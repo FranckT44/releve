@@ -71,6 +71,9 @@ button.danger{color:var(--crit);border-color:var(--crit);background:transparent}
 .chip[data-g="À réparer"][aria-pressed=true]{background:var(--repair)}
 .chip[data-g="Critique"][aria-pressed=true]{background:var(--crit)}
 .chip[data-g="Non inspecté"][aria-pressed=true],.chip[data-g="Info"][aria-pressed=true]{background:var(--na)}
+.field{display:grid;gap:5px}
+.selrow{display:grid;grid-template-columns:1fr 48px;gap:8px}
+.plus{min-height:48px;padding:0;font-size:24px;font-weight:500;line-height:1}
 .toggle{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--fg);font-weight:500}
 .toggle input{width:24px;height:24px;accent-color:var(--accent)}
 .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
@@ -128,10 +131,18 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 <section id="v-saisie">
   <div class="card">
     <h2 id="formTitle">Nouveau constat</h2>
-    <label>Équipement<select id="fEq"></select></label>
-    <label>Sous-équipement<select id="fSub"></select></label>
-    <label>Activité<select id="fAct"></select></label>
-    <label id="lSubAct">Sous-activité<select id="fSubAct"></select></label>
+    <div class="field"><span class="rtelab" id="l_fEq">Équipement</span><div class="selrow"><select id="fEq" aria-labelledby="l_fEq"></select><button type="button" class="plus" data-add="eq" aria-label="Ajouter : équipement">+</button></div></div>
+    <div class="field"><span class="rtelab" id="l_fSub">Sous-équipement</span><div class="selrow"><select id="fSub" aria-labelledby="l_fSub"></select><button type="button" class="plus" data-add="sub" aria-label="Ajouter : sous-équipement">+</button></div></div>
+    <div class="field"><span class="rtelab" id="l_fAct">Activité</span><div class="selrow"><select id="fAct" aria-labelledby="l_fAct"></select><button type="button" class="plus" data-add="act" aria-label="Ajouter : activité">+</button></div></div>
+    <div class="field" id="lSubAct"><span class="rtelab" id="l_fSubAct">Sous-activité</span><div class="selrow"><select id="fSubAct" aria-labelledby="l_fSubAct"></select><button type="button" class="plus" data-add="subact" aria-label="Ajouter : sous-activité">+</button></div></div>
+    <div id="addCard" class="card confirm" hidden>
+      <strong id="addTitre"></strong>
+      <div class="row2">
+        <label>Nom<input type="text" id="addNom" autocomplete="off"></label>
+        <label id="lAddCode">Code (court)<input type="text" id="addCode" autocomplete="off" autocapitalize="characters"></label>
+      </div>
+      <div class="btns"><button class="primary" id="bAddOk" type="button">Ajouter à la mission</button><button id="bAddCancel" type="button">Annuler</button></div>
+    </div>
     <div class="row2">
       <label>Repère (optionnel)<input type="text" id="fRep" placeholder="MH1, section 402…" autocomplete="off"></label>
       <label>Date<input type="date" id="fDate"></label>
@@ -330,7 +341,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.12";
+const APP_VERSION="1.13";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -516,8 +527,8 @@ function curEq(){return EQ.find(e=>e.code===$("fEq").value)}
 function curAct(){return ACT.find(a=>a.code===$("fAct").value)}
 function refreshSelects(keep={}){fillSelect($("fEq"),EQ,keep.eq);fillSub(keep.sub);fillSelect($("fAct"),ACT,keep.act);fillSubAct(keep.subact)}
 function fillSub(keep){const e=curEq();fillSelect($("fSub"),e&&e.enfants.length?e.enfants:[{nom:"(général)",code:"GEN"}],keep)}
-function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;$("lSubAct").hidden=!has;fillSelect($("fSubAct"),has?a.enfants:[],keep);updatePath()}
-function subActObj(){const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
+function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:"(aucune)",code:""}],keep);updatePath()}
+function subActObj(){if(!$("fSubAct").value) return null;const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
 function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=$("fSub").selectedOptions[0]?.textContent||"";
   const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
   return ["Photos",safeDir(e?.nom),safeDir(sub),safeDir(act),safeDir(sact),$("fDate").value].filter(Boolean).join("\\")}
@@ -594,6 +605,34 @@ async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id)
   form={photos:[],gravite:en.gravite,editId:id};
   for(const n of en.photos){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null})}
   renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
+/* ---------- ajout rapide depuis la saisie ---------- */
+let AJOUT=null;
+function arbreVersTexte(arbre,codesEnfants){return arbre.map(e=>`${e.nom} [${e.code}]`+e.enfants.map(c=>"\n- "+c.nom+(codesEnfants&&c.code&&c.code!==slug(c.nom)?` [${c.code}]`:"")).join("")).join("\n")}
+function codeLibre(base,pris){let c=base||"X",i=2;while(pris.includes(c)) c=base+(i++);return c}
+function ouvrirAjout(kind){const e=curEq(),a=curAct();
+  if(kind==="sub"&&!e){toast("Choisis d'abord l'équipement.");return}
+  if(kind==="subact"&&!a){toast("Choisis d'abord l'activité.");return}
+  AJOUT=kind;const titres={eq:"Nouvel équipement",sub:`Nouveau sous-équipement de ${e?.nom}`,act:"Nouvelle activité",subact:`Nouvelle sous-activité de ${a?.nom}`};
+  $("addTitre").textContent=titres[kind];$("addNom").value="";$("addCode").value="";$("addCode").dataset.touche="";$("lAddCode").hidden=kind==="sub";
+  const card=$("addCard");$({eq:"fEq",sub:"fSub",act:"fAct",subact:"fSubAct"}[kind]).closest(".field").after(card);card.hidden=false;$("addNom").focus()}
+function proposerCode(){if(AJOUT==="eq"&&!$("addCode").dataset.touche) $("addCode").value=slug($("addNom").value).replace(/-/g,"").toUpperCase().slice(0,4)}
+async function validerAjout(){const nom=$("addNom").value.trim().replace(/[\[\]]/g,"");if(!nom){toast("Indique un nom.");return}
+  const m=curMission();const eqs=parseTree(m.equipements),acts=parseTree(m.activites);const e=curEq(),a=curAct();let choix={};
+  if(AJOUT==="eq"){if(eqs.some(x=>x.nom.toLowerCase()===nom.toLowerCase())){toast("Cet équipement existe déjà.");return}
+    const code=codeLibre(($("addCode").value.trim()||slug(nom).replace(/-/g,"").slice(0,4)).toUpperCase(),eqs.map(x=>x.code));
+    eqs.push({nom,code,enfants:[]});m.equipements=arbreVersTexte(eqs,false);choix={eq:code}}
+  else if(AJOUT==="sub"){const x=eqs.find(q=>q.code===e.code);if(x.enfants.some(c=>c.nom.toLowerCase()===nom.toLowerCase())){toast("Ce sous-équipement existe déjà.");return}
+    x.enfants.push({nom,code:slug(nom)});m.equipements=arbreVersTexte(eqs,false);choix={eq:e.code,sub:slug(nom)}}
+  else if(AJOUT==="act"){if(acts.some(x=>x.nom.toLowerCase()===nom.toLowerCase())){toast("Cette activité existe déjà.");return}
+    const num=Math.max(0,...acts.map(x=>parseInt(x.code)||0))+1;const code=codeLibre($("addCode").value.trim()||String(num),acts.map(x=>x.code));
+    acts.push({nom,code,enfants:[]});m.activites=arbreVersTexte(acts,true);choix={act:code}}
+  else{const x=acts.find(q=>q.code===a.code);if(x.enfants.some(c=>c.nom.toLowerCase()===nom.toLowerCase())){toast("Cette sous-activité existe déjà.");return}
+    const lettre=String.fromCharCode(97+x.enfants.length);const code=codeLibre($("addCode").value.trim()||x.code+lettre,x.enfants.map(c=>c.code));
+    x.enfants.push({nom,code});m.activites=arbreVersTexte(acts,true);choix={act:a.code,subact:code}}
+  m.modifieLe=new Date().toISOString();await saveMissions();
+  const keep={eq:choix.eq||$("fEq").value,act:choix.act||$("fAct").value};setActive(m);
+  fillSelect($("fEq"),EQ,keep.eq);fillSub(choix.sub||$("fSub").value);fillSelect($("fAct"),ACT,keep.act);fillSubAct(choix.subact);
+  $("addCard").hidden=true;AJOUT=null;renderHeader();toast(`« ${nom} » ajouté à la mission. Pense à envoyer la mission à tes autres appareils.`,4500)}
 /* ---------- journal ---------- */
 async function refreshBadge(){const en=await allEntries();const n=en.filter(e=>!e.envoye&&belongs(e)).length;const b=$("nbPending");b.hidden=!n;b.textContent=n}
 async function renderJournal(){
@@ -908,6 +947,10 @@ async function start(){
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
   await loadCfg();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
   $("fEq").onchange=()=>{fillSub();updatePath()};$("fSub").onchange=updatePath;$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=updatePath;
+  document.querySelectorAll(".plus").forEach(b=>b.onclick=()=>ouvrirAjout(b.dataset.add));
+  $("addNom").oninput=proposerCode;$("addCode").oninput=()=>{$("addCode").dataset.touche=$("addCode").value?"1":""};
+  $("bAddOk").onclick=validerAjout;$("bAddCancel").onclick=()=>{$("addCard").hidden=true;AJOUT=null};
+  $("addNom").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();validerAjout()}};
   $("bCam").onclick=()=>$("iCam").click();$("bGal").onclick=()=>$("iGal").click();
   const appliquerPicker=v=>{const g=$("iGal");const cfg={"1":["image/*",true],"2":["image/*",false],"3":["image/jpeg,image/heic,image/heif,image/png",true],"4":["*/*",true]}[v]||["image/*",true];
     g.setAttribute("accept",cfg[0]);g.multiple=cfg[1];$("cPicker").value=v};
