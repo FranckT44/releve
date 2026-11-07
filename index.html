@@ -80,7 +80,7 @@ button.danger{color:var(--crit);border-color:var(--crit);background:transparent}
 .thumb span{position:absolute;left:4px;bottom:4px;font:11px var(--mono);background:rgba(0,0,0,.6);color:#fff;padding:1px 5px;border-radius:4px}
 .path{font:12px/1.4 var(--mono);color:var(--muted);word-break:break-all;background:var(--bg);border-radius:6px;padding:8px}
 .hint{font-size:13px;color:var(--muted);margin:0}
-nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--tab);display:grid;grid-template-columns:repeat(3,1fr);
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--tab);display:grid;grid-auto-flow:column;grid-auto-columns:1fr;
   padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 nav button{background:transparent;border:0;border-radius:0;color:var(--tab-fg);min-height:64px;font-size:14px;display:grid;place-items:center;gap:2px;padding:6px}
 nav button svg{width:24px;height:24px}
@@ -104,6 +104,13 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .cfg{font:14px/1.5 var(--mono);min-height:220px}
 .duo,.listes{display:grid;gap:14px;margin-bottom:14px}.duo>.card,.listes>.card{margin-bottom:0}
 @media (min-width:1000px){.duo,.listes{grid-template-columns:1fr 1fr;align-items:start}.listes .cfg{min-height:520px}#pasteBox{min-height:120px}}
+.tligne{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}.tligne:first-child{border-top:0}
+.tligne .m{font-size:13px;color:var(--muted)}
+.tcols{display:grid;gap:10px}@media (min-width:900px){.tcols{grid-template-columns:1fr 1fr}}
+.tcols textarea{min-height:110px;font:14px/1.45 var(--mono)}
+.tcols .src{background:transparent;color:var(--muted)}
+.tetat{font:600 12px var(--font);padding:2px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);margin-left:6px}
+.tetat.ok{border-color:var(--ok);color:var(--ok)}
 .sync{border-radius:8px;padding:10px 12px;font-size:14px;background:var(--bg);border:1px solid var(--line)}
 .sync.warn{border-color:var(--repair);background:var(--accent-soft)}
 .sync.ok{border-color:var(--ok)}
@@ -181,6 +188,38 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     </div>
   </div>
 </section>
+
+<!-- ============ TRADUCTION (PC uniquement) ============ -->
+<section id="v-trad" hidden>
+  <div class="duo">
+  <div class="card">
+    <h2>Traduire les observations</h2>
+    <p class="hint">Ouvre le fichier « Observations_releve.csv » du dossier de la mission. Les traductions sont ajoutées dans des colonnes à part : le texte d'origine n'est jamais modifié. La traduction se fait sur ce PC, sans envoyer le texte sur internet.</p>
+    <label>Langue de traduction<select id="tLang">
+      <option value="en">Anglais (EN)</option><option value="es">Espagnol (ES)</option><option value="pt">Portugais (PT)</option>
+      <option value="it">Italien (IT)</option><option value="de">Allemand (DE)</option><option value="nl">Néerlandais (NL)</option>
+    </select></label>
+    <div class="btns">
+      <button class="primary" id="bTOpen" type="button">Ouvrir un fichier CSV</button>
+      <button id="bTReopen" type="button" hidden>Rouvrir le dernier fichier</button>
+    </div>
+    <div class="path" id="tFile">Aucun fichier ouvert.</div>
+    <div class="btns">
+      <button class="primary" id="bTAll" type="button" disabled>Traduire les lignes non traduites</button>
+      <button class="primary" id="bTSave" type="button" disabled>Enregistrer dans le fichier</button>
+    </div>
+    <p class="hint" id="tState"></p>
+  </div>
+  <div class="card">
+    <h2>Glossaire réfractaire</h2>
+    <p class="hint">Une ligne par terme : « français = traduction ». Ces termes sont remplacés avant la traduction automatique, pour garder le vocabulaire du métier. Un glossaire par langue.</p>
+    <textarea class="cfg" id="tGloss" spellcheck="false"></textarea>
+    <button id="bTGloss" type="button">Enregistrer le glossaire</button>
+  </div>
+  </div>
+  <div class="card" id="tList"><p class="hint">Les lignes du fichier apparaîtront ici.</p></div>
+</section>
+<input type="file" id="iCsv" accept=".csv,text/csv" hidden>
 
 <!-- ============ MISSIONS ============ -->
 <section id="v-reglages" hidden>
@@ -278,13 +317,14 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 <nav>
   <button type="button" data-v="saisie" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Saisie</button>
   <button type="button" data-v="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Journal<span class="badge" id="nbPending" hidden></span></span></button>
+  <button type="button" data-v="trad" id="navTrad" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 6 8M11 5c-1 4-4 7-7 8"/><path d="M13 21l4-9 4 9M14.5 18h5"/></svg>Traduction</button>
   <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h6l2 2"/></svg><span>Missions<span class="badge" id="mWarn" hidden>!</span></span></button>
 </nav>
 <div class="toast" id="toast" hidden></div>
 
 <script>
 "use strict";
-const APP_VERSION="1.10";
+const APP_VERSION="1.11";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -733,8 +773,119 @@ function appliquerCollage(remplacer){if(!COLLAGE) return;
   let base=remplacer?[]:parseTree($("cEq").value).map(e=>({nom:e.nom,code:e.code,enfants:e.enfants.map(x=>x.nom)}));
   for(const e of COLLAGE){const x=base.find(b=>b.nom===e.nom);if(!x) base.push({...e,enfants:[...e.enfants]});else for(const sz of e.enfants) if(!x.enfants.includes(sz)) x.enfants.push(sz)}
   $("cEq").value=arbreTexte(base);$("pasteBox").value="";majCollage();toast("Liste mise à jour : vérifie-la puis « Enregistrer la mission ».",4500);$("cEq").scrollIntoView({block:"center"})}
+/* ---------- traduction (PC, traducteur intégré à Chrome) ---------- */
+const GLOSS_EN=`garnissage réfractaire = refractory lining
+revêtement réfractaire = refractory lining
+garnissage = lining
+béton réfractaire = refractory castable
+préparation de surface = surface preparation
+test au marteau = hammer test
+son creux = hollow sound
+sons creux = hollow sounds
+trou d'homme = manhole
+trous d'homme = manholes
+écaillage = spalling
+épaufrures = spalling
+épaufrure = spalling
+délaminage = lamination
+feuilletage = lamination
+fissures = cracks
+fissure = crack
+ancrages = anchors
+ancrage = anchor
+gunitage = gunning
+coulage = casting
+coffrage = formwork
+damage = ramming
+pisé = ramming mix
+virole = shell
+cokage = coke build-up
+décollé = detached
+décollée = detached
+décollement = detachment`;
+const T={rows:[],head:[],handle:null,nom:"",tr:null,lang:"en",modif:false};
+const colObs=l=>`Observation (${l.toUpperCase()})`,colReco=l=>`Recommandation (${l.toUpperCase()})`;
+function csvLire(txt){txt=txt.replace(/^﻿/,"");const rows=[];let row=[],f="",q=false;
+  for(let i=0;i<txt.length;i++){const c=txt[i];
+    if(q){if(c==='"'){if(txt[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"') q=true;else if(c===";"){row.push(f);f=""}else if(c==="\n"){row.push(f.replace(/\r$/,""));rows.push(row);row=[];f=""}else f+=c}
+  if(f!==""||row.length){row.push(f.replace(/\r$/,""));rows.push(row)}
+  return rows.filter(r=>r.some(x=>x!==""))}
+function csvEcrire(head,rows){const e=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  return "﻿"+[head.map(e).join(";"),...rows.map(r=>head.map(h=>e(r[h])).join(";"))].join("\r\n")+"\r\n"}
+async function glossaire(l){try{const g=await kvGet("gloss_"+l);if(g!=null) return g}catch(e){}return l==="en"?GLOSS_EN:""}
+function appliquerGlossaire(txt,g){const paires=g.split("\n").map(x=>x.split("=")).filter(p=>p.length===2&&p[0].trim()&&p[1].trim())
+    .map(p=>[p[0].trim(),p[1].trim()]).sort((a,b)=>b[0].length-a[0].length);
+  for(const [fr,tr] of paires){const re=new RegExp(`(?<![\\p{L}])${fr.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}(?![\\p{L}])`,"giu");txt=txt.replace(re,tr)}
+  return txt}
+async function traduireMorceau(t,g){if(!t.trim()) return t;const lead=t.match(/^\s*/)[0],trail=t.match(/\s*$/)[0];
+  return lead+(await T.tr.translate(appliquerGlossaire(t.trim(),g))).trim()+trail}
+async function traduireTexte(txt,g){const out=[];
+  for(const l of (txt||"").split("\n")){const m=l.match(/^(\s*(?:[-•]|(?:\d+\.)*\d+[.)])\s+)?(.*)$/);const pre=m[1]||"",c=m[2];
+    if(!c.trim()){out.push(l);continue}
+    if(/\*\*.+?\*\*|__.+?__/.test(c)){const parts=c.split(/(\*\*.+?\*\*|__.+?__)/);let r="";
+      for(const p of parts){const mm=p.match(/^(\*\*|__)(.+)\1$/);r+=mm?mm[1]+(await traduireMorceau(mm[2],g)).trim()+mm[1]:await traduireMorceau(p,g)}
+      out.push(pre+r)}
+    else out.push(pre+await traduireMorceau(c,g))}
+  return out.join("\n")}
+async function preparerTraducteur(){
+  if(!("Translator" in self)) throw new Error("Le traducteur de Chrome n'est pas disponible sur cet appareil.");
+  if(T.tr&&T.trLang===T.lang) return;
+  const dispo=await Translator.availability({sourceLanguage:"fr",targetLanguage:T.lang});
+  if(dispo==="unavailable") throw new Error("Cette langue n'est pas proposée par le traducteur de Chrome.");
+  $("tState").textContent=dispo==="available"?"Préparation du traducteur…":"Téléchargement de la langue sur ce PC (une seule fois)…";
+  T.tr=await Translator.create({sourceLanguage:"fr",targetLanguage:T.lang,monitor(m){m.addEventListener("downloadprogress",e=>{$("tState").textContent=`Téléchargement de la langue : ${Math.round(e.loaded*100)} %`})}});
+  T.trLang=T.lang;$("tState").textContent=""}
+function rendreTrad(){const L=$("tList");L.innerHTML="";
+  if(!T.rows.length){L.innerHTML='<p class="hint">Les lignes du fichier apparaîtront ici.</p>';return}
+  const co=colObs(T.lang),cr=colReco(T.lang);let nb=0;
+  T.rows.forEach((r,i)=>{const fait=(r[co]||"")!==""||(r[cr]||"")!=="";if(fait) nb++;
+    const d=document.createElement("div");d.className="tligne";
+    d.innerHTML=`<div><strong></strong><span class="tetat${fait?" ok":""}">${fait?"traduit":"à traduire"}</span><div class="m"></div></div>
+      <div class="tcols"><label>Observation (FR)<textarea class="src" readonly></textarea></label><label>${co}<textarea data-c="${co}"></textarea></label>
+      <label>Recommandation (FR)<textarea class="src" readonly></textarea></label><label>${cr}<textarea data-c="${cr}"></textarea></label></div>
+      <div><button type="button">Traduire cette ligne</button></div>`;
+    d.querySelector("strong").textContent=`${r["Date inspection"]||""} · ${r["Nom équipement"]||r["Équipement"]||""} · ${r["Sous-zone"]||""}`;
+    d.querySelector(".m").textContent=[r["Activité"],r["Sous-activité"],r["Gravité"],r["Repère"]].filter(Boolean).join(" · ");
+    const ta=d.querySelectorAll("textarea");ta[0].value=r["Observation"]||"";ta[2].value=r["Recommandation (IPR)"]||"";ta[1].value=r[co]||"";ta[3].value=r[cr]||"";
+    for(const t of [ta[1],ta[3]]) t.oninput=()=>{r[t.dataset.c]=t.value;T.modif=true;$("bTSave").disabled=false};
+    d.querySelector("button").onclick=()=>traduireLignes([i],true);
+    L.append(d)});
+  $("tState").textContent=`${T.rows.length} ligne(s), ${nb} traduite(s) en ${T.lang.toUpperCase()}.`+(T.modif?" Modifications non enregistrées.":"");
+  $("bTAll").disabled=nb===T.rows.length;$("bTSave").disabled=!T.modif}
+async function traduireLignes(idx,forcer){
+  try{await preparerTraducteur()}catch(e){toast(e.message,6000);$("tState").textContent=e.message;return}
+  const g=await glossaire(T.lang);const co=colObs(T.lang),cr=colReco(T.lang);let n=0;
+  for(const i of idx){const r=T.rows[i];if(!forcer&&((r[co]||"")!==""||(r[cr]||"")!=="")) continue;
+    $("tState").textContent=`Traduction ${++n}…`;
+    try{r[co]=await traduireTexte(r["Observation"]||"",g);r[cr]=await traduireTexte(r["Recommandation (IPR)"]||"",g)}catch(e){toast("Erreur de traduction : "+e.message,6000);break}}
+  if(!T.head.includes(co)) T.head.push(co);if(!T.head.includes(cr)) T.head.push(cr);
+  T.modif=true;rendreTrad();toast(`${n} ligne(s) traduite(s). Vérifie puis « Enregistrer dans le fichier ».`,4000)}
+async function chargerCsv(texte,nom){const rows=csvLire(texte);if(!rows.length||!rows[0].includes("Observation")){toast("Ce fichier n'est pas un fichier d'observations de l'appli.",5000);return false}
+  T.head=rows[0];T.rows=rows.slice(1).map(r=>Object.fromEntries(T.head.map((h,i)=>[h,r[i]??""])));T.nom=nom;T.modif=false;
+  $("tFile").textContent="Fichier : "+nom;rendreTrad();return true}
+async function ouvrirCsv(){
+  if(window.showOpenFilePicker){try{const [h]=await showOpenFilePicker({types:[{description:"Observations CSV",accept:{"text/csv":[".csv"]}}]});
+      T.handle=h;await chargerCsv(await (await h.getFile()).text(),h.name);kvSet("tHandle",h).catch(()=>{});$("bTReopen").hidden=false}catch(e){if(e.name!=="AbortError") toast(e.message)}}
+  else $("iCsv").click()}
+async function rouvrirCsv(){try{const h=await kvGet("tHandle");if(!h) return;
+    if((await h.queryPermission({mode:"readwrite"}))!=="granted"&&(await h.requestPermission({mode:"readwrite"}))!=="granted") return;
+    T.handle=h;await chargerCsv(await (await h.getFile()).text(),h.name)}catch(e){toast("Impossible de rouvrir le fichier : ouvre-le à nouveau.",5000)}}
+async function enregistrerCsv(){const txt=csvEcrire(T.head,T.rows);
+  if(T.handle){try{const w=await T.handle.createWritable();await w.write(txt);await w.close();T.modif=false;rendreTrad();toast("Fichier enregistré.");return}
+    catch(e){toast("Écriture impossible ("+e.message+"). Le fichier est-il ouvert dans Excel ?",7000);return}}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv"}));a.download=T.nom||"Observations_releve.csv";a.click();
+  T.modif=false;rendreTrad();toast("Fichier enregistré dans Téléchargements : remplace l'ancien dans le dossier de la mission.",6000)}
+async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) return;$("navTrad").hidden=false;
+  try{const l=await kvGet("tLang");if(l) T.lang=l}catch(e){}$("tLang").value=T.lang;$("tGloss").value=await glossaire(T.lang);
+  try{if(await kvGet("tHandle")) $("bTReopen").hidden=false}catch(e){}
+  $("tLang").onchange=async e=>{T.lang=e.target.value;kvSet("tLang",T.lang).catch(()=>{});$("tGloss").value=await glossaire(T.lang);rendreTrad()};
+  $("bTGloss").onclick=async()=>{await kvSet("gloss_"+T.lang,$("tGloss").value);toast("Glossaire enregistré")};
+  $("bTOpen").onclick=ouvrirCsv;$("bTReopen").onclick=rouvrirCsv;$("iCsv").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(f){T.handle=null;await chargerCsv(await f.text(),f.name)}};
+  $("bTAll").onclick=()=>traduireLignes(T.rows.map((_,i)=>i),false);$("bTSave").onclick=enregistrerCsv;
+  window.addEventListener("beforeunload",e=>{if(T.modif){e.preventDefault();e.returnValue=""}})}
 /* ---------- navigation ---------- */
-function showView(v){for(const s of ["saisie","journal","reglages"]) $("v-"+s).hidden=s!==v;
+function showView(v){for(const s of ["saisie","journal","reglages","trad"]) $("v-"+s).hidden=s!==v;
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v?"page":"false"));
   if(v==="journal") renderJournal();if(v==="reglages") renderCfg();window.scrollTo(0,0)}
 /* ---------- démarrage ---------- */
@@ -765,6 +916,7 @@ async function start(){
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
   $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
+  initTrad();
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
 start();
