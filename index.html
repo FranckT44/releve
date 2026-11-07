@@ -118,8 +118,8 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .edl input[type=range]{width:80px}
 .sw{display:flex;gap:5px}.sw button{width:28px;height:28px;min-height:28px;padding:0;border-radius:50%;border:2px solid #2e3a41}
 .sw button[aria-pressed=true]{outline:3px solid #fff;outline-offset:1px}
-#edZone{flex:1;min-height:0;display:grid;place-items:center;overflow:hidden;touch-action:none}
-#edCv{touch-action:none;max-width:100%;max-height:100%}
+#edZone{flex:1;min-height:0;position:relative;overflow:hidden;touch-action:none}.edvue span{min-width:2.6em;text-align:center;font-size:13px}.edvue .edsep{flex:1;min-width:0}
+#edCv{touch-action:none;position:absolute;inset:0;width:100%;height:100%}
 #edTxt{display:flex;flex-direction:column;gap:6px;padding:6px 8px}#edTxt[hidden]{display:none!important}#edTxt textarea{width:100%;box-sizing:border-box;font-size:16px;min-height:52px;resize:vertical}.edtxtopt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.edtxtopt button{min-height:44px;min-width:44px}.edtxtopt button[aria-pressed=true]{background:#2f6f8f;border-color:#8fd0ee}#edTxtTv{min-width:2ch}.edtxtopt .primary{margin-left:auto}
 .edfoot{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:6px}.edfoot button{min-height:44px;white-space:normal}
 .thumb .an{position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px}
@@ -374,6 +374,8 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <button type="button" id="edUndo" aria-label="Annuler la dernière action">↶</button><button type="button" id="edRedo" aria-label="Rétablir">↷</button>
     <button type="button" id="edDel" class="danger" aria-label="Supprimer l'élément sélectionné">Suppr.</button>
   </div>
+  <div class="edbar edvue"><button type="button" id="edFirst" aria-label="Première photo">⏮</button><button type="button" id="edPrev" aria-label="Photo précédente">‹</button><span id="edNum">1/1</span><button type="button" id="edNext" aria-label="Photo suivante">›</button><span class="edsep"></span>
+    <button type="button" id="edFit" aria-label="Voir la photo entière">Tout</button><button type="button" id="edCropVue" aria-label="Recadrer sur la vue affichée">Cadrer vue</button></div>
   <div id="edZone"><canvas id="edCv"></canvas></div>
   <div id="edTxt" hidden><textarea id="edTxtIn" rows="2" placeholder="Texte à placer (il passe à la ligne tout seul au bord de la photo)" autocomplete="off"></textarea>
     <div class="edtxtopt"><button type="button" id="edTxtB" aria-pressed="false" aria-label="Gras"><b>G</b></button><button type="button" id="edTxtI" aria-pressed="false" aria-label="Italique"><i>I</i></button><button type="button" id="edTxtU" aria-pressed="false" aria-label="Souligné"><u>S</u></button>
@@ -388,7 +390,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.20";
+const APP_VERSION="1.21";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -698,12 +700,23 @@ function edRestaurer(js){const s=JSON.parse(js);ED.obj=s.obj;ED.crop=s.crop;ED.s
 function unite(){return Math.max(ED.img.width,ED.img.height)/400}
 async function ouvrirEditeur(i){const p=form.photos[i];
   try{ED.img=await createImageBitmap(p.orig||p.blob,{imageOrientation:"from-image"})}catch(e){try{ED.img=await createImageBitmap(p.orig||p.blob)}catch(e2){toast("Impossible d'ouvrir cette photo.");return}}
-  ED.i=i;ED.obj=p.annot?structuredClone(p.annot.obj||[]):[];ED.crop=p.annot?p.annot.crop||null:null;ED.hist=[];ED.redo=[];ED.sel=-1;ED.cur=null;
+  ED.i=i;ED.obj=p.annot?structuredClone(p.annot.obj||[]):[];ED.crop=p.annot?p.annot.crop||null:null;ED.hist=[];ED.redo=[];ED.sel=-1;ED.cur=null;ED.v=null;PTR.clear();ED.pinch=null;
+  $("edTxt").hidden=true;TXTPOS=null;TXTEDIT=-1;
+  const n=form.photos.length;$("edNum").textContent=`${i+1}/${n}`;$("edFirst").disabled=$("edPrev").disabled=i===0;$("edNext").disabled=i>=n-1;
   $("ed").hidden=false;document.body.style.overflow="hidden";edOutil(ED.tool);edTaille();edDessiner()}
+// passer à une autre photo : la photo en cours est enregistrée si elle a été modifiée
+async function edAller(j){if(j<0||j>=form.photos.length||j===ED.i) return;
+  if(ED.hist.length){if(!ED.obj.length&&!ED.crop) await edOriginal(true);else await edExporter();toast(`Photo ${ED.i+1} enregistrée.`,1800)}
+  renderThumbs();await ouvrirEditeur(j)}
 function fermerEditeur(){$("ed").hidden=true;document.body.style.overflow="";$("edTxt").hidden=true;ED.img=null}
-function edTaille(){const z=$("edZone"),cv=$("edCv");const W=z.clientWidth,H=z.clientHeight;const k=Math.min(W/ED.img.width,H/ED.img.height);
-  ED.k=k;const dpr=window.devicePixelRatio||1;cv.style.width=Math.round(ED.img.width*k)+"px";cv.style.height=Math.round(ED.img.height*k)+"px";
-  cv.width=Math.round(ED.img.width*k*dpr);cv.height=Math.round(ED.img.height*k*dpr)}
+// vue : point écran (px CSS) = (point image - x0) * sc
+function edTaille(){const z=$("edZone"),cv=$("edCv");const W=Math.max(1,z.clientWidth),H=Math.max(1,z.clientHeight),dpr=window.devicePixelRatio||1;
+  ED.W=W;ED.H=H;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ED.sc0=Math.min(W/ED.img.width,H/ED.img.height);
+  if(!ED.v) edVue(ED.crop||{x:0,y:0,w:ED.img.width,h:ED.img.height});else edBorner()}
+function edVue(r){const sc=Math.min(ED.W/r.w,ED.H/r.h);ED.v={sc,x0:r.x-(ED.W/sc-r.w)/2,y0:r.y-(ED.H/sc-r.h)/2};edBorner()}
+function edBorner(){const v=ED.v;v.sc=Math.min(Math.max(v.sc,ED.sc0),ED.sc0*16);const vw=ED.W/v.sc,vh=ED.H/v.sc,iw=ED.img.width,ih=ED.img.height;
+  v.x0=vw>=iw?(iw-vw)/2:Math.min(Math.max(v.x0,0),iw-vw);v.y0=vh>=ih?(ih-vh)/2:Math.min(Math.max(v.y0,0),ih-vh)}
+function edZoomer(f,cx,cy){const v=ED.v;if(cx==null){cx=ED.W/2;cy=ED.H/2}const ix=cx/v.sc+v.x0,iy=cy/v.sc+v.y0;v.sc*=f;edBorner();v.x0=ix-cx/v.sc;v.y0=iy-cy/v.sc;edBorner();edDessiner()}
 function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
 function dessinerObjet(g,o,s){ // s = échelle image -> sortie
   const w=o.w*s;g.lineWidth=w;g.strokeStyle=o.col;g.fillStyle=rgba(o.col,o.op);g.lineCap="round";g.lineJoin="round";
@@ -732,17 +745,22 @@ function mepTexte(o){const fs=o.fs||o.w*7;const poids=o.fs?(o.b?"700":"400"):"60
 function boite(o){if(o.t==="pen"){const xs=o.pts.map(q=>q[0]),ys=o.pts.map(q=>q[1]);return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]}
   if(o.t==="text"){const L=mepTexte(o);return [o.x,o.y,o.x+L.bw,o.y+L.bh]}
   return [Math.min(o.x1,o.x2),Math.min(o.y1,o.y2),Math.max(o.x1,o.x2),Math.max(o.y1,o.y2)]}
-function edDessiner(){const cv=$("edCv"),g=cv.getContext("2d");const s=cv.width/ED.img.width;
-  g.clearRect(0,0,cv.width,cv.height);g.drawImage(ED.img,0,0,cv.width,cv.height);
-  for(const o of ED.obj) dessinerObjet(g,o,s);if(ED.cur) dessinerObjet(g,ED.cur,s);
-  if(ED.sel>=0&&ED.obj[ED.sel]){const b=boite(ED.obj[ED.sel]),m=6/s*(window.devicePixelRatio||1);g.save();g.setLineDash([8,6]);g.lineWidth=2;g.strokeStyle="#ffffff";
-    g.strokeRect((b[0]-m)*s,(b[1]-m)*s,(b[2]-b[0]+2*m)*s,(b[3]-b[1]+2*m)*s);g.restore()}
+function edDessiner(){const cv=$("edCv"),g=cv.getContext("2d");if(!ED.v) return;const dpr=window.devicePixelRatio||1,v=ED.v,k=dpr*v.sc,px=1/v.sc;
+  g.setTransform(1,0,0,1,0,0);g.fillStyle="#0e1316";g.fillRect(0,0,cv.width,cv.height);
+  g.setTransform(k,0,0,k,-v.x0*k,-v.y0*k);g.imageSmoothingQuality="high";g.drawImage(ED.img,0,0);
+  for(const o of ED.obj) dessinerObjet(g,o,1);if(ED.cur) dessinerObjet(g,ED.cur,1);
+  if(ED.sel>=0&&ED.obj[ED.sel]){const b=boite(ED.obj[ED.sel]),m=6*px;g.save();g.setLineDash([8*px,6*px]);g.lineWidth=2*px;g.strokeStyle="#ffffff";
+    g.strokeRect(b[0]-m,b[1]-m,b[2]-b[0]+2*m,b[3]-b[1]+2*m);g.restore()}
   const c=ED.cur&&ED.tool==="crop"?ED.cur:ED.crop?{x1:ED.crop.x,y1:ED.crop.y,x2:ED.crop.x+ED.crop.w,y2:ED.crop.y+ED.crop.h}:null;
-  if(c){const x=Math.min(c.x1,c.x2)*s,y=Math.min(c.y1,c.y2)*s,w=Math.abs(c.x2-c.x1)*s,h=Math.abs(c.y2-c.y1)*s;g.save();g.fillStyle="rgba(0,0,0,.55)";
-    g.fillRect(0,0,cv.width,y);g.fillRect(0,y+h,cv.width,cv.height-y-h);g.fillRect(0,y,x,h);g.fillRect(x+w,y,cv.width-x-w,h);
-    g.setLineDash([10,6]);g.strokeStyle="#fff";g.lineWidth=2;g.strokeRect(x,y,w,h);g.restore()}
+  if(c){const x=Math.min(c.x1,c.x2),y=Math.min(c.y1,c.y2),w=Math.abs(c.x2-c.x1),h=Math.abs(c.y2-c.y1);g.save();g.fillStyle="rgba(0,0,0,.55)";
+    g.beginPath();g.rect(-1e6,-1e6,2e6,2e6);g.rect(x,y,w,h);g.fill("evenodd");
+    g.setLineDash([10*px,6*px]);g.strokeStyle="#fff";g.lineWidth=2*px;g.strokeRect(x,y,w,h);g.restore()}
+  g.setTransform(1,0,0,1,0,0);
   $("edDel").disabled=ED.sel<0;$("edUndo").disabled=!ED.hist.length;$("edRedo").disabled=!ED.redo.length}
-function edPoint(ev){const r=$("edCv").getBoundingClientRect();return [(ev.clientX-r.left)/r.width*ED.img.width,(ev.clientY-r.top)/r.height*ED.img.height]}
+function edPoint(ev){const r=$("edCv").getBoundingClientRect();return [(ev.clientX-r.left)/ED.v.sc+ED.v.x0,(ev.clientY-r.top)/ED.v.sc+ED.v.y0]}
+// deux doigts = zoom et déplacement de la vue (le dessin en cours est abandonné)
+const PTR=new Map();
+function edPinchPos(){const [a,b]=[...PTR.values()],r=$("edCv").getBoundingClientRect();return {d:Math.hypot(a.x-b.x,a.y-b.y)||1,cx:(a.x+b.x)/2-r.left,cy:(a.y+b.y)/2-r.top}}
 function edOutil(t){ED.tool=t;document.querySelectorAll("#ed [data-t]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===t)));if(t!=="sel"){ED.sel=-1}if(ED.img) edDessiner()}
 function styleCourant(){return {col:ED.col,w:+$("edW").value*unite(),fill:$("edFill").checked,op:+$("edOp").value/100}}
 function toucher(pt){const tol=12*unite();for(let j=ED.obj.length-1;j>=0;j--){const b=boite(ED.obj[j]);if(pt[0]>=b[0]-tol&&pt[0]<=b[2]+tol&&pt[1]>=b[1]-tol&&pt[1]<=b[3]+tol) return j}return -1}
@@ -752,17 +770,25 @@ function txtBoutons(){for(const k of ["b","i","u"]) $("edTxt"+k.toUpperCase()).s
 function txtOuvrir(o){if(o){TXTEDIT=ED.sel;TXT.b=!!o.b;TXT.i=!!o.i;TXT.u=!!o.u;TXT.t=o.fs?Math.round(o.fs/unite()/3):Math.round(o.w*7/unite()/3);$("edTxtIn").value=o.txt}else $("edTxtIn").value="";
   txtBoutons();$("edTxtOk").textContent=o?"Modifier":"OK";$("edTxt").hidden=false;if(!o) $("edTxtIn").focus()}
 function txtStyle(){return {fs:TXT.t*unite()*3,b:TXT.b,i:TXT.i,u:TXT.u}}
-function edDown(ev){ev.preventDefault();$("edCv").setPointerCapture(ev.pointerId);const pt=edPoint(ev);
+function edDown(ev){ev.preventDefault();try{$("edCv").setPointerCapture(ev.pointerId)}catch(e){}
+  if(ev.pointerType==="touch"){PTR.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+    if(PTR.size===2){ED.cur=null;if(ED.drag){ED.drag=null;if(ED.hist.length) edRestaurer(ED.hist.pop())}$("edTxt").hidden=true;TXTPOS=null;TXTEDIT=-1;
+      const q=edPinchPos();ED.pinch={...q,sc:ED.v.sc,ix:q.cx/ED.v.sc+ED.v.x0,iy:q.cy/ED.v.sc+ED.v.y0};edDessiner();return}
+    if(PTR.size>2||ED.pinch) return}
+  const pt=edPoint(ev);
   if(ED.tool==="sel"){ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.t==="text") txtOuvrir(o)}edDessiner();return}
   if(ED.tool==="text"){TXTPOS=pt;TXTEDIT=-1;txtOuvrir(null);return}
   const st=styleCourant();
   if(ED.tool==="pen") ED.cur={t:"pen",pts:[pt],...st};
   else ED.cur={t:ED.tool,x1:pt[0],y1:pt[1],x2:pt[0],y2:pt[1],...st};edDessiner()}
-function edMove(ev){if(!ED.cur&&!ED.drag) return;ev.preventDefault();const pt=edPoint(ev);
+function edMove(ev){if(PTR.has(ev.pointerId)) PTR.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+  if(ED.pinch){ev.preventDefault();if(PTR.size<2) return;const q=edPinchPos(),p=ED.pinch,v=ED.v;v.sc=p.sc*q.d/p.d;edBorner();v.x0=p.ix-q.cx/v.sc;v.y0=p.iy-q.cy/v.sc;edBorner();edDessiner();return}
+  if(!ED.cur&&!ED.drag) return;ev.preventDefault();const pt=edPoint(ev);
   if(ED.drag&&ED.sel>=0){deplacer(ED.obj[ED.sel],pt[0]-ED.drag[0],pt[1]-ED.drag[1]);ED.drag=pt;edDessiner();return}
   if(ED.cur.t==="pen") ED.cur.pts.push(pt);else{ED.cur.x2=pt[0];ED.cur.y2=pt[1]}edDessiner()}
-function edUp(){if(ED.drag){ED.drag=null;return}if(!ED.cur) return;const c=ED.cur;ED.cur=null;
-  const taille=c.t==="pen"?c.pts.length>1:Math.hypot(c.x2-c.x1,c.y2-c.y1)>4*unite();
+function edUp(ev){if(ev&&PTR.has(ev.pointerId)){PTR.delete(ev.pointerId);if(ED.pinch){if(!PTR.size) ED.pinch=null;return}}
+  if(ED.drag){ED.drag=null;return}if(!ED.cur) return;const c=ED.cur;ED.cur=null;
+  const taille=c.t==="pen"?c.pts.length>1:Math.hypot(c.x2-c.x1,c.y2-c.y1)*ED.v.sc>8;
   if(!taille){edDessiner();return}
   edPousser();
   if(c.t==="crop"){const x=Math.max(0,Math.min(c.x1,c.x2)),y=Math.max(0,Math.min(c.y1,c.y2));ED.crop={x,y,w:Math.min(ED.img.width,Math.max(c.x1,c.x2))-x,h:Math.min(ED.img.height,Math.max(c.y1,c.y2))-y};toast("Zone de recadrage définie. Touche à nouveau « Recadrer » pour l'annuler.",3500)}
@@ -795,7 +821,14 @@ function initEditeur2(){
   $("edTxtT").oninput=()=>{TXT.t=+$("edTxtT").value;$("edTxtTv").textContent=TXT.t};
   $("edTxtIn").onkeydown=e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();$("edTxtOk").click()}};
   $("edCancel").onclick=fermerEditeur;$("edReset").onclick=()=>edOriginal(false);$("edSave").onclick=edEnregistrer;
-  window.addEventListener("resize",()=>{if(!$("ed").hidden&&ED.img){edTaille();edDessiner()}})}
+  new ResizeObserver(()=>{if(!$("ed").hidden&&ED.img&&ED.v){edTaille();edDessiner()}}).observe($("edZone"));
+  cv.addEventListener("wheel",e=>{if(!ED.img) return;e.preventDefault();const r=cv.getBoundingClientRect();edZoomer(Math.exp(-e.deltaY*0.0015),e.clientX-r.left,e.clientY-r.top)},{passive:false});
+  
+  $("edFit").onclick=()=>{edVue({x:0,y:0,w:ED.img.width,h:ED.img.height});edDessiner()};
+  $("edCropVue").onclick=()=>{const v=ED.v,x=Math.max(0,v.x0),y=Math.max(0,v.y0),x2=Math.min(ED.img.width,v.x0+ED.W/v.sc),y2=Math.min(ED.img.height,v.y0+ED.H/v.sc);
+    if(x<=0.5&&y<=0.5&&x2>=ED.img.width-0.5&&y2>=ED.img.height-0.5){toast("Zoome d'abord sur la zone à garder.");return}
+    edPousser();ED.crop={x,y,w:x2-x,h:y2-y};edDessiner();toast("Recadrage = la vue affichée. « Tout » pour revoir la photo entière.",3500)};
+  $("edFirst").onclick=()=>edAller(0);$("edPrev").onclick=()=>edAller(ED.i-1);$("edNext").onclick=()=>edAller(ED.i+1)}
 /* ---------- journal ---------- */
 async function refreshBadge(){const en=await allEntries();const n=en.filter(e=>!e.envoye&&belongs(e)).length;const b=$("nbPending");b.hidden=!n;b.textContent=n}
 async function renderJournal(){
