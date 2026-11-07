@@ -343,7 +343,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.17";
+const APP_VERSION="1.18";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -845,9 +845,11 @@ function renderHeader(){renderSync();$("appVer").textContent="Version de l'appli
 async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new Date().toISOString();
   const {id,archive,envoyeLe,recuLe,versionRecue,...data}=m;
   const f=await fichierMission({schema:"mission-releve/1",...data});
-  let ok=false;
-  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});ok=true}catch(e){if(e.name==="AbortError") return}}
-  if(!ok){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();toast(`« ${f.name} » enregistré dans Téléchargements : envoie-le au téléphone par Quick Share.`,6000)}
+  let ok=false;const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  // sur PC, le partage Windows ouvre Quick Share sans le fichier : on enregistre directement dans Téléchargements
+  if(mobile&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});ok=true}catch(e){if(e.name==="AbortError") return}}
+  if(!ok){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();
+    toast(`« ${f.name} » est dans Téléchargements : glisse-le dans la fenêtre Quick Share, ou clic droit > Envoyer avec Quick Share. Sur le téléphone : Missions > Charger une mission.`,9000)}
   m.envoyeLe=new Date().toISOString();await saveMissions();renderSync()}
 async function importCfg(file){let j;try{j=/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)?await lireImageMission(file):JSON.parse(await file.text())}catch(e){j=null}
   if(!j||!j.equipements||!j.activites){toast("Ce fichier n'est pas un fichier de mission valide.");return}
