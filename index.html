@@ -195,10 +195,16 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   <div class="card">
     <h2>Traduire les observations</h2>
     <p class="hint">Ouvre le fichier « Observations_releve.csv » du dossier de la mission. Les traductions sont ajoutées dans des colonnes à part : le texte d'origine n'est jamais modifié. La traduction se fait sur ce PC, sans envoyer le texte sur internet.</p>
-    <label>Langue de traduction<select id="tLang">
-      <option value="en">Anglais (EN)</option><option value="es">Espagnol (ES)</option><option value="pt">Portugais (PT)</option>
+    <div class="row2">
+      <label>Langue du texte saisi<select id="tSrc">
+      <option value="fr">Français (FR)</option><option value="en">Anglais (EN)</option><option value="es">Espagnol (ES)</option><option value="pt">Portugais (PT)</option>
       <option value="it">Italien (IT)</option><option value="de">Allemand (DE)</option><option value="nl">Néerlandais (NL)</option>
-    </select></label>
+      </select></label>
+      <label>Traduire en<select id="tLang">
+      <option value="fr">Français (FR)</option><option value="en">Anglais (EN)</option><option value="es">Espagnol (ES)</option><option value="pt">Portugais (PT)</option>
+      <option value="it">Italien (IT)</option><option value="de">Allemand (DE)</option><option value="nl">Néerlandais (NL)</option>
+      </select></label>
+    </div>
     <div class="btns">
       <button class="primary" id="bTOpen" type="button">Ouvrir un fichier CSV</button>
       <button id="bTReopen" type="button" hidden>Rouvrir le dernier fichier</button>
@@ -212,7 +218,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   </div>
   <div class="card">
     <h2>Glossaire réfractaire</h2>
-    <p class="hint">Une ligne par terme : « français = traduction ». Ces termes sont remplacés avant la traduction automatique, pour garder le vocabulaire du métier. Un glossaire par langue.</p>
+    <p class="hint" id="tGlossHint">Une ligne par terme : « terme d'origine = traduction ». Ces termes sont remplacés avant la traduction automatique, pour garder le vocabulaire du métier. Un glossaire par sens de traduction.</p>
     <textarea class="cfg" id="tGloss" spellcheck="false"></textarea>
     <button id="bTGloss" type="button">Enregistrer le glossaire</button>
   </div>
@@ -324,7 +330,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.11";
+const APP_VERSION="1.12";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -803,7 +809,7 @@ cokage = coke build-up
 décollé = detached
 décollée = detached
 décollement = detachment`;
-const T={rows:[],head:[],handle:null,nom:"",tr:null,lang:"en",modif:false};
+const T={rows:[],head:[],handle:null,nom:"",tr:null,src:"fr",lang:"en",modif:false};
 const colObs=l=>`Observation (${l.toUpperCase()})`,colReco=l=>`Recommandation (${l.toUpperCase()})`;
 function csvLire(txt){txt=txt.replace(/^﻿/,"");const rows=[];let row=[],f="",q=false;
   for(let i=0;i<txt.length;i++){const c=txt[i];
@@ -813,7 +819,10 @@ function csvLire(txt){txt=txt.replace(/^﻿/,"");const rows=[];let row=[],f="",q
   return rows.filter(r=>r.some(x=>x!==""))}
 function csvEcrire(head,rows){const e=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
   return "﻿"+[head.map(e).join(";"),...rows.map(r=>head.map(h=>e(r[h])).join(";"))].join("\r\n")+"\r\n"}
-async function glossaire(l){try{const g=await kvGet("gloss_"+l);if(g!=null) return g}catch(e){}return l==="en"?GLOSS_EN:""}
+function inverserGlossaire(g){const vus=new Set();return g.split("\n").map(x=>x.split("=")).filter(p=>p.length===2)
+  .map(p=>[p[1].trim(),p[0].trim()]).filter(([a])=>a&&!vus.has(a.toLowerCase())&&vus.add(a.toLowerCase())).map(([a,b])=>`${a} = ${b}`).join("\n")}
+async function glossaire(src,l){const k=`gloss_${src}_${l}`;try{let g=await kvGet(k);if(g==null&&src==="fr") g=await kvGet("gloss_"+l);if(g!=null) return g}catch(e){}
+  if(src==="fr"&&l==="en") return GLOSS_EN;if(src==="en"&&l==="fr") return inverserGlossaire(GLOSS_EN);return ""}
 function appliquerGlossaire(txt,g){const paires=g.split("\n").map(x=>x.split("=")).filter(p=>p.length===2&&p[0].trim()&&p[1].trim())
     .map(p=>[p[0].trim(),p[1].trim()]).sort((a,b)=>b[0].length-a[0].length);
   for(const [fr,tr] of paires){const re=new RegExp(`(?<![\\p{L}])${fr.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}(?![\\p{L}])`,"giu");txt=txt.replace(re,tr)}
@@ -830,20 +839,21 @@ async function traduireTexte(txt,g){const out=[];
   return out.join("\n")}
 async function preparerTraducteur(){
   if(!("Translator" in self)) throw new Error("Le traducteur de Chrome n'est pas disponible sur cet appareil.");
-  if(T.tr&&T.trLang===T.lang) return;
-  const dispo=await Translator.availability({sourceLanguage:"fr",targetLanguage:T.lang});
+  if(T.src===T.lang) throw new Error("Choisis deux langues différentes.");
+  if(T.tr&&T.trLang===T.src+">"+T.lang) return;
+  const dispo=await Translator.availability({sourceLanguage:T.src,targetLanguage:T.lang});
   if(dispo==="unavailable") throw new Error("Cette langue n'est pas proposée par le traducteur de Chrome.");
   $("tState").textContent=dispo==="available"?"Préparation du traducteur…":"Téléchargement de la langue sur ce PC (une seule fois)…";
-  T.tr=await Translator.create({sourceLanguage:"fr",targetLanguage:T.lang,monitor(m){m.addEventListener("downloadprogress",e=>{$("tState").textContent=`Téléchargement de la langue : ${Math.round(e.loaded*100)} %`})}});
-  T.trLang=T.lang;$("tState").textContent=""}
+  T.tr=await Translator.create({sourceLanguage:T.src,targetLanguage:T.lang,monitor(m){m.addEventListener("downloadprogress",e=>{$("tState").textContent=`Téléchargement de la langue : ${Math.round(e.loaded*100)} %`})}});
+  T.trLang=T.src+">"+T.lang;$("tState").textContent=""}
 function rendreTrad(){const L=$("tList");L.innerHTML="";
   if(!T.rows.length){L.innerHTML='<p class="hint">Les lignes du fichier apparaîtront ici.</p>';return}
   const co=colObs(T.lang),cr=colReco(T.lang);let nb=0;
   T.rows.forEach((r,i)=>{const fait=(r[co]||"")!==""||(r[cr]||"")!=="";if(fait) nb++;
     const d=document.createElement("div");d.className="tligne";
     d.innerHTML=`<div><strong></strong><span class="tetat${fait?" ok":""}">${fait?"traduit":"à traduire"}</span><div class="m"></div></div>
-      <div class="tcols"><label>Observation (FR)<textarea class="src" readonly></textarea></label><label>${co}<textarea data-c="${co}"></textarea></label>
-      <label>Recommandation (FR)<textarea class="src" readonly></textarea></label><label>${cr}<textarea data-c="${cr}"></textarea></label></div>
+      <div class="tcols"><label>Observation (${T.src.toUpperCase()})<textarea class="src" readonly></textarea></label><label>${co}<textarea data-c="${co}"></textarea></label>
+      <label>Recommandation (${T.src.toUpperCase()})<textarea class="src" readonly></textarea></label><label>${cr}<textarea data-c="${cr}"></textarea></label></div>
       <div><button type="button">Traduire cette ligne</button></div>`;
     d.querySelector("strong").textContent=`${r["Date inspection"]||""} · ${r["Nom équipement"]||r["Équipement"]||""} · ${r["Sous-zone"]||""}`;
     d.querySelector(".m").textContent=[r["Activité"],r["Sous-activité"],r["Gravité"],r["Repère"]].filter(Boolean).join(" · ");
@@ -855,7 +865,7 @@ function rendreTrad(){const L=$("tList");L.innerHTML="";
   $("bTAll").disabled=nb===T.rows.length;$("bTSave").disabled=!T.modif}
 async function traduireLignes(idx,forcer){
   try{await preparerTraducteur()}catch(e){toast(e.message,6000);$("tState").textContent=e.message;return}
-  const g=await glossaire(T.lang);const co=colObs(T.lang),cr=colReco(T.lang);let n=0;
+  const g=await glossaire(T.src,T.lang);const co=colObs(T.lang),cr=colReco(T.lang);let n=0;
   for(const i of idx){const r=T.rows[i];if(!forcer&&((r[co]||"")!==""||(r[cr]||"")!=="")) continue;
     $("tState").textContent=`Traduction ${++n}…`;
     try{r[co]=await traduireTexte(r["Observation"]||"",g);r[cr]=await traduireTexte(r["Recommandation (IPR)"]||"",g)}catch(e){toast("Erreur de traduction : "+e.message,6000);break}}
@@ -877,10 +887,13 @@ async function enregistrerCsv(){const txt=csvEcrire(T.head,T.rows);
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv"}));a.download=T.nom||"Observations_releve.csv";a.click();
   T.modif=false;rendreTrad();toast("Fichier enregistré dans Téléchargements : remplace l'ancien dans le dossier de la mission.",6000)}
 async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) return;$("navTrad").hidden=false;
-  try{const l=await kvGet("tLang");if(l) T.lang=l}catch(e){}$("tLang").value=T.lang;$("tGloss").value=await glossaire(T.lang);
+  try{const l=await kvGet("tLang");if(l) T.lang=l;const sl=await kvGet("tSrc");if(sl) T.src=sl}catch(e){}$("tLang").value=T.lang;$("tSrc").value=T.src;
+  const majGloss=async()=>{$("tGloss").value=await glossaire(T.src,T.lang);$("tGlossHint").textContent=`Sens ${T.src.toUpperCase()} → ${T.lang.toUpperCase()}. Une ligne par terme : « terme d'origine = traduction ». Ces termes sont remplacés avant la traduction automatique, pour garder le vocabulaire du métier.`};
+  await majGloss();
   try{if(await kvGet("tHandle")) $("bTReopen").hidden=false}catch(e){}
-  $("tLang").onchange=async e=>{T.lang=e.target.value;kvSet("tLang",T.lang).catch(()=>{});$("tGloss").value=await glossaire(T.lang);rendreTrad()};
-  $("bTGloss").onclick=async()=>{await kvSet("gloss_"+T.lang,$("tGloss").value);toast("Glossaire enregistré")};
+  $("tLang").onchange=async e=>{T.lang=e.target.value;kvSet("tLang",T.lang).catch(()=>{});await majGloss();rendreTrad()};
+  $("tSrc").onchange=async e=>{T.src=e.target.value;kvSet("tSrc",T.src).catch(()=>{});await majGloss();rendreTrad()};
+  $("bTGloss").onclick=async()=>{await kvSet(`gloss_${T.src}_${T.lang}`,$("tGloss").value);toast("Glossaire enregistré")};
   $("bTOpen").onclick=ouvrirCsv;$("bTReopen").onclick=rouvrirCsv;$("iCsv").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(f){T.handle=null;await chargerCsv(await f.text(),f.name)}};
   $("bTAll").onclick=()=>traduireLignes(T.rows.map((_,i)=>i),false);$("bTSave").onclick=enregistrerCsv;
   window.addEventListener("beforeunload",e=>{if(T.modif){e.preventDefault();e.returnValue=""}})}
