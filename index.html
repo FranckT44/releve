@@ -32,7 +32,8 @@ header{position:sticky;top:0;z-index:5;background:var(--tab);color:var(--tab-on)
   display:flex;align-items:center;gap:10px}
 header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.01em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header .mission{font:600 13px var(--mono);color:var(--tab-on);background:transparent;border:1px solid var(--tab-fg);border-radius:999px;min-height:36px;padding:4px 12px;max-width:55vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-main{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-width:720px;margin:0 auto}
+main{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-width:1240px;margin:0 auto}
+#v-saisie,#v-journal{max-width:720px;margin:0 auto}
 [hidden]{display:none!important}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:12px;margin-bottom:14px}
 .card h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:650}
@@ -45,6 +46,7 @@ textarea{min-height:90px;resize:vertical}
 button{font:600 16px var(--font);border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-height:48px;padding:10px 14px;cursor:pointer}
 button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
 button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:not-allowed}
 button.big{width:100%;min-height:56px;font-size:17px}
 button.ghost{background:transparent}
 button.danger{color:var(--crit);border-color:var(--crit);background:transparent}
@@ -88,6 +90,11 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   padding:12px 16px;border-radius:8px;font-size:15px;z-index:20;max-width:90vw;box-shadow:0 4px 18px rgba(0,0,0,.25)}
 .confirm{border:2px solid var(--accent);background:var(--accent-soft)}
 .cfg{font:14px/1.5 var(--mono);min-height:220px}
+.duo,.listes{display:grid;gap:14px;margin-bottom:14px}.duo>.card,.listes>.card{margin-bottom:0}
+@media (min-width:1000px){.duo,.listes{grid-template-columns:1fr 1fr;align-items:start}.listes .cfg{min-height:520px}#pasteBox{min-height:120px}}
+.sync{border-radius:8px;padding:10px 12px;font-size:14px;background:var(--bg);border:1px solid var(--line)}
+.sync.warn{border-color:var(--repair);background:var(--accent-soft)}
+.sync.ok{border-color:var(--ok)}
 @media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
 </style>
 </head>
@@ -165,6 +172,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <!-- ============ MISSIONS ============ -->
 <section id="v-reglages" hidden>
+  <div class="duo">
   <div class="card">
     <h2>Mission active</h2>
     <label>Mission<select id="mSel"></select></label>
@@ -196,7 +204,10 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <label>Client / site<input type="text" id="cClient"></label>
     <label>Dossier de la mission sur le PC<input type="text" id="cDir"></label>
     <p class="hint">Les photos seront rangées dans ce dossier, sous « Photos\Équipement\Sous-équipement\Activité\Date ».</p>
+    <div class="sync" id="syncInfo"></div>
   </div>
+  </div>
+  <div class="listes">
   <div class="card">
     <h2>Équipements et sous-équipements</h2>
     <p class="hint">Une ligne par équipement avec son code entre crochets, puis ses sous-équipements précédés d'un tiret.</p>
@@ -207,10 +218,22 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <p class="hint">Même principe : code entre crochets, sous-activités précédées d'un tiret.</p>
     <textarea class="cfg" id="cAct" spellcheck="false"></textarea>
   </div>
+  </div>
+  <div class="card">
+    <h2>Importer les équipements depuis Excel</h2>
+    <p class="hint">Copie les lignes de l'onglet « Équipements » du registre (avec la ligne de titres), ou un tableau à 2 colonnes Équipement | Sous-équipement (3 si un code est en première colonne), puis colle-les ici avec Ctrl+V.</p>
+    <textarea class="cfg" id="pasteBox" spellcheck="false" placeholder="Colle ici les cellules copiées dans Excel"></textarea>
+    <div class="path" id="pastePreview">Rien à importer pour l'instant.</div>
+    <div class="btns"><button class="primary" id="bPasteReplace" type="button" disabled>Remplacer la liste</button><button id="bPasteAdd" type="button" disabled>Ajouter à la liste</button></div>
+  </div>
   <button class="primary big" id="bCfgSave" type="button">Enregistrer la mission</button>
   <p></p>
   <div class="card">
     <h2>Partager une mission</h2>
+    <div id="impCard" class="card confirm" hidden>
+      <strong id="impTxt"></strong>
+      <div class="btns"><button class="primary" id="bImpOk" type="button">Remplacer</button><button id="bImpCancel" type="button">Garder celle de cet appareil</button></div>
+    </div>
     <div class="btns">
       <button id="bCfgExport" type="button">Envoyer cette mission</button>
       <button id="bCfgImport" type="button">Charger une mission</button>
@@ -225,13 +248,13 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 <nav>
   <button type="button" data-v="saisie" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Saisie</button>
   <button type="button" data-v="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Journal<span class="badge" id="nbPending" hidden></span></span></button>
-  <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h6l2 2"/></svg>Missions</button>
+  <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h6l2 2"/></svg><span>Missions<span class="badge" id="mWarn" hidden>!</span></span></button>
 </nav>
 <div class="toast" id="toast" hidden></div>
 
 <script>
 "use strict";
-const APP_VERSION="1.5";
+const APP_VERSION="1.6";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -512,6 +535,15 @@ async function purge(){const en=(await allEntries()).filter(e=>e.envoye&&belongs
   await tx("photos","readwrite",s=>{for(const e of en) for(const n of e.photos) s.delete(n)});
   await tx("entries","readwrite",s=>{for(const e of en) s.delete(e.id)});$("purgeConfirm").hidden=true;toast(`${en.length} constat(s) supprimé(s) du téléphone`);renderJournal()}
 /* ---------- missions ---------- */
+function fmtDT(iso){if(!iso) return "";const d=new Date(iso);return `${pad(d.getDate())}/${pad(d.getMonth()+1)} à ${pad(d.getHours())}h${pad(d.getMinutes())}`}
+function estSynchro(m){return !m.modifieLe||(m.envoyeLe&&m.envoyeLe>=m.modifieLe)||(m.recuLe&&m.versionRecue===m.modifieLe)}
+function renderSync(){const m=curMission();const el=$("syncInfo");if(!m||!el) return;
+  let txt,cls;
+  if(!m.modifieLe&&!m.envoyeLe&&!m.recuLe){txt="Cette mission n'a pas encore été envoyée à un autre appareil.";cls=""}
+  else if(estSynchro(m)){cls="ok";txt=m.envoyeLe&&m.envoyeLe>=(m.modifieLe||"")?`✓ À jour : version du ${fmtDT(m.modifieLe)} envoyée le ${fmtDT(m.envoyeLe)}.`:`✓ Version du ${fmtDT(m.modifieLe)}, reçue le ${fmtDT(m.recuLe)}.`}
+  else{cls="warn";txt=`⚠ Modifiée le ${fmtDT(m.modifieLe)} et pas encore envoyée aux autres appareils. Touche « Envoyer cette mission », puis charge-la sur tes téléphones.`}
+  el.className="sync "+cls;el.textContent=txt;
+  $("mWarn").hidden=MISSIONS.filter(x=>!x.archive).every(estSynchro)}
 function missionLabel(m){return `${m.no} – ${m.client||"sans nom"}${m.archive?" (archivée)":""}`}
 function renderCfg(){
   const show=$("mShowArch").checked;const sel=$("mSel");sel.innerHTML="";
@@ -522,18 +554,20 @@ function renderCfg(){
   const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;f.append(o)};
   add("copy:"+CFG.mission.id,`Copie de la mission ${CFG.mission.no}`);
   for(const m of MISSIONS.filter(m=>m.id!==CFG.mission.id&&!m.archive)) add("copy:"+m.id,`Copie de la mission ${m.no}`);
-  for(const [k,t] of Object.entries(TEMPLATES)) add("tpl:"+k,t.nom)}
+  for(const [k,t] of Object.entries(TEMPLATES)) add("tpl:"+k,t.nom);renderSync()}
 async function saveCfg(){
   const eq=parseTree($("cEq").value),ac=parseTree($("cAct").value);if(!eq.length||!ac.length){toast("Il faut au moins un équipement et une activité.");return}
   if(!$("cNo").value.trim()){toast("Indique le n° de mission.");return}
-  const m=curMission();Object.assign(m,{no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),equipements:$("cEq").value,activites:$("cAct").value});
-  await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();toast("Mission enregistrée")}
+  const m=curMission();const nv={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),equipements:$("cEq").value,activites:$("cAct").value};
+  const change=Object.keys(nv).some(k=>(m[k]||"")!==nv[k]);Object.assign(m,nv);if(change) m.modifieLe=new Date().toISOString();
+  await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();
+  toast(change?"Mission enregistrée. Pense à l'envoyer à tes autres appareils.":"Aucun changement",3500)}
 function dossierPour(no,client){const base=(CFG.mission.dossierPC||"").replace(/\\[^\\]*$/,"");return base?`${base}\\${safeDir(no+(client?" - "+client:""))}`:""}
 async function createMission(){
   const no=$("nNo").value.trim(),client=$("nClient").value.trim();if(!no){toast("Indique le n° de la nouvelle mission.");return}
   if(MISSIONS.some(m=>m.no===no&&!m.archive)){toast(`La mission ${no} existe déjà.`);return}
   const [kind,ref]=$("nFrom").value.split(":");const src=kind==="copy"?MISSIONS.find(m=>m.id===ref):TEMPLATES[ref];
-  const m={id:newId(),archive:false,no,client,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),equipements:src.equipements,activites:src.activites};
+  const m={id:newId(),archive:false,no,client,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),equipements:src.equipements,activites:src.activites,modifieLe:new Date().toISOString()};
   MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
   toast(`Mission ${no} créée : vérifie le dossier PC et complète les listes`,4000)}
 async function toggleArchive(){const m=curMission();
@@ -542,19 +576,50 @@ async function toggleArchive(){const m=curMission();
   const n=(await allEntries()).filter(e=>!e.envoye&&belongs(e)).length;
   $("archTxt").textContent=`Archiver la mission ${m.no} ?`+(n?` Attention : ${n} constat(s) pas encore envoyé(s) au PC.`:" Ses constats restent sur le téléphone tant que tu ne libères pas la place.");$("archCard").hidden=false}
 async function doArchive(){const m=curMission();m.archive=true;await saveMissions();$("archCard").hidden=true;await switchMission(MISSIONS.find(x=>!x.archive).id)}
-function renderHeader(){$("appVer").textContent="Version de l'appli : "+APP_VERSION;$("hMission").textContent=CFG.mission.no+(CFG.mission.client?" · "+CFG.mission.client:"")}
-async function exportCfg(){const m=curMission();const {id,archive,...data}=m;
+function renderHeader(){renderSync();$("appVer").textContent="Version de l'appli : "+APP_VERSION;$("hMission").textContent=CFG.mission.no+(CFG.mission.client?" · "+CFG.mission.client:"")}
+async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new Date().toISOString();
+  const {id,archive,envoyeLe,recuLe,versionRecue,...data}=m;
   const f=new File([JSON.stringify({schema:"mission-releve/1",...data},null,2)],`mission-${safeDir(m.no)}.txt`,{type:"text/plain"});
-  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:`Mission ${m.no}`})}catch(e){}}
-  else{const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click()}}
+  let ok=false;
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});ok=true}catch(e){if(e.name==="AbortError") return}}
+  if(!ok){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();toast(`« ${f.name} » enregistré dans Téléchargements : envoie-le au téléphone par Quick Share.`,6000)}
+  m.envoyeLe=new Date().toISOString();await saveMissions();renderSync()}
 async function importCfg(file){let j;try{j=JSON.parse(await file.text())}catch(e){j=null}
   if(!j||!j.equipements||!j.activites){toast("Ce fichier n'est pas un fichier de mission valide.");return}
   const d=j.schema==="reglages-releve/1"?{...j.mission,equipements:j.equipements,activites:j.activites}:j; // ancien format accepté
   if(!d.no){toast("Ce fichier ne contient pas de n° de mission.");return}
+  const m=MISSIONS.find(x=>x.no===d.no);
+  if(m&&!estSynchro(m)&&(!d.modifieLe||d.modifieLe<m.modifieLe)){ // la version locale est plus récente que le fichier
+    IMPORT_EN_ATTENTE=d;$("impTxt").textContent=`La mission ${d.no} a été modifiée sur cet appareil le ${fmtDT(m.modifieLe)}, après la version du fichier (${d.modifieLe?fmtDT(d.modifieLe):"date inconnue"}). La remplacer quand même ?`;$("impCard").hidden=false;return}
+  await appliquerImport(d)}
+let IMPORT_EN_ATTENTE=null;
+async function appliquerImport(d){$("impCard").hidden=true;IMPORT_EN_ATTENTE=null;
   let m=MISSIONS.find(x=>x.no===d.no);const maj=!!m;
   if(!m){m={id:newId(),archive:false};MISSIONS.push(m)}
-  Object.assign(m,{no:d.no,client:d.client||"",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",equipements:d.equipements,activites:d.activites,archive:false});
+  const v=d.modifieLe||new Date().toISOString();
+  Object.assign(m,{no:d.no,client:d.client||"",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",equipements:d.equipements,activites:d.activites,archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
   await saveMissions();await switchMission(m.id);toast(maj?`Mission ${m.no} mise à jour`:`Mission ${m.no} ajoutée`)}
+/* ---------- import depuis Excel (copier-coller) ---------- */
+let COLLAGE=null;
+function lireCollage(txt){
+  const lignes=txt.split(/\r?\n/).map(l=>l.split("\t").map(c=>c.trim().replace(/^"|"$/g,""))).filter(r=>r.some(c=>c));
+  if(!lignes.length) return null;
+  let ic=-1,ie=-1,is=-1,deb=0;const h=lignes[0].map(c=>c.toLowerCase());
+  if(h.some(c=>/équipement|equipement|pièce|piece|sous/.test(c))){deb=1;h.forEach((c,i)=>{if(/^code/.test(c)&&ic<0) ic=i;else if(/^sous/.test(c)&&is<0) is=i;else if(/équipement|equipement|pièce|piece/.test(c)&&ie<0) ie=i})}
+  if(ie<0){const n=Math.max(...lignes.map(r=>r.length));if(n>=5){ic=0;ie=1;is=4}else if(n===3){ic=0;ie=1;is=2}else if(n===2){ie=0;is=1}else{ie=0}}
+  const eqs=[];
+  for(const r of lignes.slice(deb)){const nom=(r[ie]||"").trim();if(!nom) continue;
+    let e=eqs.find(x=>x.nom===nom);if(!e){e={nom,code:(ic>=0&&r[ic])?r[ic].trim():slug(nom).toUpperCase().slice(0,8),enfants:[]};eqs.push(e)}
+    const subs=is>=0&&r[is]?r[is].split(";").map(x=>x.trim()).filter(Boolean):[];
+    for(const sz of subs) if(!e.enfants.includes(sz)) e.enfants.push(sz)}
+  return eqs.length?eqs:null}
+function arbreTexte(eqs){return eqs.map(e=>`${e.nom} [${e.code}]`+(e.enfants.length?"\n"+e.enfants.map(x=>"- "+(typeof x==="string"?x:x.nom)).join("\n"):"")).join("\n")}
+function majCollage(){COLLAGE=lireCollage($("pasteBox").value);const ok=!!COLLAGE;$("bPasteReplace").disabled=!ok;$("bPasteAdd").disabled=!ok;
+  $("pastePreview").textContent=ok?`${COLLAGE.length} équipement(s), ${COLLAGE.reduce((n,e)=>n+e.enfants.length,0)} sous-équipement(s) : ${COLLAGE.map(e=>e.nom).slice(0,6).join(", ")}${COLLAGE.length>6?"…":""}`:($("pasteBox").value.trim()?"Je ne reconnais pas ce tableau : il faut au moins une colonne Équipement.":"Rien à importer pour l'instant.")}
+function appliquerCollage(remplacer){if(!COLLAGE) return;
+  let base=remplacer?[]:parseTree($("cEq").value).map(e=>({nom:e.nom,code:e.code,enfants:e.enfants.map(x=>x.nom)}));
+  for(const e of COLLAGE){const x=base.find(b=>b.nom===e.nom);if(!x) base.push({...e,enfants:[...e.enfants]});else for(const sz of e.enfants) if(!x.enfants.includes(sz)) x.enfants.push(sz)}
+  $("cEq").value=arbreTexte(base);$("pasteBox").value="";majCollage();toast("Liste mise à jour : vérifie-la puis « Enregistrer la mission ».",4500);$("cEq").scrollIntoView({block:"center"})}
 /* ---------- navigation ---------- */
 function showView(v){for(const s of ["saisie","journal","reglages"]) $("v-"+s).hidden=s!==v;
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v?"page":"false"));
@@ -577,7 +642,9 @@ async function start(){
   $("bCfgSave").onclick=saveCfg;
   $("mSel").onchange=e=>switchMission(e.target.value);$("mShowArch").onchange=renderCfg;$("hMission").onclick=()=>showView("reglages");
   $("bNew").onclick=()=>{renderCfg();$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>$("newCard").hidden=true;$("bNewOk").onclick=createMission;
-  $("bArch").onclick=toggleArchive;$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
+  $("bArch").onclick=toggleArchive;
+  $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
+  $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
