@@ -48,6 +48,10 @@ textarea{min-height:90px;resize:vertical}
 .rte:focus{outline:3px solid var(--accent);outline-offset:1px}
 .rte:empty:before{content:attr(data-ph);color:var(--muted)}
 .rte ul,.rte ol,.entry .o ul,.entry .o ol{margin:2px 0;padding-left:22px}
+.rte ol,.entry .o ol{counter-reset:num;list-style:none;padding-left:8px}
+.rte ol>li,.entry .o ol>li{counter-increment:num}
+.rte ol>li::before,.entry .o ol>li::before{content:counters(num,".") ". ";font-variant-numeric:tabular-nums}
+.rte li>ul,.rte li>ol,.rte ol>ol,.rte ul>ul,.rte ol>ul,.rte ul>ol,.entry .o li>ul,.entry .o li>ol{padding-left:22px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:420px){.row2{grid-template-columns:1fr}}
 button{font:600 16px var(--font);border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-height:48px;padding:10px 14px;cursor:pointer}
@@ -143,8 +147,8 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   <div class="card">
     <h2>Constat</h2>
     <div class="chips" id="grav" role="group" aria-label="Gravité"></div>
-    <div class="rtewrap"><span class="rtelab" id="lObs">Observation</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de l'observation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button></div><div class="rte" id="fObs" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lObs" data-ph="Ex. : Lining around MH1 manhole is half disappeared"></div></div>
-    <div class="rtewrap"><span class="rtelab" id="lReco">Recommandation (pour l'IPR)</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de la recommandation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button></div><div class="rte" id="fReco" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lReco" data-ph="Ex. : Lining to be renewed as per green marking"></div></div>
+    <div class="rtewrap"><span class="rtelab" id="lObs">Observation</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de l'observation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fObs" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lObs" data-ph="Ex. : Lining around MH1 manhole is half disappeared"></div></div>
+    <div class="rtewrap"><span class="rtelab" id="lReco">Recommandation (pour l'IPR)</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de la recommandation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fReco" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lReco" data-ph="Ex. : Lining to be renewed as per green marking"></div></div>
     <label class="toggle"><input type="checkbox" id="fDec"> Décision client attendue</label>
     <div class="path" id="fPath"></div>
   </div>
@@ -280,7 +284,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.9";
+const APP_VERSION="1.10";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -389,21 +393,32 @@ function parseTree(txt){ // "Nom [CODE]" puis "- enfant [code]"
    Ce format passe tel quel dans le CSV ; les générateurs de rapports le convertissent en mise en forme Word. */
 function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function enLigne(t){return esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/__(.+?)__/g,"<u>$1</u>")}
-function versHtml(txt){const out=[];let liste=null;
-  for(const l of (txt||"").split("\n")){const m=l.match(/^\s*(?:([-•])|(\d+)[.)])\s+(.*)$/);
-    if(m){const t=m[1]?"ul":"ol";if(liste!==t){if(liste) out.push(`</${liste}>`);out.push(`<${t}>`);liste=t}out.push(`<li>${enLigne(m[3])}</li>`)}
-    else{if(liste){out.push(`</${liste}>`);liste=null}out.push(l.trim()?`<div>${enLigne(l)}</div>`:"<div><br></div>")}}
-  if(liste) out.push(`</${liste}>`);return out.join("")}
+function versHtml(txt){const out=[];const pile=[];
+  const fermer=d=>{while(pile.length>d) out.push(`</li></${pile.pop()}>`)};
+  for(const l of (txt||"").split("\n")){const m=l.match(/^(\s*)(?:([-•])|((?:\d+\.)*\d+)[.)])\s+(.*)$/);
+    if(m){const t=m[2]?"ul":"ol";let d=Math.floor(m[1].replace(/\t/g,"  ").length/2)+1;d=Math.min(d,pile.length+1);
+      if(pile.length>=d){fermer(d);if(pile[d-1]!==t){out.push(`</li></${pile.pop()}><${t}><li>`);pile.push(t)}else out.push("</li><li>")}
+      else{out.push(`<${t}><li>`);pile.push(t)}
+      out.push(enLigne(m[4]))}
+    else{fermer(0);out.push(l.trim()?`<div>${enLigne(l)}</div>`:"<div><br></div>")}}
+  fermer(0);return out.join("")}
 function versTexte(el){const lignes=[];let cur="";
   const fin=()=>{lignes.push(cur);cur=""};
   const inline=n=>{if(n.nodeType===3) return n.nodeValue.replace(/ /g," ");if(n.nodeName==="BR") return "\n";
     let t=[...n.childNodes].map(inline).join("");const st=n.getAttribute&&n.getAttribute("style")||"";
     const g=/^(B|STRONG)$/.test(n.nodeName)||/font-weight:\s*(bold|[6-9]00)/.test(st),u=n.nodeName==="U"||/underline/.test(st);
     if(t.trim()){if(g) t=`**${t}**`;if(u) t=`__${t}__`}return t};
+  const estListe=n=>n.nodeName==="UL"||n.nodeName==="OL";
+  const liste=(L,prof,pre)=>{let i=1,dernier=null;
+    for(const c of L.children){
+      if(c.nodeName==="LI"){const num=L.nodeName==="OL"?pre+i:null;i++;
+        const t=[...c.childNodes].filter(x=>!estListe(x)).map(inline).join("").replace(/\n+/g," ").trim();
+        lignes.push("  ".repeat(prof)+(num?num+". ":"- ")+t);dernier=num;
+        for(const sl of c.children) if(estListe(sl)) liste(sl,prof+1,num?num+".":pre)}
+      else if(estListe(c)){if(i===1&&dernier===null) liste(c,prof,pre);else liste(c,prof+1,dernier?dernier+".":pre)}}};
   const bloc=n=>{if(n.nodeType===3){cur+=n.nodeValue.replace(/ /g," ");return}
     if(n.nodeName==="BR"){fin();return}
-    if(n.nodeName==="UL"||n.nodeName==="OL"){if(cur) fin();let i=1;for(const li of n.children){if(li.nodeName!=="LI") continue;
-      cur=(n.nodeName==="UL"?"- ":`${i++}. `)+inline(li).replace(/\n+/g," ").trim();fin()}return}
+    if(n.nodeName==="UL"||n.nodeName==="OL"){if(cur) fin();liste(n,0,"");return}
     if(/^(DIV|P)$/.test(n.nodeName)){if(cur) fin();for(const c of n.childNodes) bloc(c);fin();return}
     cur+=inline(n)};
   for(const c of el.childNodes) bloc(c);if(cur) fin();
