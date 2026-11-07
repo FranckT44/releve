@@ -115,13 +115,14 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   <div class="card">
     <h2>Photos</h2>
     <div class="btns">
-      <button class="primary" id="bCam" type="button">Prendre une photo</button>
-      <button id="bGal" type="button">Depuis la galerie</button>
+      <button class="primary" id="bGal" type="button">Choisir dans la galerie</button>
+      <button id="bCam" type="button">Photo rapide</button>
     </div>
     <input type="file" id="iCam" accept="image/*" capture="environment" hidden>
     <input type="file" id="iGal" accept="image/*" multiple hidden>
     <div class="thumbs" id="thumbs"></div>
     <p class="hint" id="photoHint">Aucune photo pour ce constat.</p>
+    <p class="hint">Conseil : photographie avec l'appareil Samsung (tous les modes), puis choisis les photos ici. La photo rapide ouvre un appareil simplifié.</p>
   </div>
 
   <div class="card">
@@ -206,7 +207,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.0";
+const APP_VERSION="1.1";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const DEFAULT_CFG={
@@ -331,10 +332,30 @@ function renderGrav(){const g=$("grav");g.innerHTML="";for(const v of GRAVITES){
 async function makeThumb(blob){try{const bm=await createImageBitmap(blob);const w=240,h=Math.round(240*bm.height/bm.width);const c=document.createElement("canvas");c.width=w;c.height=h;
   c.getContext("2d").drawImage(bm,0,0,w,h);return c.toDataURL("image/jpeg",.7)}catch(e){return ""}}
 function renderThumbs(){const t=$("thumbs");t.innerHTML="";form.photos.forEach((p,i)=>{const d=document.createElement("div");d.className="thumb";
-  d.innerHTML=`<img alt="Photo ${i+1}"><span>${pad(i+1)}</span><button type="button" aria-label="Retirer la photo ${i+1}">×</button>`;d.querySelector("img").src=p.thumb;
+  d.innerHTML=`<img alt="Photo ${i+1}"><span>${pad(i+1)}${p.prise?" · "+p.prise.slice(11,16):""}</span><button type="button" aria-label="Retirer la photo ${i+1}">×</button>`;d.querySelector("img").src=p.thumb;
   d.querySelector("button").onclick=()=>{form.photos.splice(i,1);renderThumbs()};t.append(d)});
   $("photoHint").textContent=form.photos.length?`${form.photos.length} photo(s) pour ce constat`:"Aucune photo pour ce constat."}
-async function addFiles(files){for(const f of files){if(!f.type.startsWith("image/")) continue;form.photos.push({id:null,blob:f,thumb:await makeThumb(f),type:f.type})}renderThumbs()}
+async function exifDate(blob){ // DateTimeOriginal (0x9003) ou DateTime (0x0132) d'un JPEG
+  try{const v=new DataView(await blob.slice(0,262144).arrayBuffer());if(v.getUint16(0)!==0xFFD8) return null;let o=2;
+    while(o+4<v.byteLength){const m=v.getUint16(o),len=v.getUint16(o+2);
+      if(m===0xFFE1&&v.getUint32(o+4)===0x45786966){const t=o+10;const le=v.getUint16(t)===0x4949;const g16=x=>v.getUint16(t+x,le),g32=x=>v.getUint32(t+x,le);
+        const str=x=>{let r="";for(let i=0;i<19;i++) r+=String.fromCharCode(v.getUint8(t+x+i));return r};
+        let found=null,exifIfd=null;const scan=ifd=>{const n=g16(ifd);for(let i=0;i<n;i++){const e=ifd+2+i*12,tag=g16(e);
+          if(tag===0x9003) found=str(g32(e+8));else if(tag===0x0132&&!found) found=str(g32(e+8));else if(tag===0x8769) exifIfd=g32(e+8)}};
+        scan(g32(4));if(exifIfd) scan(exifIfd);
+        const mm=found&&found.match(/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);return mm?`${mm[1]}-${mm[2]}-${mm[3]}T${mm[4]}:${mm[5]}:${mm[6]}`:null}
+      if(m===0xFFDA) break;o+=2+len}}catch(e){}return null}
+function localIso(ms){const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}
+async function addFiles(files){
+  for(const f of files){if(!f.type.startsWith("image/")) continue;
+    const prise=(await exifDate(f))||localIso(f.lastModified||Date.now());
+    form.photos.push({id:null,blob:f,thumb:await makeThumb(f),type:f.type,prise})}
+  form.photos.sort((a,b)=>(a.prise||"").localeCompare(b.prise||""));
+  // date du constat = jour de prise de vue des photos (si elles sont toutes du même jour)
+  const jours=[...new Set(form.photos.map(p=>(p.prise||"").slice(0,10)).filter(Boolean))];
+  if(jours.length===1&&jours[0]!==$("fDate").value){$("fDate").value=jours[0];updatePath();toast(`Date réglée sur la prise de vue : ${frDate(jours[0])}`)}
+  else if(jours.length>1) toast("Attention : les photos ont été prises sur plusieurs jours.");
+  renderThumbs()}
 function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null};$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";
   if(!keepContext) $("fDate").value=today();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
 async function saveEntry(){
@@ -348,11 +369,16 @@ async function saveEntry(){
   const base=`${CFG.mission.no}_${e.code}_${slug($("fSub").value)}_${slug(actCode)}_${date.replaceAll("-","").slice(2)}_${old?old.hms:hms}`;
   // photos : on (ré)écrit toutes les photos du constat
   const names=[];const photoRecs=[];
-  form.photos.forEach((p,i)=>{const ext=(p.type||"image/jpeg").includes("png")?"png":"jpg";const name=`${base}_${pad(i+1)}.${ext}`;names.push(name);photoRecs.push({id:name,entry:id,blob:p.blob,thumb:p.thumb,type:p.type})});
+  const prises=[];
+  form.photos.forEach((p,i)=>{const ext=(p.type||"image/jpeg").includes("png")?"png":"jpg";
+    const hp=p.prise?p.prise.slice(2,10).replaceAll("-","")+"_"+p.prise.slice(11,19).replaceAll(":",""):null;
+    let name=hp?`${CFG.mission.no}_${e.code}_${slug($("fSub").value)}_${slug(actCode)}_${hp}.${ext}`:`${base}_${pad(i+1)}.${ext}`;
+    while(names.includes(name)) name=name.replace(/(\.\w+)$/,`_${pad(i+1)}$1`);
+    names.push(name);prises.push(p.prise||null);photoRecs.push({id:name,entry:id,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null})});
   const entry={schema:"releve-refractaire/1",id,hms:old?old.hms:hms,creeLe:old?old.creeLe:now.toISOString(),modifieLe:now.toISOString(),
     mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa?{code:sa.code,nom:sa.nom}:null,
     repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,
-    photos:names,dossierCible:targetDir(),envoye:false,envoyeLe:null};
+    photos:names,photosPrisesLe:prises,dossierCible:targetDir(),envoye:false,envoyeLe:null};
   try{
     await tx("photos","readwrite",s=>{if(old) for(const n of old.photos) s.delete(n);for(const r of photoRecs) s.put(r)});
     await tx("entries","readwrite",s=>s.put(entry));
@@ -366,7 +392,7 @@ async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id)
   if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
   $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;
   form={photos:[],gravite:en.gravite,editId:id};
-  for(const n of en.photos){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type})}
+  for(const n of en.photos){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null})}
   renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
 /* ---------- journal ---------- */
 async function refreshBadge(){const en=await allEntries();const n=en.filter(e=>!e.envoye).length;const b=$("nbPending");b.hidden=!n;b.textContent=n}
