@@ -273,7 +273,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <label>Client / site<input type="text" id="cClient"></label>
     <label>Dossier de la mission sur le PC<input type="text" id="cDir"></label>
     <label>Langue des listes (activités, sous-activités)<select id="cLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
-    <p class="hint">Les photos seront rangées dans ce dossier, sous « Photos\Équipement\Sous-équipement\Activité\Date ».</p>
+    <p class="hint">Les photos seront rangées dans ce dossier, sous « Dossier Photo\Équipement\Sous-équipement\Activité\Date ».</p>
     <div class="sync" id="syncInfo"></div>
   </div>
   </div>
@@ -343,7 +343,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.14";
+const APP_VERSION="1.15";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -533,7 +533,7 @@ function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSel
 function subActObj(){if(!$("fSubAct").value) return null;const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
 function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=$("fSub").selectedOptions[0]?.textContent||"";
   const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
-  return ["Photos",safeDir(e?.nom),safeDir(sub),safeDir(act),safeDir(sact),$("fDate").value].filter(Boolean).join("\\")}
+  return ["Dossier Photo",safeDir(e?.nom),safeDir(sub),safeDir(act),safeDir(sact),$("fDate").value].filter(Boolean).join("\\")}
 function updatePath(){$("fPath").textContent="→ "+targetDir()}
 function renderGrav(){const g=$("grav");g.innerHTML="";for(const v of GRAVITES){const b=document.createElement("button");b.type="button";b.className="chip";b.dataset.g=v;b.textContent=v;
   b.setAttribute("aria-pressed",String(form.gravite===v));b.onclick=()=>{form.gravite=form.gravite===v?"":v;renderGrav()};g.append(b)}}
