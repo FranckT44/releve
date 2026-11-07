@@ -120,7 +120,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .sw button[aria-pressed=true]{outline:3px solid #fff;outline-offset:1px}
 #edZone{flex:1;min-height:0;display:grid;place-items:center;overflow:hidden;touch-action:none}
 #edCv{touch-action:none;max-width:100%;max-height:100%}
-#edTxt{display:flex;gap:6px;padding:6px 8px}#edTxt[hidden]{display:none!important}#edTxt input{flex:1;font-size:16px;min-height:44px}
+#edTxt{display:flex;flex-direction:column;gap:6px;padding:6px 8px}#edTxt[hidden]{display:none!important}#edTxt textarea{width:100%;box-sizing:border-box;font-size:16px;min-height:52px;resize:vertical}.edtxtopt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.edtxtopt button{min-height:44px;min-width:44px}.edtxtopt button[aria-pressed=true]{background:#2f6f8f;border-color:#8fd0ee}#edTxtTv{min-width:2ch}.edtxtopt .primary{margin-left:auto}
 .edfoot{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:6px}.edfoot button{min-height:44px;white-space:normal}
 .thumb .an{position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px}
 .duo,.listes{display:grid;gap:14px;margin-bottom:14px}.duo>.card,.listes>.card{margin-bottom:0}
@@ -183,8 +183,8 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   <div class="card">
     <h2>Constat</h2>
     <div class="chips" id="grav" role="group" aria-label="Gravité"></div>
-    <div class="rtewrap"><span class="rtelab" id="lObs">Observation</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de l'observation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fObs" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lObs" data-ph="Ex. : Lining around MH1 manhole is half disappeared"></div></div>
-    <div class="rtewrap"><span class="rtelab" id="lReco">Recommandation (pour l'IPR)</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de la recommandation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fReco" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lReco" data-ph="Ex. : Lining to be renewed as per green marking"></div></div>
+    <div class="rtewrap"><span class="rtelab" id="lObs">Observation</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de l'observation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="italic" aria-label="Italique"><i>I</i></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fObs" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lObs" data-ph="Ex. : Lining around MH1 manhole is half disappeared"></div></div>
+    <div class="rtewrap"><span class="rtelab" id="lReco">Recommandation (pour l'IPR)</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de la recommandation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="italic" aria-label="Italique"><i>I</i></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fReco" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lReco" data-ph="Ex. : Lining to be renewed as per green marking"></div></div>
     <label class="toggle"><input type="checkbox" id="fDec"> Décision client attendue</label>
     <div class="path" id="fPath"></div>
   </div>
@@ -375,7 +375,10 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <button type="button" id="edDel" class="danger" aria-label="Supprimer l'élément sélectionné">Suppr.</button>
   </div>
   <div id="edZone"><canvas id="edCv"></canvas></div>
-  <div id="edTxt" hidden><input type="text" id="edTxtIn" placeholder="Texte à placer" autocomplete="off"><button type="button" class="primary" id="edTxtOk">OK</button></div>
+  <div id="edTxt" hidden><textarea id="edTxtIn" rows="2" placeholder="Texte à placer (il passe à la ligne tout seul au bord de la photo)" autocomplete="off"></textarea>
+    <div class="edtxtopt"><button type="button" id="edTxtB" aria-pressed="false" aria-label="Gras"><b>G</b></button><button type="button" id="edTxtI" aria-pressed="false" aria-label="Italique"><i>I</i></button><button type="button" id="edTxtU" aria-pressed="false" aria-label="Souligné"><u>S</u></button>
+    <label class="edl">Taille<input type="range" id="edTxtT" min="2" max="25" value="7"></label><span id="edTxtTv">7</span>
+    <button type="button" id="edTxtNo">Annuler</button><button type="button" class="primary" id="edTxtOk">OK</button></div></div>
   <div class="edbar edfoot">
     <button type="button" id="edCancel">Fermer</button>
     <button type="button" id="edReset">Photo d'origine</button>
@@ -385,7 +388,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.19";
+const APP_VERSION="1.20";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -493,7 +496,12 @@ function parseTree(txt){ // "Nom [CODE]" puis "- enfant [code]"
    Stockage en texte simple : **gras**, __souligné__, lignes « - » (puces) et « 1. » (numéros).
    Ce format passe tel quel dans le CSV ; les générateurs de rapports le convertissent en mise en forme Word. */
 function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
-function enLigne(t){return esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/__(.+?)__/g,"<u>$1</u>")}
+function enLigne(t){ // **gras**, *italique*, __souligné__ (combinables) ; un marqueur sans partenaire reste du texte
+  const parts=String(t).split(/(\*\*|__|\*)/);const nb={};parts.forEach((x,j)=>{if(j%2) nb[x]=(nb[x]||0)+1});
+  const reste={};for(const k in nb) reste[k]=nb[k]%2?nb[k]-1:nb[k];const on={"**":false,"*":false,"__":false};let out="";
+  parts.forEach((x,j)=>{if(j%2){if(reste[x]>0){reste[x]--;on[x]=!on[x]}else out+=esc(x);return}
+    if(!x) return;let h=esc(x);if(on["*"]) h=`<i>${h}</i>`;if(on["**"]) h=`<b>${h}</b>`;if(on["__"]) h=`<u>${h}</u>`;out+=h});
+  return out.replace(/<\/u><u>/g,"").replace(/<\/b><b>/g,"").replace(/<\/i><i>/g,"")}
 function versHtml(txt){const out=[];const pile=[];
   const fermer=d=>{while(pile.length>d) out.push(`</li></${pile.pop()}>`)};
   for(const l of (txt||"").split("\n")){const m=l.match(/^(\s*)(?:([-•])|((?:\d+\.)*\d+)[.)])\s+(.*)$/);
@@ -507,8 +515,8 @@ function versTexte(el){const lignes=[];let cur="";
   const fin=()=>{lignes.push(cur);cur=""};
   const inline=n=>{if(n.nodeType===3) return n.nodeValue.replace(/ /g," ");if(n.nodeName==="BR") return "\n";
     let t=[...n.childNodes].map(inline).join("");const st=n.getAttribute&&n.getAttribute("style")||"";
-    const g=/^(B|STRONG)$/.test(n.nodeName)||/font-weight:\s*(bold|[6-9]00)/.test(st),u=n.nodeName==="U"||/underline/.test(st);
-    if(t.trim()){if(g) t=`**${t}**`;if(u) t=`__${t}__`}return t};
+    const g=/^(B|STRONG)$/.test(n.nodeName)||/font-weight:\s*(bold|[6-9]00)/.test(st),u=n.nodeName==="U"||/underline/.test(st),it=/^(I|EM)$/.test(n.nodeName)||/font-style:\s*italic/.test(st);
+    if(t.trim()){if(it) t=`*${t}*`;if(g) t=`**${t}**`;if(u) t=`__${t}__`}return t};
   const estListe=n=>n.nodeName==="UL"||n.nodeName==="OL";
   const liste=(L,prof,pre)=>{let i=1,dernier=null;
     for(const c of L.children){
@@ -705,11 +713,24 @@ function dessinerObjet(g,o,s){ // s = échelle image -> sortie
       g.lineTo(o.x2*s-L*Math.cos(a-0.45),o.y2*s-L*Math.sin(a-0.45));g.lineTo(o.x2*s-L*Math.cos(a+0.45),o.y2*s-L*Math.sin(a+0.45));g.closePath();g.fillStyle=o.col;g.fill()}}
   else if(o.t==="rect"){const x=Math.min(o.x1,o.x2)*s,y=Math.min(o.y1,o.y2)*s,ww=Math.abs(o.x2-o.x1)*s,hh=Math.abs(o.y2-o.y1)*s;if(o.fill) g.fillRect(x,y,ww,hh);g.strokeRect(x,y,ww,hh)}
   else if(o.t==="ell"){g.beginPath();g.ellipse((o.x1+o.x2)/2*s,(o.y1+o.y2)/2*s,Math.abs(o.x2-o.x1)/2*s,Math.abs(o.y2-o.y1)/2*s,0,0,Math.PI*2);if(o.fill) g.fill();g.stroke()}
-  else if(o.t==="text"){const fs=o.w*7*s;g.font=`600 ${fs}px system-ui,sans-serif`;g.textBaseline="top";const m=g.measureText(o.txt);const pad=fs*0.25;
-    if(o.fill){g.fillStyle=rgba(o.col==="#ffffff"?"#000000":"#ffffff",o.op);g.fillRect(o.x*s-pad,o.y*s-pad,m.width+2*pad,fs+2*pad)}
-    g.fillStyle=o.col;g.fillText(o.txt,o.x*s,o.y*s)}}
+  else if(o.t==="text"){const L=mepTexte(o),fs=L.fs*s,lh=L.lh*s,pad=fs*0.25;g.font=L.police(fs);g.textBaseline="top";
+    if(o.fill){g.fillStyle=rgba(o.col==="#ffffff"?"#000000":"#ffffff",o.op);g.fillRect(o.x*s-pad,o.y*s-pad,L.bw*s+2*pad,L.bh*s+2*pad)}
+    g.fillStyle=o.col;L.lignes.forEach((t,k)=>{const y=o.y*s+k*lh;g.fillText(t,o.x*s,y);if(o.u&&t) g.fillRect(o.x*s,y+fs*0.98,g.measureText(t).width,Math.max(1,fs*0.07))})}}
+// mise en page d'un texte : taille, style, retour à la ligne au bord droit de la photo (ou du recadrage)
+const MESURE=document.createElement("canvas").getContext("2d");
+function mepTexte(o){const fs=o.fs||o.w*7;const poids=o.fs?(o.b?"700":"400"):"600";
+  const police=f=>`${o.i?"italic ":""}${poids} ${f}px system-ui,sans-serif`;MESURE.font=police(fs);const W=t=>MESURE.measureText(t).width;
+  const bord=ED.img?(ED.crop?ED.crop.x+ED.crop.w:ED.img.width):Infinity;const maxW=Math.max(fs*3,bord-o.x-fs*0.4);const lignes=[];
+  for(const par of String(o.txt).split("\n")){let cur="";
+    for(const mot of par.split(/ +/)){let m=mot;
+      if(cur&&W(cur+" "+m)<=maxW){cur+=" "+m;continue}
+      if(cur){lignes.push(cur);cur=""}
+      while(W(m)>maxW&&m.length>1){let k=m.length-1;while(k>1&&W(m.slice(0,k))>maxW) k--;lignes.push(m.slice(0,k));m=m.slice(k)}
+      cur=m}
+    lignes.push(cur)}
+  const lh=fs*1.2;return {fs,lh,lignes,police,bw:Math.max(fs*0.5,...lignes.map(W)),bh:lignes.length*lh-(lh-fs)}}
 function boite(o){if(o.t==="pen"){const xs=o.pts.map(q=>q[0]),ys=o.pts.map(q=>q[1]);return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]}
-  if(o.t==="text"){const fs=o.w*7;return [o.x,o.y,o.x+fs*0.6*o.txt.length,o.y+fs]}
+  if(o.t==="text"){const L=mepTexte(o);return [o.x,o.y,o.x+L.bw,o.y+L.bh]}
   return [Math.min(o.x1,o.x2),Math.min(o.y1,o.y2),Math.max(o.x1,o.x2),Math.max(o.y1,o.y2)]}
 function edDessiner(){const cv=$("edCv"),g=cv.getContext("2d");const s=cv.width/ED.img.width;
   g.clearRect(0,0,cv.width,cv.height);g.drawImage(ED.img,0,0,cv.width,cv.height);
@@ -726,10 +747,14 @@ function edOutil(t){ED.tool=t;document.querySelectorAll("#ed [data-t]").forEach(
 function styleCourant(){return {col:ED.col,w:+$("edW").value*unite(),fill:$("edFill").checked,op:+$("edOp").value/100}}
 function toucher(pt){const tol=12*unite();for(let j=ED.obj.length-1;j>=0;j--){const b=boite(ED.obj[j]);if(pt[0]>=b[0]-tol&&pt[0]<=b[2]+tol&&pt[1]>=b[1]-tol&&pt[1]<=b[3]+tol) return j}return -1}
 function deplacer(o,dx,dy){if(o.t==="pen") o.pts=o.pts.map(q=>[q[0]+dx,q[1]+dy]);else if(o.t==="text"){o.x+=dx;o.y+=dy}else{o.x1+=dx;o.x2+=dx;o.y1+=dy;o.y2+=dy}}
-let TXTPOS=null;
+let TXTPOS=null,TXTEDIT=-1;const TXT={b:false,i:false,u:false,t:7};
+function txtBoutons(){for(const k of ["b","i","u"]) $("edTxt"+k.toUpperCase()).setAttribute("aria-pressed",String(TXT[k]));$("edTxtT").value=TXT.t;$("edTxtTv").textContent=TXT.t}
+function txtOuvrir(o){if(o){TXTEDIT=ED.sel;TXT.b=!!o.b;TXT.i=!!o.i;TXT.u=!!o.u;TXT.t=o.fs?Math.round(o.fs/unite()/3):Math.round(o.w*7/unite()/3);$("edTxtIn").value=o.txt}else $("edTxtIn").value="";
+  txtBoutons();$("edTxtOk").textContent=o?"Modifier":"OK";$("edTxt").hidden=false;if(!o) $("edTxtIn").focus()}
+function txtStyle(){return {fs:TXT.t*unite()*3,b:TXT.b,i:TXT.i,u:TXT.u}}
 function edDown(ev){ev.preventDefault();$("edCv").setPointerCapture(ev.pointerId);const pt=edPoint(ev);
-  if(ED.tool==="sel"){ED.sel=toucher(pt);if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite())}edDessiner();return}
-  if(ED.tool==="text"){TXTPOS=pt;$("edTxt").hidden=false;$("edTxtIn").value="";$("edTxtIn").focus();return}
+  if(ED.tool==="sel"){ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.t==="text") txtOuvrir(o)}edDessiner();return}
+  if(ED.tool==="text"){TXTPOS=pt;TXTEDIT=-1;txtOuvrir(null);return}
   const st=styleCourant();
   if(ED.tool==="pen") ED.cur={t:"pen",pts:[pt],...st};
   else ED.cur={t:ED.tool,x1:pt[0],y1:pt[1],x2:pt[0],y2:pt[1],...st};edDessiner()}
@@ -762,8 +787,13 @@ function initEditeur2(){
   $("edUndo").onclick=()=>{if(!ED.hist.length) return;ED.redo.push(edEtat());edRestaurer(ED.hist.pop())};
   $("edRedo").onclick=()=>{if(!ED.redo.length) return;ED.hist.push(edEtat());edRestaurer(ED.redo.pop())};
   $("edDel").onclick=()=>{if(ED.sel<0) return;edPousser();ED.obj.splice(ED.sel,1);ED.sel=-1;edDessiner()};
-  $("edTxtOk").onclick=()=>{const t=$("edTxtIn").value.trim();$("edTxt").hidden=true;if(!t||!TXTPOS) return;edPousser();ED.obj.push({t:"text",x:TXTPOS[0],y:TXTPOS[1],txt:t,...styleCourant()});TXTPOS=null;edDessiner()};
-  $("edTxtIn").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("edTxtOk").click()}};
+  $("edTxtOk").onclick=()=>{const t=$("edTxtIn").value.replace(/[ \t]+\n/g,"\n").trim();$("edTxt").hidden=true;
+    if(TXTEDIT>=0&&ED.obj[TXTEDIT]){const o=ED.obj[TXTEDIT];edPousser();if(!t){ED.obj.splice(TXTEDIT,1);ED.sel=-1}else Object.assign(o,{txt:t,col:ED.col,fill:$("edFill").checked,op:+$("edOp").value/100},txtStyle());TXTEDIT=-1;edDessiner();return}
+    if(!t||!TXTPOS) return;edPousser();ED.obj.push({t:"text",x:TXTPOS[0],y:TXTPOS[1],txt:t,...styleCourant(),...txtStyle()});TXTPOS=null;edDessiner()};
+  $("edTxtNo").onclick=()=>{$("edTxt").hidden=true;TXTPOS=null;TXTEDIT=-1};
+  for(const k of ["b","i","u"]){const b=$("edTxt"+k.toUpperCase());b.onmousedown=e=>e.preventDefault();b.onclick=()=>{TXT[k]=!TXT[k];txtBoutons()}}
+  $("edTxtT").oninput=()=>{TXT.t=+$("edTxtT").value;$("edTxtTv").textContent=TXT.t};
+  $("edTxtIn").onkeydown=e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();$("edTxtOk").click()}};
   $("edCancel").onclick=fermerEditeur;$("edReset").onclick=()=>edOriginal(false);$("edSave").onclick=edEnregistrer;
   window.addEventListener("resize",()=>{if(!$("ed").hidden&&ED.img){edTaille();edDessiner()}})}
 /* ---------- journal ---------- */
@@ -1073,8 +1103,8 @@ async function traduireMorceau(t,g){if(!t.trim()) return t;const lead=t.match(/^
 async function traduireTexte(txt,g){const out=[];
   for(const l of (txt||"").split("\n")){const m=l.match(/^(\s*(?:[-•]|(?:\d+\.)*\d+[.)])\s+)?(.*)$/);const pre=m[1]||"",c=m[2];
     if(!c.trim()){out.push(l);continue}
-    if(/\*\*.+?\*\*|__.+?__/.test(c)){const parts=c.split(/(\*\*.+?\*\*|__.+?__)/);let r="";
-      for(const p of parts){const mm=p.match(/^(\*\*|__)(.+)\1$/);r+=mm?mm[1]+(await traduireMorceau(mm[2],g)).trim()+mm[1]:await traduireMorceau(p,g)}
+    if(/\*\*.+?\*\*|__.+?__|\*[^*]+?\*/.test(c)){const parts=c.split(/(\*\*\*.+?\*\*\*|\*\*.+?\*\*|__.+?__|\*[^*]+?\*)/);let r="";
+      for(const p of parts){const mm=p.match(/^(\*\*\*|\*\*|__|\*)(.+)\1$/);r+=mm?mm[1]+(await traduireMorceau(mm[2],g)).trim()+mm[1]:await traduireMorceau(p,g)}
       out.push(pre+r)}
     else out.push(pre+await traduireMorceau(c,g))}
   return out.join("\n")}
