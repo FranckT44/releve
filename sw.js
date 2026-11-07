@@ -1,5 +1,5 @@
 // Fonctionnement hors-ligne : l'appli est gardée en cache sur le téléphone
-const CACHE = "releve-refractaire-v9";
+const CACHE = "releve-refractaire-v10";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

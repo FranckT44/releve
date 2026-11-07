@@ -51,6 +51,7 @@ button.big{width:100%;min-height:56px;font-size:17px}
 button.ghost{background:transparent}
 button.danger{color:var(--crit);border-color:var(--crit);background:transparent}
 .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#renCard .path{white-space:pre-wrap}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{min-height:42px;padding:8px 12px;border-radius:999px;font-size:14px}
 .chip[aria-pressed=true]{color:#fff;border-color:transparent}
@@ -226,6 +227,14 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <div class="path" id="pastePreview">Rien à importer pour l'instant.</div>
     <div class="btns"><button class="primary" id="bPasteReplace" type="button" disabled>Remplacer la liste</button><button id="bPasteAdd" type="button" disabled>Ajouter à la liste</button></div>
   </div>
+  <div id="renCard" class="card confirm" hidden>
+    <strong>Renommage détecté</strong>
+    <div id="renTxt" class="path"></div>
+    <p class="hint" id="renHint"></p>
+    <button class="primary" id="bRenAll" type="button">Enregistrer et mettre à jour les constats</button>
+    <button id="bRenOnly" type="button">Enregistrer sans modifier les constats</button>
+    <button class="ghost" id="bRenCancel" type="button">Annuler</button>
+  </div>
   <button class="primary big" id="bCfgSave" type="button">Enregistrer la mission</button>
   <p></p>
   <div class="card">
@@ -254,7 +263,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.6";
+const APP_VERSION="1.7";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -432,7 +441,8 @@ async function addFiles(files){
 function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null};$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";
   if(!keepContext) $("fDate").value=today();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
 async function saveEntry(){
-  const e=curEq(),a=curAct();if(!e||!a){toast("Choisis un équipement et une activité.");return}
+  const e=curEq(),a=curAct();if(!e||!a){toast("Choisis un équipement et une activité dans la liste.");return}
+  if($("fSub").value===""){toast("Choisis un sous-équipement dans la liste.");return}
   if(!form.photos.length&&!$("fObs").value.trim()){toast("Ajoute au moins une photo ou une observation.");return}
   const date=$("fDate").value||today();const now=new Date();const hms=`${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
   const sa=subActObj();const subNom=$("fSub").selectedOptions[0]?.textContent||"";
@@ -461,7 +471,11 @@ async function saveEntry(){
 }
 async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;
   showView("saisie");refreshSelects({eq:en.equipement.code,act:en.activite.code});
-  const e=curEq();const sub=e?.enfants.find(x=>x.nom===en.sousEquipement);if(sub) $("fSub").value=sub.code;
+  const absent=(sel,txt)=>{const o=document.createElement("option");o.value="";o.textContent=`⚠ ${txt} (n'existe plus dans la liste)`;sel.prepend(o);sel.value=""};
+  if(!EQ.some(x=>x.code===en.equipement.code)){absent($("fEq"),en.equipement.nom);$("fSub").innerHTML="";absent($("fSub"),en.sousEquipement);
+    toast("L'équipement de ce constat n'existe plus dans la liste : choisis-le à nouveau avant d'enregistrer.",6000)}
+  else{const e=curEq();const sub=e?.enfants.find(x=>x.nom===en.sousEquipement);if(sub) $("fSub").value=sub.code;
+    else if(e&&e.enfants.length){absent($("fSub"),en.sousEquipement);toast("Le sous-équipement de ce constat n'existe plus : choisis-le à nouveau avant d'enregistrer.",6000)}}
   if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
   $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;
   form={photos:[],gravite:en.gravite,editId:id};
@@ -555,13 +569,45 @@ function renderCfg(){
   add("copy:"+CFG.mission.id,`Copie de la mission ${CFG.mission.no}`);
   for(const m of MISSIONS.filter(m=>m.id!==CFG.mission.id&&!m.archive)) add("copy:"+m.id,`Copie de la mission ${m.no}`);
   for(const [k,t] of Object.entries(TEMPLATES)) add("tpl:"+k,t.nom);renderSync()}
+function detecterRenommages(ancien,nouveau){
+  const cle=e=>e.code+"|"+e.nom;const kN=new Set(nouveau.map(cle)),kA=new Set(ancien.map(cle));
+  const partis=ancien.filter(e=>!kN.has(cle(e)));let venus=nouveau.filter(e=>!kA.has(cle(e)));const paires=[];
+  for(const g of partis){const m=venus.find(a=>a.code===g.code)||venus.find(a=>a.nom===g.nom)||venus.find(a=>nouveau.indexOf(a)===ancien.indexOf(g));
+    if(m){paires.push([g,m]);venus=venus.filter(x=>x!==m)}}
+  for(const e of ancien) if(kN.has(cle(e))) paires.push([e,nouveau.find(x=>cle(x)===cle(e))]);
+  const out=[];
+  for(const [o,n] of paires){const so=o.enfants.map(x=>x.nom),sn=n.enfants.map(x=>x.nom);
+    const sg=so.filter(x=>!sn.includes(x)),sa=sn.filter(x=>!so.includes(x));const subs=sg.slice(0,sa.length).map((x,i)=>({o:x,n:sa[i]}));
+    if(cle(o)!==cle(n)||subs.length) out.push({o,n,subs})}
+  return out}
+let REN_EN_ATTENTE=null;
+async function constatsTouches(ren){return (await allEntries()).filter(e=>!e.envoye&&belongs(e)&&ren.some(r=>r.o.code===e.equipement.code&&(r.o.code!==r.n.code||r.o.nom!==r.n.nom||r.subs.some(x=>x.o===e.sousEquipement))))}
+async function majConstats(ren){
+  const liste=await constatsTouches(ren);const no=CFG.mission.no;
+  for(const e of liste){const r=ren.find(x=>x.o.code===e.equipement.code);const sub=(r.subs.find(x=>x.o===e.sousEquipement)||{}).n||e.sousEquipement;
+    const avant=`${no}_${e.equipement.code}_${slug(e.sousEquipement)}_`,apres=`${no}_${r.n.code}_${slug(sub)}_`;
+    const nouveaux=e.photos.map(n=>n.startsWith(avant)?apres+n.slice(avant.length):n);
+    const parts=(e.dossierCible||"").split("\\");if(parts.length>2){parts[1]=safeDir(r.n.nom);parts[2]=safeDir(sub)}
+    for(let i=0;i<e.photos.length;i++) if(nouveaux[i]!==e.photos[i]){const p=await getPhoto(e.photos[i]);if(p) await tx("photos","readwrite",s=>{s.delete(e.photos[i]);s.put({...p,id:nouveaux[i]})})}
+    Object.assign(e,{equipement:{code:r.n.code,nom:r.n.nom},sousEquipement:sub,photos:nouveaux,dossierCible:parts.join("\\"),modifieLe:new Date().toISOString()});
+    await tx("entries","readwrite",s=>s.put(e))}
+  return liste.length}
 async function saveCfg(){
   const eq=parseTree($("cEq").value),ac=parseTree($("cAct").value);if(!eq.length||!ac.length){toast("Il faut au moins un équipement et une activité.");return}
   if(!$("cNo").value.trim()){toast("Indique le n° de mission.");return}
   const m=curMission();const nv={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),equipements:$("cEq").value,activites:$("cAct").value};
-  const change=Object.keys(nv).some(k=>(m[k]||"")!==nv[k]);Object.assign(m,nv);if(change) m.modifieLe=new Date().toISOString();
+  const change=Object.keys(nv).some(k=>(m[k]||"")!==nv[k]);
+  const ren=detecterRenommages(parseTree(m.equipements),eq);
+  if(ren.length&&!saveCfg.force){const n=(await constatsTouches(ren)).length;
+    if(n){REN_EN_ATTENTE={ren};
+      $("renTxt").textContent=ren.map(r=>(r.o.code!==r.n.code||r.o.nom!==r.n.nom?`${r.o.nom} [${r.o.code}] → ${r.n.nom} [${r.n.code}]`:r.o.nom)+r.subs.map(x=>`\n   - ${x.o} → ${x.n}`).join("")).join("\n");
+      $("renHint").textContent=`${n} constat(s) pas encore envoyé(s) utilisent l'ancien nom. « Mettre à jour » les renomme (photos et dossier de rangement compris). Les photos déjà rangées sur le PC se renomment avec l'outil « Renommer-Equipement » du dossier PC.`;
+      $("renCard").hidden=false;$("renCard").scrollIntoView({block:"center"});return}}
+  saveCfg.force=false;Object.assign(m,nv);if(change) m.modifieLe=new Date().toISOString();
   await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();
   toast(change?"Mission enregistrée. Pense à l'envoyer à tes autres appareils.":"Aucun changement",3500)}
+async function finirRenommage(majAussi){$("renCard").hidden=true;const r=REN_EN_ATTENTE;REN_EN_ATTENTE=null;
+  saveCfg.force=true;await saveCfg();if(majAussi&&r){const n=await majConstats(r.ren);refreshBadge();toast(`Mission enregistrée et ${n} constat(s) mis à jour.`,4000)}}
 function dossierPour(no,client){const base=(CFG.mission.dossierPC||"").replace(/\\[^\\]*$/,"");return base?`${base}\\${safeDir(no+(client?" - "+client:""))}`:""}
 async function createMission(){
   const no=$("nNo").value.trim(),client=$("nClient").value.trim();if(!no){toast("Indique le n° de la nouvelle mission.");return}
@@ -643,6 +689,7 @@ async function start(){
   $("mSel").onchange=e=>switchMission(e.target.value);$("mShowArch").onchange=renderCfg;$("hMission").onclick=()=>showView("reglages");
   $("bNew").onclick=()=>{renderCfg();$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>$("newCard").hidden=true;$("bNewOk").onclick=createMission;
   $("bArch").onclick=toggleArchive;
+  $("bRenAll").onclick=()=>finirRenommage(true);$("bRenOnly").onclick=()=>finirRenommage(false);$("bRenCancel").onclick=()=>{$("renCard").hidden=true;REN_EN_ATTENTE=null};
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
   $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
