@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Relevé Réfractaire</title>
+<meta name="theme-color" content="#1d2a33">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* Layout : appli une colonne, barre d'onglets en bas, gros boutons utilisables avec des gants */
+:root{
+  --bg:#eef1f2; --surface:#ffffff; --fg:#1b2329; --muted:#5d6b74; --line:#cfd6da;
+  --accent:#b4441c; --accent-fg:#ffffff; --accent-soft:#f6e3da;
+  --ok:#2e7d4f; --minor:#b38600; --repair:#c2561d; --crit:#b3261e; --na:#6b757c;
+  --tab:#1d2a33; --tab-fg:#c9d3d9; --tab-on:#ffffff;
+  --radius:10px; --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"Roboto Mono",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12181c; --surface:#1b2328; --fg:#e6ecef; --muted:#9aa8b1; --line:#2e3a41;
+  --accent:#e0703f; --accent-fg:#14100e; --accent-soft:#3a2419;
+  --ok:#5fbf86; --minor:#e0b43c; --repair:#ec8a52; --crit:#f0716a; --na:#9aa3a9;
+  --tab:#0c1114; --tab-fg:#8e9ba3; --tab-on:#ffffff; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font:16px/1.4 var(--font);-webkit-tap-highlight-color:transparent}
+header{position:sticky;top:0;z-index:5;background:var(--tab);color:var(--tab-on);
+  padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
+  display:flex;align-items:center;gap:10px}
+header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.01em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .mission{font:12px var(--mono);color:var(--tab-fg)}
+main{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-width:720px;margin:0 auto}
+[hidden]{display:none!important}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:12px;margin-bottom:14px}
+.card h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:650}
+label{display:grid;gap:5px;font-size:13px;color:var(--muted);font-weight:600}
+select,input[type=text],input[type=date],textarea{width:100%;font:16px var(--font);color:var(--fg);background:var(--bg);
+  border:1px solid var(--line);border-radius:8px;padding:12px 10px;min-height:48px}
+textarea{min-height:90px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+button{font:600 16px var(--font);border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-height:48px;padding:10px 14px;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button.big{width:100%;min-height:56px;font-size:17px}
+button.ghost{background:transparent}
+button.danger{color:var(--crit);border-color:var(--crit);background:transparent}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:42px;padding:8px 12px;border-radius:999px;font-size:14px}
+.chip[aria-pressed=true]{color:#fff;border-color:transparent}
+.chip[data-g="OK"][aria-pressed=true]{background:var(--ok)}
+.chip[data-g="Mineur"][aria-pressed=true]{background:var(--minor)}
+.chip[data-g="À réparer"][aria-pressed=true]{background:var(--repair)}
+.chip[data-g="Critique"][aria-pressed=true]{background:var(--crit)}
+.chip[data-g="Non inspecté"][aria-pressed=true],.chip[data-g="Info"][aria-pressed=true]{background:var(--na)}
+.toggle{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--fg);font-weight:500}
+.toggle input{width:24px;height:24px;accent-color:var(--accent)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.thumb{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--bg);border:1px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb button{position:absolute;top:4px;right:4px;min-height:30px;width:30px;padding:0;border-radius:50%;font-size:16px;line-height:1;background:rgba(0,0,0,.6);color:#fff;border:0}
+.thumb span{position:absolute;left:4px;bottom:4px;font:11px var(--mono);background:rgba(0,0,0,.6);color:#fff;padding:1px 5px;border-radius:4px}
+.path{font:12px/1.4 var(--mono);color:var(--muted);word-break:break-all;background:var(--bg);border-radius:6px;padding:8px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--tab);display:grid;grid-template-columns:repeat(3,1fr);
+  padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+nav button{background:transparent;border:0;border-radius:0;color:var(--tab-fg);min-height:64px;font-size:14px;display:grid;place-items:center;gap:2px;padding:6px}
+nav button svg{width:24px;height:24px}
+nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(--accent)}
+.badge{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:var(--accent-fg);font:700 12px/20px var(--font);margin-left:4px}
+.entry{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.entry:first-of-type{border-top:0}
+.entry img{width:64px;height:48px;object-fit:cover;border-radius:6px;background:var(--bg)}
+.entry .t{font-weight:650;font-size:15px}
+.entry .m{font-size:13px;color:var(--muted)}
+.entry .o{font-size:14px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.entry .acts{grid-column:2;display:flex;gap:8px;flex-wrap:wrap}
+.entry .acts button{min-height:38px;padding:4px 12px;font-size:14px}
+.pill{display:inline-block;font:600 11px var(--font);padding:2px 7px;border-radius:999px;color:#fff;margin-right:4px;vertical-align:1px}
+.dayhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.dayhead h3{margin:0;font-size:15px}
+.stat{font:13px var(--mono);color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);
+  padding:12px 16px;border-radius:8px;font-size:15px;z-index:20;max-width:90vw;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.confirm{border:2px solid var(--accent);background:var(--accent-soft)}
+.cfg{font:14px/1.5 var(--mono);min-height:220px}
+@media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hTitle">Relevé Réfractaire</h1>
+  <span class="mission" id="hMission"></span>
+</header>
+
+<main>
+<!-- ============ SAISIE ============ -->
+<section id="v-saisie">
+  <div class="card">
+    <h2 id="formTitle">Nouveau constat</h2>
+    <label>Équipement<select id="fEq"></select></label>
+    <label>Sous-équipement<select id="fSub"></select></label>
+    <label>Activité<select id="fAct"></select></label>
+    <label id="lSubAct">Sous-activité<select id="fSubAct"></select></label>
+    <div class="row2">
+      <label>Repère (optionnel)<input type="text" id="fRep" placeholder="MH1, section 402…" autocomplete="off"></label>
+      <label>Date<input type="date" id="fDate"></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Photos</h2>
+    <div class="btns">
+      <button class="primary" id="bCam" type="button">Prendre une photo</button>
+      <button id="bGal" type="button">Depuis la galerie</button>
+    </div>
+    <input type="file" id="iCam" accept="image/*" capture="environment" hidden>
+    <input type="file" id="iGal" accept="image/*" multiple hidden>
+    <div class="thumbs" id="thumbs"></div>
+    <p class="hint" id="photoHint">Aucune photo pour ce constat.</p>
+  </div>
+
+  <div class="card">
+    <h2>Constat</h2>
+    <div class="chips" id="grav" role="group" aria-label="Gravité"></div>
+    <label>Observation<textarea id="fObs" placeholder="Ex. : Lining around MH1 manhole is half disappeared"></textarea></label>
+    <label>Recommandation (pour l'IPR)<textarea id="fReco" placeholder="Ex. : Lining to be renewed as per green marking"></textarea></label>
+    <label class="toggle"><input type="checkbox" id="fDec"> Décision client attendue</label>
+    <div class="path" id="fPath"></div>
+  </div>
+
+  <button class="primary big" id="bSave" type="button">Enregistrer le constat</button>
+  <p></p>
+  <button class="ghost big" id="bCancelEdit" type="button" hidden>Annuler la modification</button>
+</section>
+
+<!-- ============ JOURNAL ============ -->
+<section id="v-journal" hidden>
+  <div class="card">
+    <h2>Envoi vers le PC</h2>
+    <p class="hint" id="sendInfo"></p>
+    <button class="primary big" id="bSend" type="button">Envoyer au PC (Quick Share)</button>
+    <div id="sentConfirm" class="card confirm" hidden>
+      <strong>Le PC a-t-il bien reçu les fichiers ?</strong>
+      <div class="btns"><button class="primary" id="bSentYes" type="button">Oui, marquer envoyé</button><button id="bSentNo" type="button">Non</button></div>
+    </div>
+  </div>
+  <div id="journal"></div>
+  <div class="card">
+    <h2>Stockage sur le téléphone</h2>
+    <p class="stat" id="storeInfo"></p>
+    <button class="danger" id="bPurge" type="button">Libérer la place : supprimer les constats déjà envoyés</button>
+    <div id="purgeConfirm" class="card confirm" hidden>
+      <strong id="purgeTxt"></strong>
+      <div class="btns"><button class="danger" id="bPurgeYes" type="button">Supprimer</button><button id="bPurgeNo" type="button">Annuler</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RÉGLAGES ============ -->
+<section id="v-reglages" hidden>
+  <div class="card">
+    <h2>Mission</h2>
+    <div class="row2">
+      <label>N° mission<input type="text" id="cNo"></label>
+      <label>Inspecteur<input type="text" id="cInsp"></label>
+    </div>
+    <label>Client / site<input type="text" id="cClient"></label>
+    <label>Dossier de la mission sur le PC<input type="text" id="cDir"></label>
+    <p class="hint">Les photos seront rangées dans ce dossier, sous « Photos\Équipement\Sous-équipement\Activité\Date ».</p>
+  </div>
+  <div class="card">
+    <h2>Équipements et sous-équipements</h2>
+    <p class="hint">Une ligne par équipement avec son code entre crochets, puis ses sous-équipements précédés d'un tiret.</p>
+    <textarea class="cfg" id="cEq" spellcheck="false"></textarea>
+  </div>
+  <div class="card">
+    <h2>Activités et sous-activités</h2>
+    <p class="hint">Même principe : code entre crochets, sous-activités précédées d'un tiret.</p>
+    <textarea class="cfg" id="cAct" spellcheck="false"></textarea>
+  </div>
+  <button class="primary big" id="bCfgSave" type="button">Enregistrer les réglages</button>
+  <p></p>
+  <div class="card">
+    <h2>Partager les réglages avec un autre téléphone</h2>
+    <div class="btns">
+      <button id="bCfgExport" type="button">Envoyer les réglages</button>
+      <button id="bCfgImport" type="button">Charger des réglages</button>
+    </div>
+    <input type="file" id="iCfg" accept="application/json,.json" hidden>
+    <p class="hint">Envoie le fichier « reglages-releve.json » par Quick Share, puis charge-le sur l'autre téléphone.</p>
+  </div>
+</section>
+</main>
+
+<nav>
+  <button type="button" data-v="saisie" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Saisie</button>
+  <button type="button" data-v="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Journal<span class="badge" id="nbPending" hidden></span></span></button>
+  <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Réglages</button>
+</nav>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+const APP_VERSION="1.0";
+const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
+const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
+const DEFAULT_CFG={
+ mission:{no:"260008",client:"REPSOL A Coruña – FCC TA26",inspecteur:"Franck TALLEUX",dossierPC:"C:\\Users\\franc\\OneDrive\\QUARTIS\\Missions\\260008 - REPSOL Coruna"},
+ equipements:`Disengager [DIS]
+- Vertical walls
+- Lower cone
+- Crossover
+- Cyclones
+Riser [RIS]
+- Top head
+- Crossover
+- Main vertical section
+- Feed cone / Lower section
+- Lateral riser
+- Expansion joint
+Stripper [STR]
+- Lower cone
+- Lower steam distributor
+- Main shell
+- Main shed / upper baffle
+- Upper distributor
+Regenerator [REG]
+- Below RegenMax - walls
+- Air distributor
+- Above RegenMax - walls and dome
+- Cyclones
+- PV1
+- PV2
+Flue Gas Line [FGL]
+- 207 External plenum
+- 207 Wye to TSS
+- 209
+- 402
+- 403
+- 456
+- 405 Boiler to stack
+- 423 ByPass
+Third Stage Separator [TSS]
+- General
+Orifice Chamber [ORC]
+- General
+Seal Pots X1326-1327 [SP]
+- X1326
+- X1327
+Auxiliary Burners H1302 [AUX]
+- H1302 A
+- H1302 B
+Heater H1301 [HTR]
+- Radiant section
+- Convection
+- Header boxes
+- Main duct to stack
+- Floor
+D1308 [D1308]
+- General
+D1309 [D1309]
+- General`,
+ activites:`Inspection initiale [1]
+Inspection complémentaire [2]
+Inspection progress [3]
+- Démolition [3a]
+- Ancrages [3b]
+- Préparation de surface [3c]
+- Installation du système d'ancrage [3d]
+- Installation du revêtement réfractaire [3e]
+- Coffrage [3f]
+- Coulage [3g]
+- Gunitage [3h]
+Inspection finale [4]`
+};
+/* ---------- utilitaires ---------- */
+const $=id=>document.getElementById(id);
+function toast(msg,ms=2600){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,ms)}
+function slug(s){return (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,28)||"X"}
+function safeDir(s){return (s||"").replace(/[\\/:*?"<>|]+/g,"-").replace(/\s+/g," ").trim()}
+function pad(n){return String(n).padStart(2,"0")}
+function today(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function frDate(iso){const [y,m,d]=iso.split("-");return `${d}/${m}/${y}`}
+function parseTree(txt){ // "Nom [CODE]" puis "- enfant [code]"
+  const out=[];let cur=null;
+  for(const raw of (txt||"").split(/\r?\n/)){
+    const line=raw.trim(); if(!line) continue;
+    const child=/^[-–•]\s*/.test(line); const body=line.replace(/^[-–•]\s*/,"");
+    const m=body.match(/^(.*?)\s*\[([^\]]+)\]\s*$/); const nom=(m?m[1]:body).trim(); const code=(m?m[2]:"").trim();
+    if(child&&cur) cur.enfants.push({nom,code:code||slug(nom)});
+    else {cur={nom,code:code||slug(nom).toUpperCase(),enfants:[]};out.push(cur)}
+  }
+  return out;
+}
+/* ---------- stockage (IndexedDB) ---------- */
+let DB=null;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open("releve-refractaire",1);
+  r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore("kv");d.createObjectStore("entries",{keyPath:"id"});d.createObjectStore("photos",{keyPath:"id"})};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function tx(store,mode,fn){return new Promise((res,rej)=>{const t=DB.transaction(store,mode);const s=t.objectStore(store);let out;const r=fn(s);
+  if(r&&"onsuccess" in r) r.onsuccess=()=>{out=r.result};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})}
+const kvGet=k=>tx("kv","readonly",s=>s.get(k));
+const kvSet=(k,v)=>tx("kv","readwrite",s=>s.put(v,k));
+const allEntries=()=>tx("entries","readonly",s=>s.getAll());
+const getPhoto=id=>tx("photos","readonly",s=>s.get(id));
+/* ---------- état ---------- */
+let CFG=null,EQ=[],ACT=[];
+let form={photos:[],gravite:"",editId:null}; // photos: {id,blob,thumb}
+async function loadCfg(){let c=null;try{c=await kvGet("cfg")}catch(e){}
+  CFG=c||structuredClone(DEFAULT_CFG);EQ=parseTree(CFG.equipements);ACT=parseTree(CFG.activites)}
+/* ---------- formulaire ---------- */
+function fillSelect(sel,items,keep){const v=keep??sel.value;sel.innerHTML="";for(const it of items){const o=document.createElement("option");o.value=it.code;o.textContent=it.nom;sel.append(o)}
+  if(items.some(i=>i.code===v)) sel.value=v}
+function curEq(){return EQ.find(e=>e.code===$("fEq").value)}
+function curAct(){return ACT.find(a=>a.code===$("fAct").value)}
+function refreshSelects(keep={}){fillSelect($("fEq"),EQ,keep.eq);fillSub(keep.sub);fillSelect($("fAct"),ACT,keep.act);fillSubAct(keep.subact)}
+function fillSub(keep){const e=curEq();fillSelect($("fSub"),e&&e.enfants.length?e.enfants:[{nom:"(général)",code:"GEN"}],keep)}
+function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;$("lSubAct").hidden=!has;fillSelect($("fSubAct"),has?a.enfants:[],keep);updatePath()}
+function subActObj(){const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
+function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=$("fSub").selectedOptions[0]?.textContent||"";
+  const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
+  return ["Photos",safeDir(e?.nom),safeDir(sub),safeDir(act),safeDir(sact),$("fDate").value].filter(Boolean).join("\\")}
+function updatePath(){$("fPath").textContent="→ "+targetDir()}
+function renderGrav(){const g=$("grav");g.innerHTML="";for(const v of GRAVITES){const b=document.createElement("button");b.type="button";b.className="chip";b.dataset.g=v;b.textContent=v;
+  b.setAttribute("aria-pressed",String(form.gravite===v));b.onclick=()=>{form.gravite=form.gravite===v?"":v;renderGrav()};g.append(b)}}
+async function makeThumb(blob){try{const bm=await createImageBitmap(blob);const w=240,h=Math.round(240*bm.height/bm.width);const c=document.createElement("canvas");c.width=w;c.height=h;
+  c.getContext("2d").drawImage(bm,0,0,w,h);return c.toDataURL("image/jpeg",.7)}catch(e){return ""}}
+function renderThumbs(){const t=$("thumbs");t.innerHTML="";form.photos.forEach((p,i)=>{const d=document.createElement("div");d.className="thumb";
+  d.innerHTML=`<img alt="Photo ${i+1}"><span>${pad(i+1)}</span><button type="button" aria-label="Retirer la photo ${i+1}">×</button>`;d.querySelector("img").src=p.thumb;
+  d.querySelector("button").onclick=()=>{form.photos.splice(i,1);renderThumbs()};t.append(d)});
+  $("photoHint").textContent=form.photos.length?`${form.photos.length} photo(s) pour ce constat`:"Aucune photo pour ce constat."}
+async function addFiles(files){for(const f of files){if(!f.type.startsWith("image/")) continue;form.photos.push({id:null,blob:f,thumb:await makeThumb(f),type:f.type})}renderThumbs()}
+function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null};$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";
+  if(!keepContext) $("fDate").value=today();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
+async function saveEntry(){
+  const e=curEq(),a=curAct();if(!e||!a){toast("Choisis un équipement et une activité.");return}
+  if(!form.photos.length&&!$("fObs").value.trim()){toast("Ajoute au moins une photo ou une observation.");return}
+  const date=$("fDate").value||today();const now=new Date();const hms=`${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const sa=subActObj();const subNom=$("fSub").selectedOptions[0]?.textContent||"";
+  const old=form.editId?await tx("entries","readonly",s=>s.get(form.editId)):null;
+  const id=old?old.id:`${CFG.mission.no}_${e.code}_${date.replaceAll("-","").slice(2)}_${hms}`;
+  const actCode=sa?sa.code:a.code;
+  const base=`${CFG.mission.no}_${e.code}_${slug($("fSub").value)}_${slug(actCode)}_${date.replaceAll("-","").slice(2)}_${old?old.hms:hms}`;
+  // photos : on (ré)écrit toutes les photos du constat
+  const names=[];const photoRecs=[];
+  form.photos.forEach((p,i)=>{const ext=(p.type||"image/jpeg").includes("png")?"png":"jpg";const name=`${base}_${pad(i+1)}.${ext}`;names.push(name);photoRecs.push({id:name,entry:id,blob:p.blob,thumb:p.thumb,type:p.type})});
+  const entry={schema:"releve-refractaire/1",id,hms:old?old.hms:hms,creeLe:old?old.creeLe:now.toISOString(),modifieLe:now.toISOString(),
+    mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa?{code:sa.code,nom:sa.nom}:null,
+    repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,
+    photos:names,dossierCible:targetDir(),envoye:false,envoyeLe:null};
+  try{
+    await tx("photos","readwrite",s=>{if(old) for(const n of old.photos) s.delete(n);for(const r of photoRecs) s.put(r)});
+    await tx("entries","readwrite",s=>s.put(entry));
+  }catch(err){toast("Enregistrement impossible : "+(err&&err.name==="QuotaExceededError"?"mémoire du navigateur pleine. Envoie puis libère la place dans le Journal.":err));return}
+  toast(old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`);
+  resetForm(true);refreshBadge();
+}
+async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;
+  showView("saisie");refreshSelects({eq:en.equipement.code,act:en.activite.code});
+  const e=curEq();const sub=e?.enfants.find(x=>x.nom===en.sousEquipement);if(sub) $("fSub").value=sub.code;
+  if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
+  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;
+  form={photos:[],gravite:en.gravite,editId:id};
+  for(const n of en.photos){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type})}
+  renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
+/* ---------- journal ---------- */
+async function refreshBadge(){const en=await allEntries();const n=en.filter(e=>!e.envoye).length;const b=$("nbPending");b.hidden=!n;b.textContent=n}
+async function renderJournal(){
+  const en=(await allEntries()).sort((a,b)=>(b.date+b.hms).localeCompare(a.date+a.hms));
+  const pend=en.filter(e=>!e.envoye);const np=pend.reduce((s,e)=>s+e.photos.length,0);
+  $("sendInfo").textContent=pend.length?`${pend.length} constat(s) et ${np} photo(s) pas encore envoyés au PC.`:"Tout a été envoyé au PC.";
+  $("bSend").disabled=!pend.length;
+  const j=$("journal");j.innerHTML="";
+  const byDay={};for(const e of en)(byDay[e.date]??=[]).push(e);
+  for(const [day,list] of Object.entries(byDay)){
+    const c=document.createElement("div");c.className="card";
+    c.innerHTML=`<div class="dayhead"><h3>${frDate(day)}</h3><span class="stat">${list.length} constat(s)</span></div>`;
+    for(const e of list){const r=document.createElement("div");r.className="entry";
+      const g=e.gravite?`<span class="pill" style="background:${GCOL[e.gravite]}">${e.gravite}</span>`:"";
+      r.innerHTML=`<img alt=""><div><div class="t"></div><div class="m"></div><div class="o"></div></div><div class="acts"></div>`;
+      r.querySelector(".t").innerHTML=g;r.querySelector(".t").append(`${e.equipement.nom} · ${e.sousEquipement}`);
+      r.querySelector(".m").textContent=`${(e.sousActivite||e.activite).nom}${e.repere?" · "+e.repere:""} · ${e.photos.length} photo(s) · ${e.envoye?"envoyé ✓":"à envoyer"}`;
+      r.querySelector(".o").textContent=e.observation;
+      if(e.photos[0]) getPhoto(e.photos[0]).then(p=>{if(p) r.querySelector("img").src=p.thumb});
+      const acts=r.querySelector(".acts");
+      const bE=document.createElement("button");bE.type="button";bE.textContent="Modifier";bE.onclick=()=>editEntry(e.id);acts.append(bE);
+      if(e.envoye){const bR=document.createElement("button");bR.type="button";bR.textContent="Renvoyer";bR.onclick=()=>sendEntries([e]);acts.append(bR)}
+      c.append(r)}
+    j.append(c)}
+  if(!en.length) j.innerHTML=`<div class="card"><p class="hint">Aucun constat pour l'instant. Les constats enregistrés depuis l'onglet Saisie apparaissent ici, classés par jour.</p></div>`;
+  try{const est=await navigator.storage.estimate();const per=navigator.storage.persisted?await navigator.storage.persisted():false;
+    $("storeInfo").textContent=`${en.length} constat(s) · ${(est.usage/1048576).toFixed(1)} Mo utilisés sur ${(est.quota/1073741824).toFixed(1)} Go · stockage ${per?"protégé":"non protégé"}`}catch(e){$("storeInfo").textContent=`${en.length} constat(s)`}
+}
+let pendingSent=[];
+function entryJSON(e){const {hms,envoye,envoyeLe,...rest}=e;return JSON.stringify({...rest,versionAppli:APP_VERSION},null,2)}
+async function sendEntries(list){
+  const files=[];
+  for(const e of list){for(const n of e.photos){const p=await getPhoto(n);if(p) files.push(new File([p.blob],n,{type:p.type||"image/jpeg"}))}
+    files.push(new File([entryJSON(e)],`${e.id}.releve.json`,{type:"application/json"}))}
+  pendingSent=list.map(e=>e.id);
+  if(navigator.canShare&&navigator.canShare({files})){
+    try{await navigator.share({files,title:"Relevé réfractaire",text:`${list.length} constat(s)`});$("sentConfirm").hidden=false}
+    catch(err){if(err.name!=="AbortError") toast("Partage impossible : "+err.message)}
+  }else{ // appareil sans partage de fichiers : téléchargement
+    for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,250))}
+    toast("Fichiers téléchargés (partage non disponible sur cet appareil).");$("sentConfirm").hidden=false}
+}
+async function markSent(){const now=new Date().toISOString();await tx("entries","readwrite",s=>{for(const id of pendingSent){const r=s.get(id);r.onsuccess=()=>{const e=r.result;if(e){e.envoye=true;e.envoyeLe=now;s.put(e)}}}});
+  $("sentConfirm").hidden=true;pendingSent=[];toast("Marqué comme envoyé");renderJournal();refreshBadge()}
+async function purge(){const en=(await allEntries()).filter(e=>e.envoye);
+  await tx("photos","readwrite",s=>{for(const e of en) for(const n of e.photos) s.delete(n)});
+  await tx("entries","readwrite",s=>{for(const e of en) s.delete(e.id)});$("purgeConfirm").hidden=true;toast(`${en.length} constat(s) supprimé(s) du téléphone`);renderJournal()}
+/* ---------- réglages ---------- */
+function renderCfg(){$("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur;$("cClient").value=CFG.mission.client;$("cDir").value=CFG.mission.dossierPC;$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites}
+async function saveCfg(fromImport){
+  if(!fromImport) CFG={mission:{no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim()},equipements:$("cEq").value,activites:$("cAct").value};
+  const eq=parseTree(CFG.equipements),ac=parseTree(CFG.activites);if(!eq.length||!ac.length){toast("Il faut au moins un équipement et une activité.");return}
+  const keep={eq:$("fEq").value,act:$("fAct").value};await kvSet("cfg",CFG);EQ=eq;ACT=ac;refreshSelects(keep);renderCfg();renderHeader();toast("Réglages enregistrés")}
+function renderHeader(){$("hMission").textContent=CFG.mission.no}
+async function exportCfg(){const f=new File([JSON.stringify({schema:"reglages-releve/1",...CFG},null,2)],"reglages-releve.json",{type:"application/json"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:"Réglages relevé"})}catch(e){}}
+  else{const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click()}}
+async function importCfg(file){try{const j=JSON.parse(await file.text());if(!j.equipements||!j.activites||!j.mission) throw 0;
+  CFG={mission:j.mission,equipements:j.equipements,activites:j.activites};await saveCfg(true)}catch(e){toast("Ce fichier n'est pas un fichier de réglages valide.")}}
+/* ---------- navigation ---------- */
+function showView(v){for(const s of ["saisie","journal","reglages"]) $("v-"+s).hidden=s!==v;
+  document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v?"page":"false"));
+  if(v==="journal") renderJournal();if(v==="reglages") renderCfg();window.scrollTo(0,0)}
+/* ---------- démarrage ---------- */
+async function start(){
+  try{DB=await openDB()}catch(e){document.querySelector("main").innerHTML=`<div class="card"><strong>Stockage indisponible.</strong><p class="hint">Ouvre l'appli dans Chrome (pas en navigation privée).</p></div>`;return}
+  try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
+  await loadCfg();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
+  $("fEq").onchange=()=>{fillSub();updatePath()};$("fSub").onchange=updatePath;$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=updatePath;
+  $("bCam").onclick=()=>$("iCam").click();$("bGal").onclick=()=>$("iGal").click();
+  $("iCam").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};$("iGal").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};
+  $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>resetForm(true);
+  $("bSend").onclick=async()=>sendEntries((await allEntries()).filter(e=>!e.envoye));
+  $("bSentYes").onclick=markSent;$("bSentNo").onclick=()=>{$("sentConfirm").hidden=true;pendingSent=[]};
+  $("bPurge").onclick=async()=>{const n=(await allEntries()).filter(e=>e.envoye).length;if(!n){toast("Aucun constat envoyé à supprimer.");return}
+    $("purgeTxt").textContent=`Supprimer du téléphone ${n} constat(s) déjà envoyé(s) au PC ? Vérifie d'abord qu'ils sont bien rangés sur le PC.`;$("purgeConfirm").hidden=false};
+  $("bPurgeYes").onclick=purge;$("bPurgeNo").onclick=()=>$("purgeConfirm").hidden=true;
+  $("bCfgSave").onclick=()=>saveCfg(false);$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
+  document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+start();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "Relevé Réfractaire",
+  "short_name": "Relevé",
+  "description": "Photos et constats d'inspection réfractaire, rangés par équipement et activité",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1d2a33",
+  "theme_color": "#1d2a33",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
