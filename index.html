@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Relevé Réfractaire</title>
+<title>Relevé sur Site</title>
 <meta name="theme-color" content="#1d2a33">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -93,7 +93,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 </head>
 <body>
 <header>
-  <h1 id="hTitle">Relevé Réfractaire</h1>
+  <h1 id="hTitle">Relevé sur Site</h1>
   <span class="mission" id="hMission"></span>
 </header>
 
@@ -430,7 +430,7 @@ async function sendEntries(list){
     files.push(new File([entryJSON(e)],`${e.id}.releve.json`,{type:"application/json"}))}
   pendingSent=list.map(e=>e.id);
   if(navigator.canShare&&navigator.canShare({files})){
-    try{await navigator.share({files,title:"Relevé réfractaire",text:`${list.length} constat(s)`});$("sentConfirm").hidden=false}
+    try{await navigator.share({files,title:"Relevé sur Site",text:`${list.length} constat(s)`});$("sentConfirm").hidden=false}
     catch(err){if(err.name!=="AbortError") toast("Partage impossible : "+err.message)}
   }else{ // appareil sans partage de fichiers : téléchargement
     for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,250))}

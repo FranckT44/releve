@@ -1,6 +1,6 @@
 {
-  "name": "Relevé Réfractaire",
-  "short_name": "Relevé",
+  "name": "Relevé sur Site",
+  "short_name": "Relevé sur Site",
   "description": "Photos et constats d'inspection réfractaire, rangés par équipement et activité",
   "lang": "fr",
   "start_url": "./index.html",
