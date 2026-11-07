@@ -251,6 +251,16 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <p class="hint" id="appVer"></p>
     <p class="hint">Envoie le fichier « mission-N°.txt » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
   </div>
+  <div class="card">
+    <h2>Réglage de ce téléphone</h2>
+    <label>Sélecteur de photos (bouton « Choisir dans la galerie »)<select id="cPicker">
+      <option value="1">1 – Standard</option>
+      <option value="2">2 – Une photo à la fois</option>
+      <option value="3">3 – Formats photo précis (JPEG, HEIC, PNG)</option>
+      <option value="4">4 – Tous types de fichiers</option>
+    </select></label>
+    <p class="hint">Android choisit lui-même l'appli proposée selon la façon dont les photos sont demandées. Essaie les variantes et garde celle qui ouvre la Galerie Samsung. Ce réglage ne concerne que ce téléphone.</p>
+  </div>
 </section>
 </main>
 
@@ -263,7 +273,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.7";
+const APP_VERSION="1.8";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -677,6 +687,10 @@ async function start(){
   await loadCfg();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
   $("fEq").onchange=()=>{fillSub();updatePath()};$("fSub").onchange=updatePath;$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=updatePath;
   $("bCam").onclick=()=>$("iCam").click();$("bGal").onclick=()=>$("iGal").click();
+  const appliquerPicker=v=>{const g=$("iGal");const cfg={"1":["image/*",true],"2":["image/*",false],"3":["image/jpeg,image/heic,image/heif,image/png",true],"4":["*/*",true]}[v]||["image/*",true];
+    g.setAttribute("accept",cfg[0]);g.multiple=cfg[1];$("cPicker").value=v};
+  kvGet("picker").then(v=>appliquerPicker(v||"1")).catch(()=>appliquerPicker("1"));
+  $("cPicker").onchange=e=>{appliquerPicker(e.target.value);kvSet("picker",e.target.value).catch(()=>{});toast("Sélecteur de photos : variante "+e.target.value+". Essaie « Choisir dans la galerie ».")};
   $("iCam").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};$("iGal").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};
   $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>resetForm(true);
   $("bSend").onclick=async()=>{if(PREP&&PREP.files.length) sendEntries(PREP.list,PREP.files);else sendEntries((await allEntries()).filter(e=>!e.envoye&&belongs(e)))};
