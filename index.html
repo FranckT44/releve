@@ -343,7 +343,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.16";
+const APP_VERSION="1.17";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -806,6 +806,10 @@ async function majConstats(ren){
     Object.assign(e,{equipement:{code:r.n.code,nom:r.n.nom},sousEquipement:sub,photos:nouveaux,dossierCible:parts.join("\\"),modifieLe:new Date().toISOString()});
     await tx("entries","readwrite",s=>s.put(e))}
   return liste.length}
+// constats non envoyés : recopier les infos corrigées de la mission (n°, client, dossier PC…)
+async function majMissionConstats(m){const liste=(await allEntries()).filter(e=>!e.envoye&&e.mission&&(e.mission.id===m.id||(!e.mission.id&&e.mission.no===m.no)));
+  for(const e of liste){e.mission={id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC};await tx("entries","readwrite",s=>s.put(e))}
+  return liste.length}
 async function saveCfg(){
   const eq=parseTree($("cEq").value),ac=parseTree($("cAct").value);if(!eq.length||!ac.length){toast("Il faut au moins un équipement et une activité.");return}
   if(!$("cNo").value.trim()){toast("Indique le n° de mission.");return}
@@ -817,7 +821,7 @@ async function saveCfg(){
       $("renTxt").textContent=ren.map(r=>(r.o.code!==r.n.code||r.o.nom!==r.n.nom?`${r.o.nom} [${r.o.code}] → ${r.n.nom} [${r.n.code}]`:r.o.nom)+r.subs.map(x=>`\n   - ${x.o} → ${x.n}`).join("")).join("\n");
       $("renHint").textContent=`${n} constat(s) pas encore envoyé(s) utilisent l'ancien nom. « Mettre à jour » les renomme (photos et dossier de rangement compris). Les photos déjà rangées sur le PC se renomment avec l'outil « Renommer-Equipement » du dossier PC.`;
       $("renCard").hidden=false;$("renCard").scrollIntoView({block:"center"});return}}
-  saveCfg.force=false;Object.assign(m,nv);if(change) m.modifieLe=new Date().toISOString();
+  saveCfg.force=false;Object.assign(m,nv);await majMissionConstats(m);if(change) m.modifieLe=new Date().toISOString();
   await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();
   toast(change?"Mission enregistrée. Pense à l'envoyer à tes autres appareils.":"Aucun changement",3500)}
 async function finirRenommage(majAussi){$("renCard").hidden=true;const r=REN_EN_ATTENTE;REN_EN_ATTENTE=null;
