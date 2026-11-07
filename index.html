@@ -423,7 +423,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.22";
+const APP_VERSION="1.23";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -978,7 +978,10 @@ async function renderJournal(){
     $("storeInfo").textContent=`${en.length} constat(s) · ${(est.usage/1048576).toFixed(1)} Mo utilisés sur ${(est.quota/1073741824).toFixed(1)} Go · stockage ${per?"protégé":"non protégé"}`}catch(e){$("storeInfo").textContent=`${en.length} constat(s)`}
 }
 let pendingSent=[];
-function entryJSON(e){const {hms,envoye,envoyeLe,...rest}=e;return JSON.stringify({...rest,versionAppli:APP_VERSION},null,2)}
+// le dossier PC et les infos de mission sont pris dans la mission telle qu'elle est aujourd'hui (corrigée depuis, peut-être)
+function entryJSON(e){const {hms,envoye,envoyeLe,...rest}=e;const m=MISSIONS.find(x=>e.mission&&x.id===e.mission.id);
+  if(m) rest.mission={id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC};
+  return JSON.stringify({...rest,versionAppli:APP_VERSION},null,2)}
 // Chrome Android ne partage que certains formats : les photos HEIC/HEIF (Samsung « haute efficacité ») sont converties en JPEG
 const PARTAGEABLE=/^image\/(jpeg|png)$/;
 async function versJpeg(blob){try{const bm=await createImageBitmap(blob);const c=document.createElement("canvas");c.width=bm.width;c.height=bm.height;
