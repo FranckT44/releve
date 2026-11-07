@@ -252,6 +252,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <div id="newCard" class="card confirm" hidden>
       <strong>Nouvelle mission</strong>
       <label>Partir de<select id="nFrom"></select></label>
+      <label>Langue des listes<select id="nLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
       <div class="row2">
         <label>N° mission<input type="text" id="nNo" inputmode="numeric" autocomplete="off"></label>
         <label>Client / site<input type="text" id="nClient" autocomplete="off"></label>
@@ -271,6 +272,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     </div>
     <label>Client / site<input type="text" id="cClient"></label>
     <label>Dossier de la mission sur le PC<input type="text" id="cDir"></label>
+    <label>Langue des listes (activités, sous-activités)<select id="cLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
     <p class="hint">Les photos seront rangées dans ce dossier, sous « Photos\Équipement\Sous-équipement\Activité\Date ».</p>
     <div class="sync" id="syncInfo"></div>
   </div>
@@ -341,7 +343,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.13";
+const APP_VERSION="1.14";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -526,8 +528,8 @@ function fillSelect(sel,items,keep){const v=keep??sel.value;sel.innerHTML="";for
 function curEq(){return EQ.find(e=>e.code===$("fEq").value)}
 function curAct(){return ACT.find(a=>a.code===$("fAct").value)}
 function refreshSelects(keep={}){fillSelect($("fEq"),EQ,keep.eq);fillSub(keep.sub);fillSelect($("fAct"),ACT,keep.act);fillSubAct(keep.subact)}
-function fillSub(keep){const e=curEq();fillSelect($("fSub"),e&&e.enfants.length?e.enfants:[{nom:"(général)",code:"GEN"}],keep)}
-function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:"(aucune)",code:""}],keep);updatePath()}
+function fillSub(keep){const e=curEq();fillSelect($("fSub"),e&&e.enfants.length?e.enfants:[{nom:GENERAL[langueMission()]||"(général)",code:"GEN"}],keep)}
+function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],keep);updatePath()}
 function subActObj(){if(!$("fSubAct").value) return null;const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
 function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=$("fSub").selectedOptions[0]?.textContent||"";
   const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
@@ -700,6 +702,40 @@ async function markSent(){const now=new Date().toISOString();await tx("entries",
 async function purge(){const en=(await allEntries()).filter(e=>e.envoye&&belongs(e));
   await tx("photos","readwrite",s=>{for(const e of en) for(const n of e.photos) s.delete(n)});
   await tx("entries","readwrite",s=>{for(const e of en) s.delete(e.id)});$("purgeConfirm").hidden=true;toast(`${en.length} constat(s) supprimé(s) du téléphone`);renderJournal()}
+/* ---------- langue des listes ---------- */
+const DICO=[
+ {fr:"Inspection initiale",en:"Initial inspection",es:"Inspección inicial",de:"Erstinspektion"},
+ {fr:"Inspection complémentaire",en:"Complementary inspection",es:"Inspección complementaria",de:"Ergänzende Inspektion"},
+ {fr:"Inspection progress",en:"Progress inspection",es:"Inspección de avance",de:"Fortschrittsinspektion"},
+ {fr:"Démolition",en:"Demolition",es:"Demolición",de:"Abbruch"},
+ {fr:"Ancrages",en:"Anchors",es:"Anclajes",de:"Anker"},
+ {fr:"Préparation de surface",en:"Surface preparation",es:"Preparación de superficie",de:"Oberflächenvorbereitung"},
+ {fr:"Installation du système d'ancrage",en:"Anchoring system installation",es:"Instalación del sistema de anclaje",de:"Installation des Verankerungssystems"},
+ {fr:"Installation du revêtement réfractaire",en:"Refractory lining installation",es:"Instalación del revestimiento refractario",de:"Einbau der Feuerfestauskleidung"},
+ {fr:"Coffrage",en:"Formwork",es:"Encofrado",de:"Schalung"},
+ {fr:"Coulage",en:"Casting",es:"Vertido",de:"Gießen"},
+ {fr:"Gunitage",en:"Gunning",es:"Gunitado",de:"Torkretieren"},
+ {fr:"Inspection finale",en:"Final inspection",es:"Inspección final",de:"Endinspektion"},
+ {fr:"Types de matériel",en:"Material types",es:"Tipos de material",de:"Materialarten"},
+ {fr:"Matériaux",en:"Materials",es:"Materiales",de:"Werkstoffe"},
+ {fr:"Contrôle dimensionnel",en:"Dimensional inspection",es:"Control dimensional",de:"Maßkontrolle"},
+ {fr:"Préqualification",en:"Prequalification",es:"Precalificación",de:"Vorqualifizierung"},
+ {fr:"Installation des revêtements",en:"Lining installation",es:"Instalación de revestimientos",de:"Einbau der Auskleidungen"},
+ {fr:"Coffrage / coulage",en:"Formwork / casting",es:"Encofrado / vertido",de:"Schalung / Gießen"},
+ {fr:"Hand packing",en:"Hand packing",es:"Hand packing",de:"Hand packing"},
+ {fr:"Fiber installation",en:"Fiber installation",es:"Instalación de fibra",de:"Fasermontage"},
+ {fr:"Inspection",en:"Inspection",es:"Inspección",de:"Inspektion"}];
+const GENERAL={fr:"(général)",en:"(general)",es:"(general)",de:"(allgemein)"};
+const AUCUNE={fr:"(aucune)",en:"(none)",es:"(ninguna)",de:"(keine)"};
+function traduireNom(nom,l){const n=nom.trim().toLowerCase();const d=DICO.find(x=>Object.values(x).some(v=>v.toLowerCase()===n));return d?d[l]:nom}
+function convertirActivites(txt,l){const t=parseTree(txt);for(const a of t){a.nom=traduireNom(a.nom,l);for(const c of a.enfants) c.nom=traduireNom(c.nom,l)}
+  return t.map(a=>`${a.nom} [${a.code}]`+a.enfants.map(c=>`\n- ${c.nom} [${c.code}]`).join("")).join("\n")}
+const langueMission=()=>(curMission()&&curMission().langue)||"fr";
+async function changerLangue(l){const m=curMission();if(!m) return;
+  const avant=m.activites;m.langue=l;m.activites=convertirActivites(m.activites,l);
+  if(m.activites!==avant) m.modifieLe=new Date().toISOString();
+  await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();
+  toast("Listes passées en "+{fr:"français",en:"anglais",es:"espagnol",de:"allemand"}[l]+". Les constats déjà saisis gardent leurs noms ; les nouvelles photos iront dans des dossiers à ce nom.",6000)}
 /* ---------- missions ---------- */
 function fmtDT(iso){if(!iso) return "";const d=new Date(iso);return `${pad(d.getDate())}/${pad(d.getMonth()+1)} à ${pad(d.getHours())}h${pad(d.getMinutes())}`}
 function estSynchro(m){return !m.modifieLe||(m.envoyeLe&&m.envoyeLe>=m.modifieLe)||(m.recuLe&&m.versionRecue===m.modifieLe)}
@@ -715,7 +751,7 @@ function renderCfg(){
   const show=$("mShowArch").checked;const sel=$("mSel");sel.innerHTML="";
   for(const m of MISSIONS.filter(m=>show||!m.archive||m.id===CFG.mission.id)){const o=document.createElement("option");o.value=m.id;o.textContent=missionLabel(m);sel.append(o)}
   sel.value=CFG.mission.id;const cur=curMission();$("bArch").textContent=cur&&cur.archive?"Désarchiver":"Archiver";
-  $("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur||"";$("cClient").value=CFG.mission.client||"";$("cDir").value=CFG.mission.dossierPC||"";$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites;
+  $("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur||"";$("cClient").value=CFG.mission.client||"";$("cDir").value=CFG.mission.dossierPC||"";$("cLang").value=langueMission();$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites;
   const f=$("nFrom");f.innerHTML="";
   const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;f.append(o)};
   add("copy:"+CFG.mission.id,`Copie de la mission ${CFG.mission.no}`);
@@ -765,7 +801,8 @@ async function createMission(){
   const no=$("nNo").value.trim(),client=$("nClient").value.trim();if(!no){toast("Indique le n° de la nouvelle mission.");return}
   if(MISSIONS.some(m=>m.no===no&&!m.archive)){toast(`La mission ${no} existe déjà.`);return}
   const [kind,ref]=$("nFrom").value.split(":");const src=kind==="copy"?MISSIONS.find(m=>m.id===ref):TEMPLATES[ref];
-  const m={id:newId(),archive:false,no,client,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),equipements:src.equipements,activites:src.activites,modifieLe:new Date().toISOString()};
+  const lang=$("nLang").value||"fr";
+  const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),equipements:src.equipements,activites:convertirActivites(src.activites,lang),modifieLe:new Date().toISOString()};
   MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
   toast(`Mission ${no} créée : vérifie le dossier PC et complète les listes`,4000)}
 async function toggleArchive(){const m=curMission();
@@ -795,7 +832,7 @@ async function appliquerImport(d){$("impCard").hidden=true;IMPORT_EN_ATTENTE=nul
   let m=MISSIONS.find(x=>x.no===d.no);const maj=!!m;
   if(!m){m={id:newId(),archive:false};MISSIONS.push(m)}
   const v=d.modifieLe||new Date().toISOString();
-  Object.assign(m,{no:d.no,client:d.client||"",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",equipements:d.equipements,activites:d.activites,archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
+  Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",equipements:d.equipements,activites:d.activites,archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
   await saveMissions();await switchMission(m.id);toast(maj?`Mission ${m.no} mise à jour`:`Mission ${m.no} ajoutée`)}
 /* ---------- import depuis Excel (copier-coller) ---------- */
 let COLLAGE=null;
@@ -966,8 +1003,9 @@ async function start(){
   $("bPurgeYes").onclick=purge;$("bPurgeNo").onclick=()=>$("purgeConfirm").hidden=true;
   $("bCfgSave").onclick=saveCfg;
   $("mSel").onchange=e=>switchMission(e.target.value);$("mShowArch").onchange=renderCfg;$("hMission").onclick=()=>showView("reglages");
-  $("bNew").onclick=()=>{renderCfg();$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>$("newCard").hidden=true;$("bNewOk").onclick=createMission;
+  $("bNew").onclick=()=>{renderCfg();$("nLang").value=langueMission();$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>$("newCard").hidden=true;$("bNewOk").onclick=createMission;
   $("bArch").onclick=toggleArchive;
+  $("cLang").onchange=e=>changerLangue(e.target.value);
   $("bRenAll").onclick=()=>finirRenommage(true);$("bRenOnly").onclick=()=>finirRenommage(false);$("bRenCancel").onclick=()=>{$("renCard").hidden=true;REN_EN_ATTENTE=null};
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
   $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
