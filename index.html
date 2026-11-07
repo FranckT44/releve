@@ -145,6 +145,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <h2>Envoi vers le PC</h2>
     <p class="hint" id="sendInfo"></p>
     <button class="primary big" id="bSend" type="button">Envoyer au PC (Quick Share)</button>
+    <button class="big" id="bDl" type="button">Enregistrer dans Téléchargements (secours)</button>
     <div id="sentConfirm" class="card confirm" hidden>
       <strong>Le PC a-t-il bien reçu les fichiers ?</strong>
       <div class="btns"><button class="primary" id="bSentYes" type="button">Oui, marquer envoyé</button><button id="bSentNo" type="button">Non</button></div>
@@ -215,6 +216,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
       <button id="bCfgImport" type="button">Charger une mission</button>
     </div>
     <input type="file" id="iCfg" accept=".txt,.json,text/plain,application/json" hidden>
+    <p class="hint" id="appVer"></p>
     <p class="hint">Envoie le fichier « mission-N°.txt » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
   </div>
 </section>
@@ -229,7 +231,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.3";
+const APP_VERSION="1.4";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -450,7 +452,7 @@ async function renderJournal(){
   const autres=[...new Set(tous.filter(e=>!e.envoye&&!belongs(e)).map(e=>e.mission.no))];
   $("sendInfo").textContent=(pend.length?`Mission ${CFG.mission.no} : ${pend.length} constat(s) et ${np} photo(s) pas encore envoyés au PC.`:`Mission ${CFG.mission.no} : tout a été envoyé au PC.`)
     +(autres.length?` Il reste aussi des constats à envoyer pour la mission ${autres.join(", ")}.`:"");
-  $("bSend").disabled=!pend.length;PREP=null;if(pend.length) prepareSend();
+  $("bSend").disabled=!pend.length;$("bDl").disabled=!pend.length;PREP=null;if(pend.length) prepareSend();
   const j=$("journal");j.innerHTML="";
   const byDay={};for(const e of en)(byDay[e.date]??=[]).push(e);
   for(const [day,list] of Object.entries(byDay)){
@@ -474,26 +476,30 @@ async function renderJournal(){
 }
 let pendingSent=[];
 function entryJSON(e){const {hms,envoye,envoyeLe,...rest}=e;return JSON.stringify({...rest,versionAppli:APP_VERSION},null,2)}
+// Chrome Android ne partage que certains formats : les photos HEIC/HEIF (Samsung « haute efficacité ») sont converties en JPEG
+const PARTAGEABLE=/^image\/(jpeg|png)$/;
+async function versJpeg(blob){try{const bm=await createImageBitmap(blob);const c=document.createElement("canvas");c.width=bm.width;c.height=bm.height;
+  c.getContext("2d").drawImage(bm,0,0);return await new Promise(r=>c.toBlob(r,"image/jpeg",0.92))}catch(e){return null}}
+async function photoFile(n){const p=await getPhoto(n);if(!p) return null;let blob=p.blob,type=(p.type||blob.type||"").toLowerCase();
+  if(!PARTAGEABLE.test(type)){const j=await versJpeg(blob);if(j){blob=j;type="image/jpeg"}}
+  if(type==="image/png"&&!/\.png$/i.test(n)) type="image/jpeg";
+  return new File([blob],n,{type:type||"image/jpeg"})}
 async function buildFiles(list){const files=[];
-  for(const e of list){for(const n of e.photos){const p=await getPhoto(n);if(p) files.push(new File([p.blob],n,{type:p.type||"image/jpeg"}))}
-    files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))}
+  for(const e of list){for(const n of e.photos){const f=await photoFile(n);if(f) files.push(f)}
+    files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))} // .txt : Chrome Android refuse de partager du .json
   return files}
 let PREP=null; // fichiers de l'envoi préparés à l'affichage du Journal
 async function prepareSend(){const list=(await allEntries()).filter(e=>!e.envoye&&belongs(e));PREP={list,files:list.length?await buildFiles(list):[]}}
-async function sendEntries(list,prepared){
-  if(prepared) return shareFiles(list,prepared);
-  const files=[];
-  for(const e of list){for(const n of e.photos){const p=await getPhoto(n);if(p) files.push(new File([p.blob],n,{type:p.type||"image/jpeg"}))}
-    files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))} // .txt : Chrome Android refuse de partager du .json
-  return shareFiles(list,files)}
+async function sendEntries(list,prepared){return shareFiles(list,prepared||await buildFiles(list))}
+async function downloadFiles(list,files){pendingSent=list.map(e=>e.id);
+  for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,300))}
+  toast("Fichiers enregistrés dans Téléchargements : envoie-les au PC depuis « Mes fichiers » > Téléchargements > Partager > Quick Share.",7000);$("sentConfirm").hidden=false}
 async function shareFiles(list,files){
   pendingSent=list.map(e=>e.id);
   if(navigator.canShare&&navigator.canShare({files})){
-    try{await navigator.share({files,title:"Relevé sur Site",text:`${list.length} constat(s)`});$("sentConfirm").hidden=false}
-    catch(err){if(err.name!=="AbortError") toast(`Partage impossible (${err.name}) : ${err.message}`,6000)}
-  }else{ // appareil sans partage de fichiers : téléchargement
-    for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,250))}
-    toast("Fichiers téléchargés (partage non disponible sur cet appareil).");$("sentConfirm").hidden=false}
+    try{await navigator.share({files});$("sentConfirm").hidden=false}
+    catch(err){if(err.name!=="AbortError"){toast(`Partage impossible (${err.name}) : ${err.message}. Utilise le bouton « Enregistrer dans Téléchargements ».`,8000);$("bDl").hidden=false}}
+  }else{await downloadFiles(list,files)}
 }
 async function markSent(){const now=new Date().toISOString();await tx("entries","readwrite",s=>{for(const id of pendingSent){const r=s.get(id);r.onsuccess=()=>{const e=r.result;if(e){e.envoye=true;e.envoyeLe=now;s.put(e)}}}});
   $("sentConfirm").hidden=true;pendingSent=[];toast("Marqué comme envoyé");renderJournal();refreshBadge()}
@@ -531,7 +537,7 @@ async function toggleArchive(){const m=curMission();
   const n=(await allEntries()).filter(e=>!e.envoye&&belongs(e)).length;
   $("archTxt").textContent=`Archiver la mission ${m.no} ?`+(n?` Attention : ${n} constat(s) pas encore envoyé(s) au PC.`:" Ses constats restent sur le téléphone tant que tu ne libères pas la place.");$("archCard").hidden=false}
 async function doArchive(){const m=curMission();m.archive=true;await saveMissions();$("archCard").hidden=true;await switchMission(MISSIONS.find(x=>!x.archive).id)}
-function renderHeader(){$("hMission").textContent=CFG.mission.no+(CFG.mission.client?" · "+CFG.mission.client:"")}
+function renderHeader(){$("appVer").textContent="Version de l'appli : "+APP_VERSION;$("hMission").textContent=CFG.mission.no+(CFG.mission.client?" · "+CFG.mission.client:"")}
 async function exportCfg(){const m=curMission();const {id,archive,...data}=m;
   const f=new File([JSON.stringify({schema:"mission-releve/1",...data},null,2)],`mission-${safeDir(m.no)}.txt`,{type:"text/plain"});
   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:`Mission ${m.no}`})}catch(e){}}
@@ -558,7 +564,8 @@ async function start(){
   $("iCam").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};$("iGal").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};
   $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>resetForm(true);
   $("bSend").onclick=async()=>{if(PREP&&PREP.files.length) sendEntries(PREP.list,PREP.files);else sendEntries((await allEntries()).filter(e=>!e.envoye&&belongs(e)))};
-  $("bSentYes").onclick=markSent;$("bSentNo").onclick=()=>{$("sentConfirm").hidden=true;pendingSent=[]};
+  $("bSentYes").onclick=markSent;
+  $("bDl").onclick=async()=>{const list=(PREP&&PREP.list.length)?PREP.list:(await allEntries()).filter(e=>!e.envoye&&belongs(e));if(!list.length) return;downloadFiles(list,(PREP&&PREP.files.length)?PREP.files:await buildFiles(list))};$("bSentNo").onclick=()=>{$("sentConfirm").hidden=true;pendingSent=[]};
   $("bPurge").onclick=async()=>{const n=(await allEntries()).filter(e=>e.envoye&&belongs(e)).length;if(!n){toast("Aucun constat envoyé à supprimer.");return}
     $("purgeTxt").textContent=`Supprimer du téléphone ${n} constat(s) de la mission ${CFG.mission.no} déjà envoyé(s) au PC ? Vérifie d'abord qu'ils sont bien rangés sur le PC.`;$("purgeConfirm").hidden=false};
   $("bPurgeYes").onclick=purge;$("bPurgeNo").onclick=()=>$("purgeConfirm").hidden=true;
