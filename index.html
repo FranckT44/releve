@@ -214,8 +214,8 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
       <button id="bCfgExport" type="button">Envoyer cette mission</button>
       <button id="bCfgImport" type="button">Charger une mission</button>
     </div>
-    <input type="file" id="iCfg" accept="application/json,.json" hidden>
-    <p class="hint">Envoie le fichier « mission-N°.json » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
+    <input type="file" id="iCfg" accept=".txt,.json,text/plain,application/json" hidden>
+    <p class="hint">Envoie le fichier « mission-N°.txt » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
   </div>
 </section>
 </main>
@@ -229,7 +229,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.2";
+const APP_VERSION="1.3";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -450,7 +450,7 @@ async function renderJournal(){
   const autres=[...new Set(tous.filter(e=>!e.envoye&&!belongs(e)).map(e=>e.mission.no))];
   $("sendInfo").textContent=(pend.length?`Mission ${CFG.mission.no} : ${pend.length} constat(s) et ${np} photo(s) pas encore envoyés au PC.`:`Mission ${CFG.mission.no} : tout a été envoyé au PC.`)
     +(autres.length?` Il reste aussi des constats à envoyer pour la mission ${autres.join(", ")}.`:"");
-  $("bSend").disabled=!pend.length;
+  $("bSend").disabled=!pend.length;PREP=null;if(pend.length) prepareSend();
   const j=$("journal");j.innerHTML="";
   const byDay={};for(const e of en)(byDay[e.date]??=[]).push(e);
   for(const [day,list] of Object.entries(byDay)){
@@ -474,14 +474,23 @@ async function renderJournal(){
 }
 let pendingSent=[];
 function entryJSON(e){const {hms,envoye,envoyeLe,...rest}=e;return JSON.stringify({...rest,versionAppli:APP_VERSION},null,2)}
-async function sendEntries(list){
+async function buildFiles(list){const files=[];
+  for(const e of list){for(const n of e.photos){const p=await getPhoto(n);if(p) files.push(new File([p.blob],n,{type:p.type||"image/jpeg"}))}
+    files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))}
+  return files}
+let PREP=null; // fichiers de l'envoi préparés à l'affichage du Journal
+async function prepareSend(){const list=(await allEntries()).filter(e=>!e.envoye&&belongs(e));PREP={list,files:list.length?await buildFiles(list):[]}}
+async function sendEntries(list,prepared){
+  if(prepared) return shareFiles(list,prepared);
   const files=[];
   for(const e of list){for(const n of e.photos){const p=await getPhoto(n);if(p) files.push(new File([p.blob],n,{type:p.type||"image/jpeg"}))}
-    files.push(new File([entryJSON(e)],`${e.id}.releve.json`,{type:"application/json"}))}
+    files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))} // .txt : Chrome Android refuse de partager du .json
+  return shareFiles(list,files)}
+async function shareFiles(list,files){
   pendingSent=list.map(e=>e.id);
   if(navigator.canShare&&navigator.canShare({files})){
     try{await navigator.share({files,title:"Relevé sur Site",text:`${list.length} constat(s)`});$("sentConfirm").hidden=false}
-    catch(err){if(err.name!=="AbortError") toast("Partage impossible : "+err.message)}
+    catch(err){if(err.name!=="AbortError") toast(`Partage impossible (${err.name}) : ${err.message}`,6000)}
   }else{ // appareil sans partage de fichiers : téléchargement
     for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,250))}
     toast("Fichiers téléchargés (partage non disponible sur cet appareil).");$("sentConfirm").hidden=false}
@@ -524,7 +533,7 @@ async function toggleArchive(){const m=curMission();
 async function doArchive(){const m=curMission();m.archive=true;await saveMissions();$("archCard").hidden=true;await switchMission(MISSIONS.find(x=>!x.archive).id)}
 function renderHeader(){$("hMission").textContent=CFG.mission.no+(CFG.mission.client?" · "+CFG.mission.client:"")}
 async function exportCfg(){const m=curMission();const {id,archive,...data}=m;
-  const f=new File([JSON.stringify({schema:"mission-releve/1",...data},null,2)],`mission-${safeDir(m.no)}.json`,{type:"application/json"});
+  const f=new File([JSON.stringify({schema:"mission-releve/1",...data},null,2)],`mission-${safeDir(m.no)}.txt`,{type:"text/plain"});
   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:`Mission ${m.no}`})}catch(e){}}
   else{const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click()}}
 async function importCfg(file){let j;try{j=JSON.parse(await file.text())}catch(e){j=null}
@@ -548,7 +557,7 @@ async function start(){
   $("bCam").onclick=()=>$("iCam").click();$("bGal").onclick=()=>$("iGal").click();
   $("iCam").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};$("iGal").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};
   $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>resetForm(true);
-  $("bSend").onclick=async()=>sendEntries((await allEntries()).filter(e=>!e.envoye&&belongs(e)));
+  $("bSend").onclick=async()=>{if(PREP&&PREP.files.length) sendEntries(PREP.list,PREP.files);else sendEntries((await allEntries()).filter(e=>!e.envoye&&belongs(e)))};
   $("bSentYes").onclick=markSent;$("bSentNo").onclick=()=>{$("sentConfirm").hidden=true;pendingSent=[]};
   $("bPurge").onclick=async()=>{const n=(await allEntries()).filter(e=>e.envoye&&belongs(e)).length;if(!n){toast("Aucun constat envoyé à supprimer.");return}
     $("purgeTxt").textContent=`Supprimer du téléphone ${n} constat(s) de la mission ${CFG.mission.no} déjà envoyé(s) au PC ? Vérifie d'abord qu'ils sont bien rangés sur le PC.`;$("purgeConfirm").hidden=false};
