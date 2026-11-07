@@ -316,9 +316,9 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
       <button id="bCfgExport" type="button">Envoyer cette mission</button>
       <button id="bCfgImport" type="button">Charger une mission</button>
     </div>
-    <input type="file" id="iCfg" accept=".txt,.json,text/plain,application/json" hidden>
+    <input type="file" id="iCfg" accept="image/jpeg,.jpg,.txt,.json,text/plain,application/json" hidden>
     <p class="hint" id="appVer"></p>
-    <p class="hint">Envoie le fichier « mission-N°.txt » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
+    <p class="hint">Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
   </div>
   <div class="card">
     <h2>Réglage de ce téléphone</h2>
@@ -343,7 +343,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.15";
+const APP_VERSION="1.16";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -736,6 +736,32 @@ async function changerLangue(l){const m=curMission();if(!m) return;
   if(m.activites!==avant) m.modifieLe=new Date().toISOString();
   await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();
   toast("Listes passées en "+{fr:"français",en:"anglais",es:"espagnol",de:"allemand"}[l]+". Les constats déjà saisis gardent leurs noms ; les nouvelles photos iront dans des dossiers à ce nom.",6000)}
+/* ---------- mission transportée dans une image ----------
+   Quick Share envoie mal un fichier texte seul : la mission part comme une image JPEG (carte lisible),
+   les données sont dans des segments « commentaire » du JPEG (RELEVE-MISSION:<base64>). */
+function b64(txt){const u=new TextEncoder().encode(txt);let s="";for(let i=0;i<u.length;i+=8192) s+=String.fromCharCode(...u.subarray(i,i+8192));return btoa(s)}
+function deb64(b){const s=atob(b);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i);return new TextDecoder().decode(u)}
+async function fichierMission(obj){
+  const c=document.createElement("canvas");c.width=900;c.height=480;const g=c.getContext("2d");
+  g.fillStyle="#1d2a33";g.fillRect(0,0,900,480);g.fillStyle="#b4441c";g.fillRect(0,0,14,480);
+  g.fillStyle="#ffffff";g.font="bold 44px sans-serif";g.fillText("Mission "+obj.no,50,95);
+  g.font="30px sans-serif";g.fillText((obj.client||"").slice(0,48),50,150);
+  g.fillStyle="#c9d3d9";g.font="26px sans-serif";
+  const eq=parseTree(obj.equipements),ac=parseTree(obj.activites);
+  g.fillText(`${eq.length} équipement(s), ${eq.reduce((n,e)=>n+e.enfants.length,0)} sous-équipement(s)`,50,230);
+  g.fillText(`${ac.length} activité(s) · langue ${(obj.langue||"fr").toUpperCase()}`,50,272);
+  g.fillText("Version du "+fmtDT(obj.modifieLe),50,314);
+  g.font="22px sans-serif";g.fillText("Relevé sur Site : Missions › Charger une mission",50,420);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.9));const b=new Uint8Array(await blob.arrayBuffer());
+  const data=b64(JSON.stringify(obj));const morceaux=[];for(let i=0;i<data.length;i+=60000) morceaux.push(data.slice(i,i+60000));
+  const segs=morceaux.map(m=>{const t=new TextEncoder().encode("RELEVE-MISSION:"+m);const L=t.length+2;const s=new Uint8Array(L+2);s.set([0xFF,0xFE,L>>8,L&255]);s.set(t,4);return s});
+  return new File([b.subarray(0,2),...segs,b.subarray(2)],`mission-${safeDir(obj.no)}.jpg`,{type:"image/jpeg"})}
+async function lireImageMission(file){const b=new Uint8Array(await file.arrayBuffer());if(b[0]!==0xFF||b[1]!==0xD8) return null;
+  let pos=2,data="";const dec=new TextDecoder();
+  while(pos+4<b.length&&b[pos]===0xFF){const m=b[pos+1],L=b[pos+2]<<8|b[pos+3];
+    if(m===0xFE){const t=dec.decode(b.subarray(pos+4,pos+2+L));if(t.startsWith("RELEVE-MISSION:")) data+=t.slice(15)}
+    if(m===0xDA) break;pos+=2+L}
+  return data?JSON.parse(deb64(data)):null}
 /* ---------- missions ---------- */
 function fmtDT(iso){if(!iso) return "";const d=new Date(iso);return `${pad(d.getDate())}/${pad(d.getMonth()+1)} à ${pad(d.getHours())}h${pad(d.getMinutes())}`}
 function estSynchro(m){return !m.modifieLe||(m.envoyeLe&&m.envoyeLe>=m.modifieLe)||(m.recuLe&&m.versionRecue===m.modifieLe)}
@@ -814,12 +840,12 @@ async function doArchive(){const m=curMission();m.archive=true;await saveMission
 function renderHeader(){renderSync();$("appVer").textContent="Version de l'appli : "+APP_VERSION;$("hMission").textContent=CFG.mission.no+(CFG.mission.client?" · "+CFG.mission.client:"")}
 async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new Date().toISOString();
   const {id,archive,envoyeLe,recuLe,versionRecue,...data}=m;
-  const f=new File([JSON.stringify({schema:"mission-releve/1",...data},null,2)],`mission-${safeDir(m.no)}.txt`,{type:"text/plain"});
+  const f=await fichierMission({schema:"mission-releve/1",...data});
   let ok=false;
   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});ok=true}catch(e){if(e.name==="AbortError") return}}
   if(!ok){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();toast(`« ${f.name} » enregistré dans Téléchargements : envoie-le au téléphone par Quick Share.`,6000)}
   m.envoyeLe=new Date().toISOString();await saveMissions();renderSync()}
-async function importCfg(file){let j;try{j=JSON.parse(await file.text())}catch(e){j=null}
+async function importCfg(file){let j;try{j=/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)?await lireImageMission(file):JSON.parse(await file.text())}catch(e){j=null}
   if(!j||!j.equipements||!j.activites){toast("Ce fichier n'est pas un fichier de mission valide.");return}
   const d=j.schema==="reglages-releve/1"?{...j.mission,equipements:j.equipements,activites:j.activites}:j; // ancien format accepté
   if(!d.no){toast("Ce fichier ne contient pas de n° de mission.");return}
