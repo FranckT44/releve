@@ -231,7 +231,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.4";
+const APP_VERSION="1.5";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -420,7 +420,7 @@ async function saveEntry(){
   // photos : on (ré)écrit toutes les photos du constat
   const names=[];const photoRecs=[];
   const prises=[];
-  form.photos.forEach((p,i)=>{const ext=(p.type||"image/jpeg").includes("png")?"png":"jpg";
+  form.photos.forEach((p,i)=>{const ext="jpg";
     const hp=p.prise?p.prise.slice(2,10).replaceAll("-","")+"_"+p.prise.slice(11,19).replaceAll(":",""):null;
     let name=hp?`${CFG.mission.no}_${e.code}_${slug($("fSub").value)}_${slug(actCode)}_${hp}.${ext}`:`${base}_${pad(i+1)}.${ext}`;
     while(names.includes(name)) name=name.replace(/(\.\w+)$/,`_${pad(i+1)}$1`);
@@ -480,10 +480,15 @@ function entryJSON(e){const {hms,envoye,envoyeLe,...rest}=e;return JSON.stringif
 const PARTAGEABLE=/^image\/(jpeg|png)$/;
 async function versJpeg(blob){try{const bm=await createImageBitmap(blob);const c=document.createElement("canvas");c.width=bm.width;c.height=bm.height;
   c.getContext("2d").drawImage(bm,0,0);return await new Promise(r=>c.toBlob(r,"image/jpeg",0.92))}catch(e){return null}}
+// Chrome renomme les fichiers partagés (share123….jpg) : le vrai nom est écrit dans un commentaire JPEG, relu par le script PC
+async function marquerJpeg(blob,nom){try{const b=new Uint8Array(await blob.arrayBuffer());if(b[0]!==0xFF||b[1]!==0xD8) return blob;
+  let pos=2;while(pos+4<b.length&&b[pos]===0xFF&&b[pos+1]>=0xE0&&b[pos+1]<=0xEF) pos+=2+(b[pos+2]<<8|b[pos+3]); // après les segments APP (EXIF)
+  const t=new TextEncoder().encode("RELEVE-FICHIER:"+nom);const L=t.length+2;
+  return new Blob([b.subarray(0,pos),new Uint8Array([0xFF,0xFE,L>>8,L&255]),t,b.subarray(pos)],{type:"image/jpeg"})}catch(e){return blob}}
 async function photoFile(n){const p=await getPhoto(n);if(!p) return null;let blob=p.blob,type=(p.type||blob.type||"").toLowerCase();
-  if(!PARTAGEABLE.test(type)){const j=await versJpeg(blob);if(j){blob=j;type="image/jpeg"}}
-  if(type==="image/png"&&!/\.png$/i.test(n)) type="image/jpeg";
-  return new File([blob],n,{type:type||"image/jpeg"})}
+  if(type!=="image/jpeg"){const j=await versJpeg(blob);if(j){blob=j;type="image/jpeg"}} // tout passe en JPEG pour porter le nom
+  blob=await marquerJpeg(blob,n);
+  return new File([blob],n,{type:"image/jpeg"})}
 async function buildFiles(list){const files=[];
   for(const e of list){for(const n of e.photos){const f=await photoFile(n);if(f) files.push(f)}
     files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))} // .txt : Chrome Android refuse de partager du .json
