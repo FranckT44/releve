@@ -41,6 +41,13 @@ label{display:grid;gap:5px;font-size:13px;color:var(--muted);font-weight:600}
 select,input[type=text],input[type=date],textarea{width:100%;font:16px var(--font);color:var(--fg);background:var(--bg);
   border:1px solid var(--line);border-radius:8px;padding:12px 10px;min-height:48px}
 textarea{min-height:90px;resize:vertical}
+.rtewrap{display:grid;gap:5px}.rtelab{font-size:13px;color:var(--muted);font-weight:600}
+.rtebar{display:flex;gap:6px;flex-wrap:wrap}.rtebar button{min-height:38px;padding:4px 12px;font-size:15px;font-weight:500}
+.rtebar button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent)}
+.rte{min-height:90px;font:16px/1.45 var(--font);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-wrap:anywhere}
+.rte:focus{outline:3px solid var(--accent);outline-offset:1px}
+.rte:empty:before{content:attr(data-ph);color:var(--muted)}
+.rte ul,.rte ol,.entry .o ul,.entry .o ol{margin:2px 0;padding-left:22px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:420px){.row2{grid-template-columns:1fr}}
 button{font:600 16px var(--font);border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-height:48px;padding:10px 14px;cursor:pointer}
@@ -136,8 +143,8 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   <div class="card">
     <h2>Constat</h2>
     <div class="chips" id="grav" role="group" aria-label="Gravité"></div>
-    <label>Observation<textarea id="fObs" placeholder="Ex. : Lining around MH1 manhole is half disappeared"></textarea></label>
-    <label>Recommandation (pour l'IPR)<textarea id="fReco" placeholder="Ex. : Lining to be renewed as per green marking"></textarea></label>
+    <div class="rtewrap"><span class="rtelab" id="lObs">Observation</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de l'observation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button></div><div class="rte" id="fObs" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lObs" data-ph="Ex. : Lining around MH1 manhole is half disappeared"></div></div>
+    <div class="rtewrap"><span class="rtelab" id="lReco">Recommandation (pour l'IPR)</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de la recommandation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button></div><div class="rte" id="fReco" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lReco" data-ph="Ex. : Lining to be renewed as per green marking"></div></div>
     <label class="toggle"><input type="checkbox" id="fDec"> Décision client attendue</label>
     <div class="path" id="fPath"></div>
   </div>
@@ -273,7 +280,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.8";
+const APP_VERSION="1.9";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -377,6 +384,41 @@ function parseTree(txt){ // "Nom [CODE]" puis "- enfant [code]"
   }
   return out;
 }
+/* ---------- texte mis en forme ----------
+   Stockage en texte simple : **gras**, __souligné__, lignes « - » (puces) et « 1. » (numéros).
+   Ce format passe tel quel dans le CSV ; les générateurs de rapports le convertissent en mise en forme Word. */
+function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function enLigne(t){return esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/__(.+?)__/g,"<u>$1</u>")}
+function versHtml(txt){const out=[];let liste=null;
+  for(const l of (txt||"").split("\n")){const m=l.match(/^\s*(?:([-•])|(\d+)[.)])\s+(.*)$/);
+    if(m){const t=m[1]?"ul":"ol";if(liste!==t){if(liste) out.push(`</${liste}>`);out.push(`<${t}>`);liste=t}out.push(`<li>${enLigne(m[3])}</li>`)}
+    else{if(liste){out.push(`</${liste}>`);liste=null}out.push(l.trim()?`<div>${enLigne(l)}</div>`:"<div><br></div>")}}
+  if(liste) out.push(`</${liste}>`);return out.join("")}
+function versTexte(el){const lignes=[];let cur="";
+  const fin=()=>{lignes.push(cur);cur=""};
+  const inline=n=>{if(n.nodeType===3) return n.nodeValue.replace(/ /g," ");if(n.nodeName==="BR") return "\n";
+    let t=[...n.childNodes].map(inline).join("");const st=n.getAttribute&&n.getAttribute("style")||"";
+    const g=/^(B|STRONG)$/.test(n.nodeName)||/font-weight:\s*(bold|[6-9]00)/.test(st),u=n.nodeName==="U"||/underline/.test(st);
+    if(t.trim()){if(g) t=`**${t}**`;if(u) t=`__${t}__`}return t};
+  const bloc=n=>{if(n.nodeType===3){cur+=n.nodeValue.replace(/ /g," ");return}
+    if(n.nodeName==="BR"){fin();return}
+    if(n.nodeName==="UL"||n.nodeName==="OL"){if(cur) fin();let i=1;for(const li of n.children){if(li.nodeName!=="LI") continue;
+      cur=(n.nodeName==="UL"?"- ":`${i++}. `)+inline(li).replace(/\n+/g," ").trim();fin()}return}
+    if(/^(DIV|P)$/.test(n.nodeName)){if(cur) fin();for(const c of n.childNodes) bloc(c);fin();return}
+    cur+=inline(n)};
+  for(const c of el.childNodes) bloc(c);if(cur) fin();
+  return lignes.join("\n").replace(/\n{3,}/g,"\n\n").trim()}
+function initEditeur(id){const el=$(id);
+  Object.defineProperty(el,"value",{get(){return versTexte(el)},set(v){el.innerHTML=v?versHtml(v):""}});
+  const bar=el.previousElementSibling;
+  bar.querySelectorAll("button").forEach(b=>{b.onmousedown=e=>e.preventDefault();
+    b.onclick=()=>{el.focus();document.execCommand(b.dataset.cmd,false,null);majBarre()}});
+  el.addEventListener("paste",e=>{e.preventDefault();document.execCommand("insertText",false,(e.clipboardData||window.clipboardData).getData("text/plain"))});
+  el.addEventListener("input",()=>{if(!el.textContent.trim()&&!el.querySelector("li")) el.innerHTML=""});
+  el.addEventListener("blur",()=>bar.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed","false")))}
+function majBarre(){const a=document.activeElement;if(!a||!a.classList||!a.classList.contains("rte")) return;
+  a.previousElementSibling.querySelectorAll("button").forEach(b=>{let on=false;try{on=document.queryCommandState(b.dataset.cmd)}catch(e){}b.setAttribute("aria-pressed",String(on))})}
+document.addEventListener("selectionchange",majBarre);
 /* ---------- stockage (IndexedDB) ---------- */
 let DB=null;
 function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open("releve-refractaire",1);
@@ -510,7 +552,7 @@ async function renderJournal(){
       r.innerHTML=`<img alt=""><div><div class="t"></div><div class="m"></div><div class="o"></div></div><div class="acts"></div>`;
       r.querySelector(".t").innerHTML=g;r.querySelector(".t").append(`${e.equipement.nom} · ${e.sousEquipement}`);
       r.querySelector(".m").textContent=`${(e.sousActivite||e.activite).nom}${e.repere?" · "+e.repere:""} · ${e.photos.length} photo(s) · ${e.envoye?"envoyé ✓":"à envoyer"}`;
-      r.querySelector(".o").textContent=e.observation;
+      r.querySelector(".o").innerHTML=versHtml(e.observation);
       if(e.photos[0]) getPhoto(e.photos[0]).then(p=>{if(p) r.querySelector("img").src=p.thumb});
       const acts=r.querySelector(".acts");
       const bE=document.createElement("button");bE.type="button";bE.textContent="Modifier";bE.onclick=()=>editEntry(e.id);acts.append(bE);
@@ -682,6 +724,7 @@ function showView(v){for(const s of ["saisie","journal","reglages"]) $("v-"+s).h
   if(v==="journal") renderJournal();if(v==="reglages") renderCfg();window.scrollTo(0,0)}
 /* ---------- démarrage ---------- */
 async function start(){
+  initEditeur("fObs");initEditeur("fReco");
   try{DB=await openDB()}catch(e){document.querySelector("main").innerHTML=`<div class="card"><strong>Stockage indisponible.</strong><p class="hint">Ouvre l'appli dans Chrome (pas en navigation privée).</p></div>`;return}
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
   await loadCfg();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
