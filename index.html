@@ -121,6 +121,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% + 8px);margin:0;box-shadow:0 0 0 2px var(--tab)}
 #majBar{position:fixed;left:0;right:0;top:0;z-index:30;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;background:var(--accent);color:var(--accent-fg);font:600 15px var(--font);box-shadow:0 2px 8px rgba(0,0,0,.25)}
 #majBar[hidden]{display:none}#majBar span{flex:1 1 180px}#majBar button{min-height:44px;background:var(--accent-fg);color:var(--accent);border:0;font-weight:700}#majBar button.ghost{background:transparent;color:var(--accent-fg);border:1px solid var(--accent-fg)}
+[id$="ActSoc"][hidden]{display:none!important}
 .acc-alerte{margin-top:8px;padding:8px 10px;border-radius:8px;border:2px solid var(--repair);background:var(--accent-soft);font-weight:600}.acc-alerte[hidden]{display:none}
 .entry{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .entry:first-of-type{border-top:0}
@@ -404,6 +405,8 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
         <label>N° mission<input type="text" id="nNo" inputmode="numeric" autocomplete="off"></label>
         <label>Client / site<input type="text" id="nClient" autocomplete="off"></label>
       </div>
+      <div class="row2"><label>Rapports émis au nom de<select id="nSoc"><option value="QUARTIS">QUARTIS (consultant)</option><option value="FTA">Mon entreprise (compte propre)</option></select></label>
+        <label id="lNActSoc" hidden>Activité affichée<select id="nActSoc"><option value="API 936 Consultancy">API 936 Consultancy</option><option value="API 982 Consultancy">API 982 Consultancy</option></select></label></div>
       <div class="btns"><button class="primary" id="bNewOk" type="button">Créer la mission</button><button id="bNewCancel" type="button">Annuler</button></div>
     </div>
     <div id="archCard" class="card confirm" hidden>
@@ -418,6 +421,9 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
       <label>Inspecteur<input type="text" id="cInsp"></label>
     </div>
     <label>Client / site<input type="text" id="cClient"></label>
+    <div class="row2"><label>Rapports émis au nom de<select id="cSoc"><option value="QUARTIS">QUARTIS (consultant)</option><option value="FTA">Mon entreprise (compte propre)</option></select></label>
+      <label id="lActSoc" hidden>Activité affichée dans l'en-tête<select id="cActSoc"><option value="API 936 Consultancy">API 936 Consultancy</option><option value="API 982 Consultancy">API 982 Consultancy</option></select></label></div>
+    <p class="hint">Change le logo et l'en-tête des IPR / IR générés sur le PC pour cette mission (dossier _OUTILS\Sociétés).</p>
     <label>Dossier de la mission sur le PC<input type="text" id="cDir"></label>
     <label>Langue des listes (activités, sous-activités)<select id="cLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
     <p class="hint">Les photos seront rangées dans ce dossier, sous « Dossier Photo\Équipement\Sous-équipement\Activité\Date ».</p>
@@ -562,7 +568,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.47";
+const APP_VERSION="1.48";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -740,7 +746,7 @@ async function loadCfg(){
     MISSIONS=[{id:newId(),archive:false,...m}];await kvSet("missions",MISSIONS)}
   let act=null;try{act=await kvGet("active")}catch(e){}
   setActive(MISSIONS.find(m=>m.id===act&&!m.archive)||MISSIONS.find(m=>!m.archive)||MISSIONS[0])}
-function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC},equipements:m.equipements,activites:m.activites};
+function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m)},equipements:m.equipements,activites:m.activites};
   EQ=parseTree(CFG.equipements);ACT=parseTree(CFG.activites);kvSet("active",m.id).catch(()=>{})}
 const curMission=()=>MISSIONS.find(m=>m.id===CFG.mission.id);
 const belongs=e=>e.mission&&(e.mission.id?e.mission.id===CFG.mission.id:e.mission.no===CFG.mission.no);
@@ -1619,7 +1625,7 @@ async function renderJournal(){
 let pendingSent=[];
 // le dossier PC et les infos de mission sont pris dans la mission telle qu'elle est aujourd'hui (corrigée depuis, peut-être)
 function entryJSON(e){const {hms,envoye,envoyeLe,...rest}=e;const m=MISSIONS.find(x=>e.mission&&x.id===e.mission.id);
-  if(m) rest.mission={id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC};
+  if(m) rest.mission={id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m)};
   return JSON.stringify({...rest,versionAppli:APP_VERSION},null,2)}
 // Chrome Android ne partage que certains formats : les photos HEIC/HEIF (Samsung « haute efficacité ») sont converties en JPEG
 const PARTAGEABLE=/^image\/(jpeg|png)$/;
@@ -1738,12 +1744,16 @@ function renderSync(){const m=curMission();const el=$("syncInfo");if(!m||!el) re
   else{cls="warn";txt=`⚠ Modifiée le ${fmtDT(m.modifieLe)} et pas encore envoyée aux autres appareils. Touche « Envoyer cette mission », puis charge-la sur tes téléphones.`}
   el.className="sync "+cls;el.textContent=txt;
   $("mWarn").hidden=MISSIONS.filter(x=>!x.archive).every(estSynchro)}
+/* ---------- société émettrice des rapports (v1.48) : QUARTIS ou compte propre (dossier _OUTILS\Sociétés\FTA) ---------- */
+function socMission(m){const societe=m&&m.societe||"QUARTIS";return {societe,activiteSociete:societe==="FTA"?(m.activiteSociete||"API 936 Consultancy"):""}}
+function libelleSociete(m){const s=socMission(m);return s.societe==="FTA"?`Compte propre – ${s.activiteSociete}`:"Pour QUARTIS"}
+function majChoixSoc(sel,lab){$(lab).hidden=$(sel).value!=="FTA"}
 function missionLabel(m){return `${m.no} – ${m.client||"sans nom"}${m.archive?" (archivée)":""}`}
 function renderCfg(){
   const show=$("mShowArch").checked;const sel=$("mSel");sel.innerHTML="";
   for(const m of MISSIONS.filter(m=>show||!m.archive||m.id===CFG.mission.id)){const o=document.createElement("option");o.value=m.id;o.textContent=missionLabel(m);sel.append(o)}
   sel.value=CFG.mission.id;const cur=curMission();$("bArch").textContent=cur&&cur.archive?"Désarchiver":"Archiver";
-  $("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur||"";$("cClient").value=CFG.mission.client||"";$("cDir").value=CFG.mission.dossierPC||"";$("cLang").value=langueMission();$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites;
+  $("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur||"";$("cClient").value=CFG.mission.client||"";$("cDir").value=CFG.mission.dossierPC||"";{const so=socMission(cur);$("cSoc").value=so.societe;$("cActSoc").value=so.activiteSociete||"API 936 Consultancy";majChoixSoc("cSoc","lActSoc")}$("cLang").value=langueMission();$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites;
   const f=$("nFrom");f.innerHTML="";
   const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;f.append(o)};
   add("copy:"+CFG.mission.id,`Copie de la mission ${CFG.mission.no}`);
@@ -1774,13 +1784,13 @@ async function majConstats(ren){
   return liste.length}
 // constats non envoyés : recopier les infos corrigées de la mission (n°, client, dossier PC…)
 async function majMissionConstats(m){const liste=(await allEntries()).filter(e=>!e.envoye&&e.mission&&(e.mission.id===m.id||(!e.mission.id&&e.mission.no===m.no)));
-  for(const e of liste){e.mission={id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC};await tx("entries","readwrite",s=>s.put(e))}
+  for(const e of liste){e.mission={id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m)};await tx("entries","readwrite",s=>s.put(e))}
   return liste.length}
 async function saveCfg(){
   const eq=parseTree($("cEq").value),ac=parseTree($("cAct").value);if(!eq.length||!ac.length){toast("Il faut au moins un équipement et une activité.");return}
   if(!$("cNo").value.trim()){toast("Indique le n° de mission.");return}
-  const m=curMission();const nv={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),equipements:$("cEq").value,activites:$("cAct").value};
-  const change=Object.keys(nv).some(k=>(m[k]||"")!==nv[k]);
+  const m=curMission();const nv={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),societe:$("cSoc").value,activiteSociete:$("cSoc").value==="FTA"?$("cActSoc").value:"",equipements:$("cEq").value,activites:$("cAct").value};
+  const change=Object.keys(nv).some(k=>(k==="societe"?socMission(m).societe:k==="activiteSociete"?socMission(m).activiteSociete:(m[k]||""))!==nv[k]);
   const ren=detecterRenommages(parseTree(m.equipements),eq);
   if(ren.length&&!saveCfg.force){const n=(await constatsTouches(ren)).length;
     if(n){REN_EN_ATTENTE={ren};
@@ -1798,7 +1808,7 @@ async function createMission(){
   if(MISSIONS.some(m=>m.no===no&&!m.archive)){toast(`La mission ${no} existe déjà.`);return}
   const [kind,ref]=$("nFrom").value.split(":");const src=kind==="copy"?MISSIONS.find(m=>m.id===ref):TEMPLATES[ref];
   const lang=$("nLang").value||"fr";
-  const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),equipements:src.equipements,activites:convertirActivites(src.activites,lang),modifieLe:new Date().toISOString()};
+  const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",equipements:src.equipements,activites:convertirActivites(src.activites,lang),modifieLe:new Date().toISOString()};
   MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
   toast(`Mission ${no} créée : vérifie le dossier PC et complète les listes`,4000)}
 async function toggleArchive(){const m=curMission();
@@ -1830,7 +1840,7 @@ async function appliquerImport(d){$("impCard").hidden=true;IMPORT_EN_ATTENTE=nul
   let m=MISSIONS.find(x=>x.no===d.no);const maj=!!m;
   if(!m){m={id:newId(),archive:false};MISSIONS.push(m)}
   const v=d.modifieLe||new Date().toISOString();
-  Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",equipements:d.equipements,activites:d.activites,archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
+  Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",societe:d.societe||"QUARTIS",activiteSociete:d.activiteSociete||"",equipements:d.equipements,activites:d.activites,archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
   await saveMissions();await switchMission(m.id);toast(maj?`Mission ${m.no} mise à jour`:`Mission ${m.no} ajoutée`)}
 /* ---------- import depuis Excel (copier-coller) ---------- */
 let COLLAGE=null;
@@ -1977,7 +1987,7 @@ function showView(v){if(v!=="journal") PREP=null;for(const s of ["accueil","sais
   if(v==="journal") renderJournal();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();window.scrollTo(0,0)}
 /* ---------- accueil ---------- */
 async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`${m.no} · ${m.client||""}`;
-  $("accInfo").textContent=m.inspecteur||"";$("accVer").textContent="version "+APP_VERSION;
+  $("accInfo").textContent=[m.inspecteur,libelleSociete(m)].filter(Boolean).join(" · ");$("accVer").textContent="version "+APP_VERSION;
   const np=PREVUS.filter(p=>p.mission===m.id).length;$("accPrevus").textContent=np?`${np} à faire`:"Aucun";
   const en=(await allEntries()).filter(belongs);const n=en.filter(e=>!e.envoye).length;
   $("accJournal").textContent=n?`${n} constat${n>1?"s":""} à envoyer`:(en.length?`${en.length} constat${en.length>1?"s":""}, tout est envoyé`:"Aucun constat");
@@ -2078,8 +2088,8 @@ async function start(){
   $("bPurgeYes").onclick=purge;$("bPurgeNo").onclick=()=>$("purgeConfirm").hidden=true;
   $("bCfgSave").onclick=saveCfg;
   $("mSel").onchange=e=>switchMission(e.target.value);$("mShowArch").onchange=renderCfg;$("hMission").onclick=()=>showView("reglages");
-  $("bNew").onclick=()=>{renderCfg();$("nLang").value=langueMission();$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>$("newCard").hidden=true;$("bNewOk").onclick=createMission;
-  $("bArch").onclick=toggleArchive;
+  $("bNew").onclick=()=>{renderCfg();$("nLang").value=langueMission();{const so=socMission(curMission());$("nSoc").value=so.societe;$("nActSoc").value=so.activiteSociete||"API 936 Consultancy";majChoixSoc("nSoc","lNActSoc")}$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>$("newCard").hidden=true;$("bNewOk").onclick=createMission;
+  $("bArch").onclick=toggleArchive;$("cSoc").onchange=()=>majChoixSoc("cSoc","lActSoc");$("nSoc").onchange=()=>majChoixSoc("nSoc","lNActSoc");
   $("cLang").onchange=e=>changerLangue(e.target.value);
   $("bRenAll").onclick=()=>finirRenommage(true);$("bRenOnly").onclick=()=>finirRenommage(false);$("bRenCancel").onclick=()=>{$("renCard").hidden=true;REN_EN_ATTENTE=null};
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
