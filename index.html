@@ -149,7 +149,11 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .edl{display:flex;align-items:center;gap:6px;color:#c9d3d9;font-size:13px;font-weight:500;white-space:nowrap}
 .edl input[type=range]{width:80px}.edpm{min-width:34px;min-height:34px;padding:0 6px!important;font-size:17px}#edInclW.off{opacity:.45}#edIncl{width:3.6em!important;font-size:15px;background:#0e1316!important;color:#e6ecef}.edsel{width:auto!important;text-align:left}.edn{width:3.6em;min-height:34px;font-size:15px;padding:2px 4px;border-radius:6px;border:1px solid #556;background:#0e1316;color:#e6ecef;text-align:center}
 .sw{display:flex;gap:5px}.sw button{width:28px;height:28px;min-height:28px;padding:0;border-radius:50%;border:2px solid #2e3a41}
-.sw button[aria-pressed=true]{outline:3px solid #fff;outline-offset:1px}
+.sw button[aria-pressed=true],.swpick[aria-pressed=true]{outline:3px solid #fff;outline-offset:1px}
+.sw{flex-wrap:wrap;align-items:center}.swsep{width:1px;height:22px;background:#556;margin:0 3px}
+.swpick{position:relative;width:28px;height:28px;border-radius:50%;border:2px solid #2e3a41;display:inline-flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;
+  background:conic-gradient(#e53935,#fdd835,#43a047,#1e88e5,#8e24aa,#e53935);box-shadow:inset 0 0 0 5px var(--pc,transparent)}
+.swpick span{filter:drop-shadow(0 0 2px #000)}.swpick input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;padding:0;cursor:pointer}
 #edZone{flex:1;min-height:0;position:relative;overflow:hidden;touch-action:none}.edvue span{min-width:2.6em;text-align:center;font-size:13px}.edvue .edsep{flex:1;min-width:0}
 #edCv{touch-action:none;position:absolute;inset:0;width:100%;height:100%}
 #edTxt{display:flex;flex-direction:column;gap:6px;padding:6px 8px}#edTxt[hidden]{display:none!important}#edTxt textarea{width:100%;box-sizing:border-box;font-size:16px;min-height:52px;resize:vertical}.edtxtopt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.edtxtopt button{min-height:44px;min-width:44px}.edtxtopt button[aria-pressed=true]{background:#2f6f8f;border-color:#8fd0ee}#edTxtTv{min-width:2ch}.edtxtopt .primary{margin-left:auto}
@@ -519,7 +523,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.40";
+const APP_VERSION="1.41";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -827,7 +831,7 @@ async function validerAjout(){const nom=$("addNom").value.trim().replace(/[\[\]]
    Objets en coordonnées de l'image d'origine : {t:"pen"|"line"|"arrow"|"rect"|"ell"|"text", pts|x1,y1,x2,y2|x,y,txt, col, w, fill, op}
    La photo d'origine est conservée (orig) ; la version annotée (blob) est celle des rapports. */
 const ED={ctx:null,i:-1,img:null,obj:[],crop:null,hist:[],redo:[],tool:"arrow",col:"#e53935",sel:-1,drag:null,cur:null,k:1};
-const COULEURS=["#e53935","#fdd835","#43a047","#1e88e5","#ffffff","#000000","#ff9800"];
+const COULEURS=["#e53935","#ff9800","#fdd835","#43a047","#00bcd4","#1e88e5","#8e24aa","#ec407a","#ffffff","#9e9e9e","#000000"];
 function edEtat(){return JSON.stringify({obj:ED.obj,crop:ED.crop,rot:ED.rot||0})}
 function edPousser(){ED.hist.push(edEtat());if(ED.hist.length>60) ED.hist.shift();ED.redo=[]}
 function edRestaurer(js){const s=JSON.parse(js);ED.obj=s.obj;ED.crop=s.crop;ED.sel=-1;
@@ -964,7 +968,7 @@ function edDown(ev){ev.preventDefault();try{$("edCv").setPointerCapture(ev.point
     if(PTR.size>2||ED.pinch) return}
   const pt=edPoint(ev);
   if(ED.tool==="sel"){const h=toucherPoignee(pt);if(h!==-1){edPousser();ED.poignee=h;ED.drag=pt;return}
-    ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.op!=null) $("edOp").value=Math.round(o.op*100);if(o.fill!=null) $("edFill").checked=!!o.fill;if(o.t!=="text") $("edDash").value=o.ds||"";edSyncN();if(o.t==="text") txtOuvrir(o)}edDessiner();return}
+    ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.op!=null) $("edOp").value=Math.round(o.op*100);if(o.fill!=null) $("edFill").checked=!!o.fill;if(o.t!=="text") $("edDash").value=o.ds||"";if(o.col){ED.col=o.col.toLowerCase();majPastilles()}edSyncN();if(o.t==="text") txtOuvrir(o)}edDessiner();return}
   if(ED.tool==="text"){TXTPOS=pt;TXTEDIT=-1;txtOuvrir(null);return}
   const st=styleCourant();
   if(ED.tool==="pen") ED.cur={t:"pen",pts:[pt],...st};
@@ -991,9 +995,24 @@ async function edEnregistrer(){if(!ED.hist.length){fermerEditeur();return}const 
   if(!rien) toast(ED.ctx.src===form.photos&&form.editId?"Photo annotée. Pense à « Enregistrer les modifications ».":"Photo annotée.")}
 async function edOriginal(silencieux){const p=ED.ctx.src[ED.i];if(p.orig){p.blob=p.orig;p.orig=null;p.annot=null;p.thumb=await makeThumb(p.blob)}
   if(!silencieux){if(ED.ctx.apres) await ED.ctx.apres(ED.i);fermerEditeur();toast("Photo d'origine rétablie.")}}
+// palette : 7 couleurs de base + couleurs personnelles récentes (mémorisées sur ce téléphone) + nuancier complet 🎨
+function couleursPerso(){try{const v=JSON.parse(localStorage.getItem("couleursPerso")||"[]");return Array.isArray(v)?v.filter(c=>/^#[0-9a-f]{6}$/i.test(c)).slice(0,6):[]}catch(e){return []}}
+function retenirCouleur(c){c=c.toLowerCase();if(COULEURS.includes(c)) return;const l=[c,...couleursPerso().filter(x=>x!==c)].slice(0,6);try{localStorage.setItem("couleursPerso",JSON.stringify(l))}catch(e){}}
+function choisirCouleur(c){ED.col=c;if(ED.sel>=0&&ED.obj[ED.sel]){edPousser();ED.obj[ED.sel].col=c;edDessiner()}majPastilles()}
+function majPastilles(){const col=(ED.col||"").toLowerCase();let vu=false;$("edCols").querySelectorAll("button[data-c]").forEach(b=>{const on=b.dataset.c===col;vu=vu||on;b.setAttribute("aria-pressed",String(on))});
+  const pk=$("edPick");if(pk){pk.setAttribute("aria-pressed",String(!vu));pk.style.setProperty("--pc",vu?"transparent":col);if(/^#[0-9a-f]{6}$/i.test(col)) $("edColIn").value=col}}
+function renderCouleurs(){const sw=$("edCols");sw.innerHTML="";const perso=couleursPerso();
+  const pastille=(c,cls)=>{const b=document.createElement("button");b.type="button";b.dataset.c=c.toLowerCase();if(cls) b.className=cls;b.style.background=c;b.setAttribute("aria-label","Couleur "+c);b.onclick=()=>choisirCouleur(c.toLowerCase());sw.append(b)};
+  COULEURS.forEach(c=>pastille(c));
+  if(perso.length){const sep=document.createElement("span");sep.className="swsep";sw.append(sep);perso.forEach(c=>pastille(c,"perso"))}
+  const pk=document.createElement("label");pk.id="edPick";pk.className="swpick";pk.title="Autre couleur (nuancier)";pk.setAttribute("aria-label","Autre couleur");
+  pk.innerHTML='<span>🎨</span><input type="color" id="edColIn" value="#e53935" aria-label="Choisir une autre couleur">';sw.append(pk);
+  const inp=pk.querySelector("input");inp.addEventListener("input",()=>{ED.col=inp.value.toLowerCase();if(ED.sel>=0&&ED.obj[ED.sel]){ED.obj[ED.sel].col=ED.col;edDessiner()}majPastilles()});
+  inp.addEventListener("pointerdown",()=>{if(ED.sel>=0) edPousser()});
+  inp.addEventListener("change",()=>{retenirCouleur(inp.value);choisirCouleur(inp.value.toLowerCase());renderCouleurs()});
+  majPastilles()}
 function initEditeur2(){
-  const sw=$("edCols");for(const c of COULEURS){const b=document.createElement("button");b.type="button";b.style.background=c;b.setAttribute("aria-label","Couleur "+c);b.setAttribute("aria-pressed",String(c===ED.col));
-    b.onclick=()=>{ED.col=c;sw.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));if(ED.sel>=0){edPousser();ED.obj[ED.sel].col=c;ED.obj[ED.sel].op=ED.obj[ED.sel].op;edDessiner()}};sw.append(b)}
+  renderCouleurs();
   document.querySelectorAll("#ed [data-t]").forEach(b=>b.onclick=()=>{if(b.dataset.t==="crop"&&ED.tool==="crop"&&ED.crop){edPousser();ED.crop=null;edDessiner()}edOutil(b.dataset.t)});
   const cv=$("edCv");cv.addEventListener("pointerdown",edDown);cv.addEventListener("pointermove",edMove);cv.addEventListener("pointerup",edUp);cv.addEventListener("pointercancel",edUp);
   const majSel=()=>{if(ED.sel>=0){const o=ED.obj[ED.sel];o.w=+$("edW").value*unite();o.fill=$("edFill").checked;o.op=+$("edOp").value/100;if(o.t!=="text") o.ds=$("edDash").value;edDessiner()}};
