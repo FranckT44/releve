@@ -189,6 +189,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .prevus{list-style:none;margin:0;padding:0;display:grid;gap:8px}.prevu{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px}.prevu>div{grid-column:1/-1}.prevu .hint{font-size:13px}
 .prevu .hint{display:block}.prevu.actif{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 .prevuBanner{display:flex;justify-content:space-between;gap:8px;align-items:center;background:#fff4d6;color:#5a4300;border-radius:8px;padding:6px 10px;font-size:14px}
+.visite{border:1px solid var(--line);border-radius:8px;padding:10px;margin:4px 0 12px;display:grid;gap:8px}.visite h3{margin:0;font-size:16px}.visList{list-style:none;margin:0;padding:0;display:grid;gap:4px}.visList li{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:4px 6px}.visList li.off{opacity:.5}.visList label{flex:1;display:flex;align-items:center;gap:8px;min-height:36px}.visList .vn{color:var(--muted);font-size:13px;min-width:1.4em;text-align:right}.visList button{min-height:36px;min-width:40px;padding:2px 8px}.suivCard{display:grid;gap:6px}.suivCard .btns{display:flex;gap:8px;flex-wrap:wrap}
 .prepItem{border:1px solid var(--line);border-radius:8px;padding:8px;display:grid;gap:6px;margin-bottom:8px}.prepItem.doute{border-color:#e08a00;background:rgba(224,138,0,.08)}
 .prepTete{display:flex;gap:6px;align-items:baseline}.prepTete .hint{flex:1}.prepSel{display:grid;grid-template-columns:1fr 1fr;gap:6px}.prepSel select,.prepSel input{min-height:40px;font-size:15px}
 .surf{display:grid;gap:10px}.surf input[type=text]{max-width:10em}
@@ -261,6 +262,14 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
   <div class="card confirm brCard" id="brCardS" hidden><strong class="brTxt"></strong><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
   <div class="card c-violet" id="prepCard" hidden>
     <div class="ghead"><h2>Préparer des constats</h2><button type="button" class="ghost" id="prepClose">Fermer</button></div>
+    <div class="visite" id="visBox">
+      <h3>Préparer une visite</h3>
+      <p class="hint">Choisis l'équipement et l'activité : un constat prévu par sous-équipement coché, dans l'ordre de ton parcours (flèches ↑ ↓).</p>
+      <div class="row2"><label>Équipement<select id="visEq" data-noi18n></select></label><label>Activité<select id="visAct" data-noi18n></select></label></div>
+      <label id="lVisSa">Sous-activité<select id="visSa" data-noi18n></select></label>
+      <ul class="visList" id="visList"></ul>
+      <button type="button" class="primary" id="visSave">Créer les constats prévus</button>
+    </div>
     <p class="hint">Avant d'aller en unité : dicte ou tape les contrôles prévus, séparés par « puis » ou « ensuite » (ou un retour à la ligne). Ex. : « je vais dans le régénérateur pour contrôler le soudage de l'hexmetal dans les cyclones primaires, puis les cyclones secondaires, ensuite la démolition du riser au MH2 ».</p>
     <div class="row2"><label>Langue de la dictée<select id="prepLang"><option value="fr-FR">Français</option><option value="en-GB">English</option><option value="es-ES">Español</option><option value="de-DE">Deutsch</option></select></label>
       <div class="field"><span class="rtelab">&nbsp;</span><button type="button" id="prepMic">🎤 Dicter</button></div></div>
@@ -272,10 +281,13 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
   </div>
   <div class="card c-jaune" id="prevusCard" hidden>
     <h2>Constats prévus (<span id="prevusN">0</span>)</h2>
+    <p class="hint" id="prevusVis" hidden></p>
     <ul id="prevusList" class="prevus"></ul>
   </div>
   <div class="card c-bleu">
     <div class="ghead"><h2 id="formTitle">Nouveau constat</h2><button type="button" id="bPrep">🎤 Préparer</button></div>
+    <div class="card confirm suivCard" id="suivCard" hidden><strong id="suivTitre">Constat suivant</strong><span id="suivTxt" data-noi18n></span><span class="hint" id="suivVis"></span>
+      <div class="btns"><button type="button" class="primary" id="suivGo">Commencer</button><button type="button" class="ghost" id="suivNon">Plus tard</button></div></div>
     <div id="prevuBanner" class="prevuBanner" hidden><span>Constat prévu : <i id="prevuTxt"></i></span><button type="button" class="ghost" id="prevuQuit" aria-label="Ne plus lier ce constat au prévu">✕</button></div>
     <div class="field"><span class="rtelab" id="l_fEq">Équipement</span><div class="selrow"><select id="fEq" aria-labelledby="l_fEq"></select><button type="button" class="plus" data-add="eq" aria-label="Ajouter : équipement">+</button></div></div>
     <div class="field"><span class="rtelab" id="l_fSub">Sous-équipement</span><div class="selrow"><select id="fSub" aria-labelledby="l_fSub"></select><button type="button" class="plus" data-add="sub" aria-label="Ajouter : sous-équipement">+</button></div></div>
@@ -616,7 +628,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.62";
+const APP_VERSION="1.63";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -884,8 +896,8 @@ async function saveEntry(){
     await tx("entries","readwrite",s=>s.put(entry));
   }catch(err){toast("Enregistrement impossible : "+(err&&err.name==="QuotaExceededError"?"mémoire du navigateur pleine. Envoie puis libère la place dans le Journal.":err));return}
   toast(old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`);
-  if(!old) await prevuTermine();
-  resetForm(true);effacerBrouillon();refreshBadge();
+  const fini=!old?await prevuTermine():null;
+  resetForm(true);effacerBrouillon();refreshBadge();if(fini) proposerSuivant(fini);
 }
 async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;BR.silence=true;try{await editEntry2(en,id)}finally{BR.silence=false}}
 async function editEntry2(en,id){
@@ -1401,8 +1413,22 @@ function analyserTexte(txt){const out=[];let prev=null;
     if(bs<1){act=prev?ACT.find(x=>x.code===prev.act):null;sa=act&&prev.subact?act.enfants.find(x=>x.code===prev.subact):null;herite=true}
     const rep=(seg.match(/\b(?:mh|manhole|trou d.homme|tdh|section|repere)\s*n?°?\s*\d+[a-z]?\b/i)||[""])[0].toUpperCase().replace(/^MANHOLE\s*|^TROU D.HOMME\s*|^TDH\s*/,"MH");
     const p={id:newId(),mission:CFG.mission.id,eq:eq?eq.code:"",sub:sub?sub.code:"",act:act?act.code:"",subact:sa?sa.code:"",repere:rep,note:seg,sur:!!(eq&&act&&!herite&&(sub||!eq.enfants.length))}; // sur = tout reconnu dans la phrase, sinon ligne en orange à vérifier
+    // v1.63 : plusieurs sous-équipements cités dans la même phrase (« cyclones primaires et secondaires ») -> un constat prévu chacun
+    const multi=eq?sousMultiples(eq,stems,seg):[];
+    if(multi.length>1){for(const c of multi) out.push({...p,id:newId(),sub:c.code,sur:!!(eq&&act&&!herite)});prev=out[out.length-1];continue}
     out.push(p);prev=p}
   return out}
+// sous-équipements entièrement cités dans la phrase (tous leurs mots-clés), sauf ceux contenus dans un autre plus précis, dans l'ordre du texte
+function sousMultiples(eq,stems,seg){if(!eq||eq.enfants.length<2) return [];
+  const reste=new Set(stems);for(const t of motsCles(eq.nom)) for(const v of variantes(t)) reste.delete(v);
+  const kw=c=>motsCles(c.nom).map(stem);
+  const ok=eq.enfants.filter(c=>{const m=motsCles(c.nom);return m.length&&m.every(t=>variantes(t).some(v=>reste.has(v)))});
+  const f=ok.filter(c=>!ok.some(d=>d!==c&&kw(d).length>kw(c).length&&kw(c).every(t=>kw(d).includes(t))));
+  if(f.length<2) return [];
+  const toks=norm(seg).split(" ").filter(Boolean).map(stem);
+  const pos=c=>{const autres=new Set(f.filter(d=>d!==c).flatMap(kw));const propres=motsCles(c.nom).filter(t=>!autres.has(stem(t)));
+    const cherche=(propres.length?propres:motsCles(c.nom)).flatMap(variantes);let m=1e9;toks.forEach((t,i)=>{if(i<m&&cherche.includes(t)) m=i});return m};
+  return f.map(c=>[pos(c),c]).sort((a,b)=>a[0]-b[0]).map(x=>x[1])}
 // stockage : kv « prevus » = constats préparés, toutes missions
 let PREVUS=[];
 let PREVUS_OK=false;
@@ -1412,7 +1438,7 @@ async function chargerPrevusFusion(){const nouv=PREVUS;await chargerPrevus();for
 const nomDe=(liste,code)=>(liste.find(x=>x.code===code)||{}).nom||"";
 function libellePrevu(p){const e=EQ.find(x=>x.code===p.eq),a=ACT.find(x=>x.code===p.act);
   return [e?e.nom:"?",e?nomDe(e.enfants,p.sub):"",a?(p.subact?nomDe(a.enfants,p.subact):a.nom):"?"].filter(Boolean).join(" · ")+(p.repere?` · ${p.repere}`:"")}
-function renderPrevus(){const l=PREVUS.filter(p=>p.mission===CFG.mission.id),c=$("prevusCard");c.hidden=!l.length;if(!l.length) return;
+function renderPrevus(){const l=PREVUS.filter(p=>p.mission===CFG.mission.id),c=$("prevusCard");c.hidden=!l.length;const vs=visites(),pv=$("prevusVis");if(pv){pv.textContent=vs.map(texteVisite).join(" · ");pv.hidden=!vs.length}if(!l.length) return;
   $("prevusN").textContent=l.length;const ul=$("prevusList");ul.innerHTML="";
   for(const p of l){const li=document.createElement("li");li.className="prevu"+(form.prevuId===p.id?" actif":"");
     li.innerHTML=`<div data-noi18n><b></b><span class="hint"></span></div><button type="button" class="primary">Commencer</button><button type="button" class="ghost" aria-label="Supprimer ce constat prévu">✕</button>`;
@@ -1426,7 +1452,7 @@ function commencerPrevu(id){const p=PREVUS.find(x=>x.id===id);if(!p) return;
   if(p.repere) $("fRep").value=p.repere;
   form.prevuId=id;$("prevuBanner").hidden=false;$("prevuTxt").textContent=p.note;renderPrevus();
   $("formTitle").scrollIntoView({behavior:"smooth",block:"start"})}
-async function prevuTermine(){if(!form.prevuId) return;const id=form.prevuId;PREVUS=PREVUS.filter(x=>x.id!==id);await sauverPrevus()}
+async function prevuTermine(){if(!form.prevuId) return null;const id=form.prevuId;const p=PREVUS.find(x=>x.id===id)||null;PREVUS=PREVUS.filter(x=>x.id!==id);await sauverPrevus();return p}
 // panneau de préparation
 let PROPS=[],REC=null;
 function selectPrep(items,val,vide){const s=document.createElement("select");if(vide){const o=document.createElement("option");o.value="";o.textContent=vide;s.append(o)}
@@ -1445,8 +1471,50 @@ function renderPrep(){const box=$("prepRes");box.innerHTML="";$("prepSave").hidd
     sEq.onchange=()=>{p.eq=sEq.value;p.sub="";p.sur=!!(p.eq&&p.act);renderPrep()};sSub.onchange=()=>{p.sub=sSub.value;p.sur=!!(p.eq&&p.act);d.classList.toggle("doute",!p.sur)};
     sAct.onchange=()=>{p.act=sAct.value;p.subact="";p.sur=!!(p.eq&&p.act);renderPrep()};sSa.onchange=()=>{p.subact=sSa.value};rep.oninput=()=>{p.repere=rep.value.trim()};
     p.sub=sSub.value;p.subact=sSa.value;zone.append(sEq,sSub,sAct,sSa,rep);box.append(d)})}
+/* ---------- visite d'un équipement (v1.63) ----------
+   Un constat prévu par sous-équipement coché, dans l'ordre choisi. Les constats prévus d'une même visite portent visite {id, total, lib}
+   et ordre : après chaque constat enregistré, l'appli propose le suivant de la visite et affiche « n / total faits ». */
+const VIS={eq:"",ordre:[],off:new Set()};
+function visRemplir(){const sE=$("visEq"),sA=$("visAct");if(!sE) return;const ve=sE.value,va=sA.value;
+  const opt=(s,items,v)=>{s.innerHTML="";for(const it of items) s.append(new Option(it.nom,it.code));if(items.some(i=>i.code===v)) s.value=v};
+  opt(sE,EQ,ve||$("fEq").value);opt(sA,ACT,va||$("fAct").value);visSousAct();visListe(true)}
+function visSousAct(){const a=ACT.find(x=>x.code===$("visAct").value),s=$("visSa"),v=s.value;s.innerHTML="";
+  const has=a&&a.enfants.length;$("lVisSa").hidden=!has;if(has){for(const c of a.enfants) s.append(new Option(c.nom,c.code));if(a.enfants.some(c=>c.code===v)) s.value=v}}
+function visSubs(){const e=EQ.find(x=>x.code===$("visEq").value);return e?(e.enfants.length?e.enfants:[{nom:GENERAL[langueMission()]||"(général)",code:"GEN"}]):[]}
+function visListe(reinit){const subs=visSubs();if(reinit||VIS.eq!==$("visEq").value||VIS.ordre.length!==subs.length||!subs.every(c=>VIS.ordre.includes(c.code))){VIS.eq=$("visEq").value;VIS.ordre=subs.map(c=>c.code);VIS.off=new Set()}
+  const ul=$("visList");ul.innerHTML="";let k=0;
+  VIS.ordre.forEach((code,i)=>{const c=subs.find(x=>x.code===code);if(!c) return;const on=!VIS.off.has(code);if(on) k++;
+    const li=document.createElement("li");li.className=on?"":"off";
+    li.innerHTML=`<span class="vn">${on?k+".":""}</span><label><input type="checkbox"${on?" checked":""}> <span data-noi18n></span></label><button type="button" class="ghost" aria-label="Monter">↑</button><button type="button" class="ghost" aria-label="Descendre">↓</button>`;
+    li.querySelector("[data-noi18n]").textContent=c.nom;
+    li.querySelector("input").onchange=ev=>{if(ev.target.checked) VIS.off.delete(code);else VIS.off.add(code);visListe()};
+    const [bH,bB]=li.querySelectorAll("button");bH.disabled=i===0;bB.disabled=i===VIS.ordre.length-1;
+    bH.onclick=()=>{[VIS.ordre[i-1],VIS.ordre[i]]=[VIS.ordre[i],VIS.ordre[i-1]];visListe()};bB.onclick=()=>{[VIS.ordre[i+1],VIS.ordre[i]]=[VIS.ordre[i],VIS.ordre[i+1]];visListe()};
+    ul.append(li)});
+  const b=$("visSave");b.disabled=!k;b.textContent=`Créer ${k} constat${k>1?"s":""} prévu${k>1?"s":""}`}
+async function visCreer(){const e=EQ.find(x=>x.code===$("visEq").value),a=ACT.find(x=>x.code===$("visAct").value);if(!e||!a){toast("Choisis l'équipement et l'activité.");return}
+  const sa=a.enfants.length?a.enfants.find(c=>c.code===$("visSa").value):null;const subs=visSubs();
+  const codes=VIS.ordre.filter(c=>!VIS.off.has(c)&&subs.some(x=>x.code===c));if(!codes.length) return;
+  const vid=newId(),lib=[e.nom,sa?sa.nom:a.nom].join(" · "),now=new Date().toISOString();
+  codes.forEach((code,k)=>PREVUS.push({id:newId(),mission:CFG.mission.id,eq:e.code,sub:code,act:a.code,subact:sa?sa.code:"",repere:"",note:`Visite ${lib} – ${k+1} / ${codes.length}`,sur:true,
+    visite:{id:vid,total:codes.length,lib},ordre:k,creeLe:now}));
+  await sauverPrevus();arreterDictee();$("prepCard").hidden=true;
+  toast(`${codes.length} constat${codes.length>1?"s":""} prévu${codes.length>1?"s":""} : touche « Commencer » sur place.`,4000)}
+function visites(){const m=new Map();for(const p of PREVUS) if(p.mission===CFG.mission.id&&p.visite){const v=m.get(p.visite.id)||{lib:p.visite.lib,total:p.visite.total,reste:0};v.reste++;m.set(p.visite.id,v)}
+  return [...m.values()].map(v=>({...v,faits:v.total-v.reste}))}
+const texteVisite=v=>`${v.lib} : ${v.faits} / ${v.total} faits`;
+// après un constat enregistré depuis un constat prévu : proposer le suivant (même visite, sinon même équipement)
+function proposerSuivant(fini){const c=$("suivCard");if(!c||!fini) return;const l=PREVUS.filter(p=>p.mission===CFG.mission.id);
+  let s=null;if(fini.visite) s=l.filter(p=>p.visite&&p.visite.id===fini.visite.id).sort((x,y)=>(x.ordre||0)-(y.ordre||0))[0];
+  if(!s) s=l.find(p=>p.eq===fini.eq);
+  const v=fini.visite?visites().find(x=>x.lib===fini.visite.lib&&x.total===fini.visite.total):null;
+  if(!s){c.hidden=true;if(fini.visite) toast(`Visite terminée : ${fini.visite.lib} (${fini.visite.total} / ${fini.visite.total})`,5000);return}
+  $("suivTxt").textContent=libellePrevu(s);$("suivVis").textContent=v&&s.visite&&s.visite.id===fini.visite.id?texteVisite(v):"";$("suivVis").hidden=!$("suivVis").textContent;
+  c.hidden=false;$("suivGo").onclick=()=>{c.hidden=true;commencerPrevu(s.id)};$("suivNon").onclick=()=>{c.hidden=true};
+  c.scrollIntoView({behavior:"smooth",block:"center"})}
 function initPrep(){
-  $("bPrep").onclick=()=>{const c=$("prepCard");c.hidden=!c.hidden;if(!c.hidden) $("prepTxt").focus()};
+  $("visEq").onchange=()=>visListe(true);$("visAct").onchange=visSousAct;$("visSave").onclick=visCreer;
+  $("bPrep").onclick=()=>{const c=$("prepCard");c.hidden=!c.hidden;if(!c.hidden) visRemplir()};
   $("prepClose").onclick=()=>{arreterDictee();$("prepCard").hidden=true};
   $("prepGo").onclick=()=>{arreterDictee();PROPS=analyserTexte($("prepTxt").value);renderPrep();if(!PROPS.length) toast("Rien à analyser : dicte ou tape les constats à préparer.")};
   $("prepSave").onclick=async()=>{const ok=PROPS.filter(p=>p.eq&&p.act);if(ok.length<PROPS.length){toast("Choisis l'équipement et l'activité des lignes où ils manquent.");return}
@@ -2212,7 +2280,7 @@ function showView(v){if(v!=="journal") PREP=null;for(const s of ["accueil","sais
 /* ---------- accueil ---------- */
 async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`${m.no} · ${m.client||""}`;
   $("accInfo").textContent=[m.inspecteur,libelleSociete(m)].filter(Boolean).join(" · ");$("accVer").textContent="version "+APP_VERSION;
-  const np=PREVUS.filter(p=>p.mission===m.id).length;$("accPrevus").textContent=np?`${np} à faire`:"Aucun";
+  const np=PREVUS.filter(p=>p.mission===m.id).length;const vs=visites();$("accPrevus").textContent=np?[`${np} à faire`,...vs.map(texteVisite)].join(" · "):"Aucun";
   const en=(await allEntries()).filter(belongs);const n=en.filter(e=>!e.envoye).length;
   $("accJournal").textContent=n?`${n} constat${n>1?"s":""} à envoyer`:(en.length?`${en.length} constat${en.length>1?"s":""}, tout est envoyé`:"Aucun constat");
   // constats qui n'existent que sur ce téléphone depuis plus de 4 h (ou depuis la veille)
@@ -2226,7 +2294,7 @@ async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`
   try{const np=(await tousPdfs()).filter(p=>p.mission&&p.mission.id===m.id).length;$("accPdfs").textContent=np?`${np} PDF`:"Aucun"}catch(e){}
   $("accTrad").hidden=$("navTrad").hidden}
 function initAccueil(){$("pdfToutes").onchange=renderPdfs;document.querySelectorAll("#v-accueil .acc").forEach(b=>b.onclick=()=>{const g=b.dataset.go;
-  if(g==="prep"){showView("saisie");$("prepCard").hidden=false;$("prepTxt").focus();return}
+  if(g==="prep"){showView("saisie");$("prepCard").hidden=false;visRemplir();$("prepCard").scrollIntoView({block:"start"});return}
   if(g==="prevus"){showView("saisie");if(!$("prevusCard").hidden) $("prevusCard").scrollIntoView({block:"start"});return}
   showView(g)});
   document.querySelector("header h1").style.cursor="pointer";document.querySelector("header h1").onclick=()=>showView("accueil")}
@@ -2868,6 +2936,14 @@ const TRAD_UI=[
 ["Nouvelle version de l'appli disponible.","New version of the app available.","Nueva versión de la app disponible.","Neue App-Version verfügbar."],
 ["Recharger","Reload","Recargar","Neu laden"],
 ["Plus tard","Later","Más tarde","Später"],
+["Préparer une visite","Prepare a visit","Preparar una visita","Besuch vorbereiten"],
+["Choisis l'équipement et l'activité : un constat prévu par sous-équipement coché, dans l'ordre de ton parcours (flèches ↑ ↓).","Choose the equipment and the activity: one planned finding per ticked sub-equipment, in the order of your route (↑ ↓ arrows).","Elige el equipo y la actividad: un hallazgo previsto por subequipo marcado, en el orden de tu recorrido (flechas ↑ ↓).","Ausrüstung und Tätigkeit wählen: ein geplanter Befund je angekreuzter Unterausrüstung, in der Reihenfolge deines Rundgangs (Pfeile ↑ ↓)."],
+["Monter","Move up","Subir","Nach oben"],["Descendre","Move down","Bajar","Nach unten"],
+["Constat suivant","Next finding","Siguiente hallazgo","Nächster Befund"],
+["{a} : {b} / {c} faits","{a}: {b} / {c} done","{a}: {b} / {c} hechos","{a}: {b} / {c} erledigt"],
+["{a} à faire","{a} to do","{a} pendientes","{a} offen"],
+["Visite terminée : {a} ({b})","Visit completed: {a} ({b})","Visita terminada: {a} ({b})","Besuch abgeschlossen: {a} ({b})"],
+["Choisis l'équipement et l'activité.","Choose the equipment and the activity.","Elige el equipo y la actividad.","Ausrüstung und Tätigkeit wählen."],
 // saisie
 ["🎤 Préparer","🎤 Prepare","🎤 Preparar","🎤 Vorbereiten"],
 ["Constat prévu :","Planned finding:","Hallazgo previsto:","Geplanter Befund:"],
