@@ -201,6 +201,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .gt.hors .lg{right:auto;max-width:55%}.gt.drag{outline:3px solid var(--accent);transform:scale(1.05);z-index:2}.gt.cible{outline:3px dashed var(--accent)}
 .ghead{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}.ghead h3{margin:0;font-size:15px}
 #gv{position:fixed;inset:0;z-index:35;background:#0e1316;color:#e6ecef;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+#pretCard{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:30;max-width:560px;margin:0 auto;box-shadow:0 6px 24px rgba(0,0,0,.35);overflow-wrap:anywhere}#pretCard[hidden]{display:none}#pretCard .hint{margin:4px 0 0}
 #pv{position:fixed;inset:0;z-index:36;background:#0e1316;color:#e6ecef;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 #pv[hidden]{display:none!important}#pv .edsep{flex:1}.pvTitre{font-weight:650;font-size:14px;padding:0 4px}@media (max-width:479px){.pvTitre{display:none}}#pvInfo{font-size:12.5px;color:#aab6bd;padding:0 10px 6px;overflow-wrap:anywhere}
 #pvPages{flex:1;overflow:auto;padding:10px 12px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;-webkit-overflow-scrolling:touch}
@@ -334,8 +335,6 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
     <button class="primary big" id="bSend" type="button">Envoyer au PC (Quick Share)</button>
     <button class="big" id="bDl" type="button">Enregistrer dans Téléchargements (secours)</button>
     <button class="big" id="bPdfSel" type="button">📄 PDF rapide de la sélection</button>
-    <div id="pretCard" class="card confirm" hidden><strong id="pretTxt"></strong>
-      <div class="btns"><button class="primary" id="bPretPartager" type="button">Partager</button><button id="bPretDl" type="button">Enregistrer dans Téléchargements</button><button class="ghost" id="bPretNon" type="button">Fermer</button></div></div>
     <div id="sentConfirm" class="card confirm" hidden>
       <strong>Le PC a-t-il bien reçu les fichiers ?</strong>
       <div class="btns"><button class="primary" id="bSentYes" type="button">Oui, marquer envoyé</button><button id="bSentNo" type="button">Non</button></div>
@@ -526,6 +525,8 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
   <button type="button" data-v="trad" id="navTrad" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 6 8M11 5c-1 4-4 7-7 8"/><path d="M13 21l4-9 4 9M14.5 18h5"/></svg>Traduction</button>
   <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h6l2 2"/></svg><span>Missions<span class="badge" id="mWarn" hidden>!</span></span></button>
 </nav>
+<div id="pretCard" class="card confirm" hidden><strong id="pretTxt"></strong><p class="hint" id="pretPq"></p>
+  <div class="btns"><button class="primary" id="bPretPartager" type="button">Partager</button><button id="bPretDl" type="button">Enregistrer dans Téléchargements</button><button class="ghost" id="bPretNon" type="button">Fermer</button></div></div>
 <div class="toast" id="toast" hidden></div>
 <div id="majBar" role="status" hidden><span>Nouvelle version de l'appli disponible.</span><button type="button" id="majGo">Recharger</button><button type="button" class="ghost" id="majPlusTard">Plus tard</button></div>
 <!-- ============ VISIONNEUSE DE LA GALERIE ============ -->
@@ -2277,19 +2278,22 @@ async function pdfRapide(liste){if(!liste.length){toast("Aucun constat sélectio
     const tri=[...liste].sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));
     for(const e of tri) await mk.constat(e,await photosPdf(e,mk));
     const nom=tri.length===1?nomExplicite(tri[0])+".pdf":nomSur(`${m.no} - ${pdfL("rapide",l)} - ${today()} - ${tri.length} ${pdfL("constats",l)}`)+".pdf";
-    await mk.miseEnPage();$("toast").hidden=true;if(!await apercuPdf(mk,nom)){toast("PDF annulé.");return}
-    toast("Création du PDF…",60000);const octets=await mk.octets();
-    const f=new File([octets],nom,{type:"application/pdf"});$("toast").hidden=true;
-    try{await tx("pdfs","readwrite",s=>s.put({id:newId(),nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:so.societe,
-      constats:tri.map(e=>e.id),titres:tri.map(e=>libelleConstat(e)),taille:octets.length,blob:f}))}catch(err){toast("PDF créé mais pas gardé dans l'appli (mémoire pleine ?).",5000)}
-    await proposerFichiers([f],"PDF")}
+    const octets=await mk.octets();const f=new File([octets],nom,{type:"application/pdf"});
+    $("toast").hidden=true;if(!await apercuPdf(mk,nom)){toast("PDF annulé.");return}
+    const garde=tx("pdfs","readwrite",s=>s.put({id:newId(),nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:so.societe,
+      constats:tri.map(e=>e.id),titres:tri.map(e=>libelleConstat(e)),taille:octets.length,blob:f})).catch(()=>toast("PDF créé mais pas gardé dans l'appli (mémoire pleine ?).",5000));
+    await proposerFichiers([f],"PDF");await garde}
   catch(err){toast("PDF impossible : "+(err&&err.message||err),6000)}finally{PDF_EN_COURS=false}}
 // partage Android (Quick Share, mail, WhatsApp, Teams…) ; si le délai d'Android est dépassé, une carte propose de partager
 let FICHIERS_PRETS=null;
-async function proposerFichiers(files,quoi){const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)&&!estDeX();
-  if(mobile&&navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files});return}catch(err){if(err.name==="AbortError") return}
-    FICHIERS_PRETS=files;$("pretTxt").textContent=files.length===1?`Prêt : ${files[0].name}`:`Prêt : ${files.length} fichiers`;$("pretCard").hidden=false;$("pretCard").scrollIntoView({block:"center"});return}
-  await telechargerFichiers(files)}
+// v1.51 : partage vers le client (PDF, photos) : feuille de partage dès qu'elle existe (téléphone, DeX, PC),
+// sans tenir compte du réglage « Envoi vers le PC » ; si elle est refusée, carte flottante visible depuis tous les onglets
+async function proposerFichiers(files,quoi){let ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files}))}catch(e){}
+  if(!ok){montrerPret(files,"Partage direct indisponible sur cet appareil.");return}
+  try{await navigator.share({files});return}catch(err){if(err&&err.name==="AbortError") return;
+    montrerPret(files,`Le partage n'a pas pu s'ouvrir tout seul (${err&&err.name||"erreur"}).`)}}
+function montrerPret(files,pourquoi){FICHIERS_PRETS=files;$("pretTxt").textContent=files.length===1?`Prêt : ${files[0].name}`:`Prêt : ${files.length} fichiers`;
+  $("pretPq").textContent=pourquoi||"";$("pretCard").hidden=false}
 async function telechargerFichiers(files){for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,300))}
   toast(files.length===1?"Fichier enregistré dans Téléchargements.":`${files.length} fichiers enregistrés dans Téléchargements.`,4000)}
 // étiquettes lisibles par Windows (Propriétés > Détails : titre, mots clés) : bloc XMP ajouté au JPEG, image inchangée
@@ -2369,6 +2373,9 @@ const TRAD_UI=[
 ["📄 Créer le PDF","📄 Create PDF","📄 Crear el PDF","📄 PDF erstellen"],
 ["{a} page","{a} page","{a} página","{a} Seite"],
 ["{a} pages","{a} pages","{a} páginas","{a} Seiten"],
+["Partage direct indisponible sur cet appareil.","Direct sharing not available on this device.","Compartir directamente no está disponible en este dispositivo.","Direktes Teilen auf diesem Gerät nicht verfügbar."],
+["Le partage n'a pas pu s'ouvrir tout seul ({a}).","Sharing could not open by itself ({a}).","No se pudo abrir el menú de compartir ({a}).","Das Teilen-Menü konnte sich nicht selbst öffnen ({a})."],
+["Partage refusé ({a}) : fichier enregistré dans Téléchargements à la place.","Sharing refused ({a}): file saved to Downloads instead.","Compartir rechazado ({a}): archivo guardado en Descargas.","Teilen abgelehnt ({a}): Datei stattdessen in Downloads gespeichert."],
 ["PDF annulé.","PDF cancelled.","PDF cancelado.","PDF abgebrochen."],
 ["Confirmer la suppression","Confirm deletion","Confirmar la eliminación","Löschen bestätigen"],
 ["PDF supprimé du téléphone.","PDF deleted from the phone.","PDF eliminado del teléfono.","PDF vom Telefon gelöscht."],
@@ -2739,7 +2746,8 @@ async function start(){
   $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>{resetForm(true);effacerBrouillon()};
   $("bSend").onclick=async()=>{if(PREP&&PREP.files.length) sendEntries(PREP.list,PREP.files);else{const l=await selectionEnvoi();if(l.length) sendEntries(l)}};
   $("bPdfSel").onclick=async()=>pdfRapide(await selectionEnvoi());
-  $("bPretPartager").onclick=async()=>{const f=FICHIERS_PRETS;$("pretCard").hidden=true;if(!f) return;try{await navigator.share({files:f})}catch(err){if(err.name!=="AbortError") telechargerFichiers(f)}};
+  $("bPretPartager").onclick=async()=>{const f=FICHIERS_PRETS;if(!f) return;$("pretCard").hidden=true;
+    try{await navigator.share({files:f})}catch(err){if(err&&err.name==="AbortError") return;toast(`Partage refusé (${err&&err.name||"indisponible"}) : fichier enregistré dans Téléchargements à la place.`,6000);telechargerFichiers(f)}};
   $("bPretDl").onclick=()=>{const f=FICHIERS_PRETS;$("pretCard").hidden=true;if(f) telechargerFichiers(f)};$("bPretNon").onclick=()=>{$("pretCard").hidden=true;FICHIERS_PRETS=null};
   $("bSentYes").onclick=markSent;
   $("bDl").onclick=async()=>{const list=(PREP&&PREP.list.length)?PREP.list:await selectionEnvoi();if(!list.length) return;downloadFiles(list,(PREP&&PREP.files.length)?PREP.files:await buildFiles(list))};$("bSentNo").onclick=()=>{$("sentConfirm").hidden=true;pendingSent=[]};
