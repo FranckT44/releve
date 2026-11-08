@@ -499,7 +499,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.31";
+const APP_VERSION="1.32";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1212,7 +1212,8 @@ async function renderJournal(){
   const autres=[...new Set(tous.filter(e=>!e.envoye&&!belongs(e)).map(e=>e.mission.no))];
   $("sendInfo").textContent=(pend.length?`Mission ${CFG.mission.no} : ${pend.length} constat(s) et ${np} photo(s) pas encore envoyés au PC.`:`Mission ${CFG.mission.no} : tout a été envoyé au PC.`)
     +(autres.length?` Il reste aussi des constats à envoyer pour la mission ${autres.join(", ")}.`:"");
-  $("bSend").disabled=!pend.length;$("bDl").disabled=!pend.length;PREP=null;if(pend.length) prepareSend();
+  $("bSend").disabled=!pend.length;$("bDl").disabled=!pend.length;
+  if(estDeX()){$("bSend").textContent="Enregistrer pour le PC (DeX : Téléchargements)";$("bDl").hidden=true}PREP=null;if(pend.length) prepareSend();
   const j=$("journal");j.innerHTML="";
   const byDay={};for(const e of en)(byDay[e.date]??=[]).push(e);
   for(const [day,list] of Object.entries(byDay)){
@@ -1264,11 +1265,15 @@ async function sendEntries(list,prepared){return shareFiles(list,prepared||await
 async function downloadFiles(list,files){pendingSent=list.map(e=>e.id);
   for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,300))}
   toast("Fichiers enregistrés dans Téléchargements : envoie-les au PC depuis « Mes fichiers » > Téléchargements > Partager > Quick Share.",7000);$("sentConfirm").hidden=false}
+// Samsung DeX (écran externe) : la fenêtre de partage s'ouvre et se referme aussitôt -> on enregistre dans Téléchargements
+function estDeX(){const ua=navigator.userAgent;return (/SamsungBrowser/i.test(ua)&&!/Mobile/i.test(ua))||(/Android/i.test(ua)&&matchMedia("(pointer:fine)").matches&&screen.width>=1024)}
 async function shareFiles(list,files){
   pendingSent=list.map(e=>e.id);
-  if(navigator.canShare&&navigator.canShare({files})){
+  if(estDeX()){await downloadFiles(list,files);return}
+  if(navigator.canShare&&navigator.canShare({files})){const t0=Date.now();
     try{await navigator.share({files});$("sentConfirm").hidden=false}
-    catch(err){if(err.name!=="AbortError"){toast(`Partage impossible (${err.name}) : ${err.message}. Utilise le bouton « Enregistrer dans Téléchargements ».`,8000);$("bDl").hidden=false}}
+    catch(err){if(err.name!=="AbortError"){toast(`Partage impossible (${err.name}) : ${err.message}. Utilise le bouton « Enregistrer dans Téléchargements ».`,8000);$("bDl").hidden=false}
+      else if(Date.now()-t0<900){toast("La fenêtre de partage s'est fermée toute seule (fréquent en DeX) : utilise « Enregistrer dans Téléchargements », puis Mes fichiers > Téléchargements > Partager > Quick Share.",9000)}}
   }else{await downloadFiles(list,files)}
 }
 async function markSent(){const now=new Date().toISOString();await tx("entries","readwrite",s=>{for(const id of pendingSent){const r=s.get(id);r.onsuccess=()=>{const e=r.result;if(e){e.envoye=true;e.envoyeLe=now;s.put(e)}}}});
@@ -1419,7 +1424,7 @@ function renderHeader(){renderSync();$("appVer").textContent="Version de l'appli
 async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new Date().toISOString();
   const {id,archive,envoyeLe,recuLe,versionRecue,...data}=m;
   const f=await fichierMission({schema:"mission-releve/1",...data});
-  let ok=false;const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  let ok=false;const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)&&!estDeX();
   // sur PC, le partage Windows ouvre Quick Share sans le fichier : on enregistre directement dans Téléchargements
   if(mobile&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});ok=true}catch(e){if(e.name==="AbortError") return}}
   if(!ok){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();
