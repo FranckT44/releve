@@ -75,6 +75,7 @@ textarea{min-height:90px;resize:vertical}
 .rtebar{display:flex;gap:6px;flex-wrap:wrap}.rtebar button{min-height:38px;padding:4px 12px;font-size:15px;font-weight:500}
 .rtebar button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent)}
 .plGrp{margin:12px 0 2px;font-weight:600;font-size:14px;color:var(--muted)}.plStep{border-top:1px solid rgba(128,128,128,.25);padding:4px 0}.plDet{margin:2px 0 8px 26px}.plDet .rte{min-height:52px}.plAbs{color:var(--muted);font-size:13px}.plArretOn{color:#c62828;font-weight:600}.plAp{margin:0;padding-left:20px}
+.avStep{border-top:1px solid rgba(128,128,128,.25);padding:4px 0}.avDet{margin:2px 0 8px 26px;display:grid;gap:6px}.avMode{display:flex;gap:16px;flex-wrap:wrap}.avMode label{display:flex;align-items:center;gap:6px;font-size:15px}.avVal{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.avVal input{width:5.5em}.avVal select{width:auto}.avCalc{font-weight:600}.avPrec{margin:0}.avDet .rte{min-height:52px}.avHp{color:#c62828;font-size:13px;font-weight:600}.avBar{height:6px;background:rgba(128,128,128,.25);border-radius:3px;overflow:hidden;max-width:260px}.avBar i{display:block;height:100%;background:#2e7d32}
 .rte{min-height:90px;font:16px/1.45 var(--font);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-wrap:anywhere}
 .rte:focus{outline:3px solid var(--accent);outline-offset:1px}
 .rte:empty:before{content:attr(data-ph);color:var(--muted)}
@@ -327,6 +328,13 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
     <h2>Plan de réparation</h2>
     <p class="hint">Coche les étapes prévues pour réparer cette zone (reprises au §4 « Repair plan » de l'IR) ; pour chacune : point d'arrêt et commentaire.</p>
     <div id="planList"></div>
+  </div>
+
+  <div class="card c-vert" id="avCard" hidden>
+    <h2>Avancement</h2>
+    <p class="hint">Coche la ou les étapes contrôlées et saisis l'avancement cumulé à ce jour, en % ou en quantité (fait / total).</p>
+    <p class="hint" id="avSrc"></p>
+    <div id="avList"></div>
   </div>
 
   <button class="primary big" id="bSave" type="button">Enregistrer le constat</button>
@@ -608,7 +616,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.60";
+const APP_VERSION="1.62";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -801,7 +809,7 @@ function curEq(){return EQ.find(e=>e.code===$("fEq").value)}
 function curAct(){return ACT.find(a=>a.code===$("fAct").value)}
 function refreshSelects(keep={}){fillSelect($("fEq"),EQ,keep.eq);fillSub(keep.sub);fillSelect($("fAct"),ACT,keep.act);fillSubAct(keep.subact)}
 function fillSub(keep){const e=curEq();fillSelect($("fSub"),e&&e.enfants.length?e.enfants:[{nom:GENERAL[langueMission()]||"(général)",code:"GEN"}],keep)}
-function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],keep);updatePath();if(typeof majDegats==="function") majDegats();if(typeof majPlan==="function") majPlan()}
+function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],keep);updatePath();if(typeof majDegats==="function") majDegats();if(typeof majPlan==="function") majPlan();if(typeof majAv==="function") majAv()}
 function subActObj(){if(!$("fSubAct").value) return null;const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
 function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=$("fSub").selectedOptions[0]?.textContent||"";
   const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
@@ -841,7 +849,7 @@ async function addFiles(files){const nouv=[];
   majPropDate();
   renderThumbs()}
 function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";$("fSurf").value="";$("fMarq").checked=false;if($("fAcces").options.length) $("fAcces").value="";
-  renderPlan([]);$("fDate").value=today();/* v1.57 : chaque nouveau constat repart sur la date du jour */majPropDate();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
+  renderPlan([]);majAv([]);$("fDate").value=today();/* v1.57 : chaque nouveau constat repart sur la date du jour */majPropDate();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
 async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
   const e=curEq(),a=curAct();if(!e||!a){toast("Choisis un équipement et une activité dans la liste.");return}
@@ -869,6 +877,7 @@ async function saveEntry(){
     mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa?{code:sa.code,nom:sa.nom}:null,
     repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,surface:$("fSurf").value.trim().replace(/\s*m²?$/i,""),zonesMarquees:$("fMarq").checked,acces:$("fAcces").value?{code:$("fAcces").value,nom:$("fAcces").selectedOptions[0].textContent}:null,
     planReparation:estInitiale(a)?lirePlan():[],
+    avancement:estInitiale(a)?[]:lireAv(),
     photos:names,photosPrisesLe:prises,legendes:form.photos.map(p=>p.leg||""),rapport:form.photos.map(p=>p.inc!==false),originaux,dossierCible:targetDir(),envoye:false,envoyeLe:null};
   try{
     await tx("photos","readwrite",s=>{if(old) for(const n of old.photos) s.delete(n);for(const r of photoRecs) s.put(r)});
@@ -887,7 +896,7 @@ async function editEntry2(en,id){
   else{const e=curEq();const sub=e?.enfants.find(x=>x.nom===en.sousEquipement);if(sub) $("fSub").value=sub.code;
     else if(e&&e.enfants.length){absent($("fSub"),en.sousEquipement);toast("Le sous-équipement de ce constat n'existe plus : choisis-le à nouveau avant d'enregistrer.",6000)}}
   if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
-  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;$("fAcces").value=en.acces?en.acces.code:"";renderPlan(en.planReparation||[]);
+  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;$("fAcces").value=en.acces?en.acces.code:"";renderPlan(en.planReparation||[]);majAv(en.avancement||[]);
   form={photos:[],gravite:en.gravite,editId:id};
   for(const [k,n] of en.photos.entries()){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null,leg:(en.legendes||[])[k]||"",inc:(en.rapport||[])[k]!==false})}
   renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
@@ -1448,10 +1457,16 @@ function initPrep(){
   if(!SR){$("prepMic").hidden=true;$("prepMicHint").textContent="Dictée : utilise le micro du clavier du téléphone dans la zone de texte."}
   else $("prepMic").onclick=()=>REC?arreterDictee():lancerDictee(SR);
 }
-function lancerDictee(SR){const r=new SR();REC=r;r.lang=$("prepLang").value;r.continuous=true;r.interimResults=true;
-  const t=$("prepTxt");let base=t.value.trim();
-  r.onresult=ev=>{let fin="",tmp="";for(let i=ev.resultIndex;i<ev.results.length;i++){const x=ev.results[i];if(x.isFinal) fin+=x[0].transcript;else tmp+=x[0].transcript}
-    if(fin){base=(base?base+" ":"")+fin.trim();t.value=base}$("prepLive").textContent=tmp};
+/* v1.62 : sous Android (Chrome, Samsung Internet), le mode « continu » renvoie chaque résultat final en reprenant toute la phrase
+   depuis le début (« je / je vais / je vais inspecter… ») : le texte était ajouté plusieurs fois. La dictée se fait donc phrase par phrase
+   (continuous = false, relancée à la fin de chaque phrase), le texte de la phrase est relu en entier à chaque résultat, et une phrase
+   qui reprend la précédente ne garde que la suite. */
+function suiteDictee(prec,nouv){const a=prec.trim().toLowerCase(),b=nouv.trim();if(!a) return b;if(b.toLowerCase()===a) return "";
+  if(b.toLowerCase().startsWith(a+" ")) return b.slice(a.length).trim();return b}
+function lancerDictee(SR){const r=new SR();REC=r;r.lang=$("prepLang").value;r.continuous=false;r.interimResults=true;r.maxAlternatives=1;
+  const t=$("prepTxt");let base=t.value.trim(),dern="";
+  r.onresult=ev=>{let fin="",tmp="";for(let i=0;i<ev.results.length;i++){const x=ev.results[i];if(x.isFinal) fin=x[0].transcript;else tmp=x[0].transcript}
+    if(fin){const ajout=suiteDictee(dern,fin);dern=fin;if(ajout){base=(base?base+" ":"")+ajout;t.value=base}tmp=""}$("prepLive").textContent=tmp};
   r.onerror=ev=>{if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){toast("Micro refusé : autorise le micro pour l'appli, ou utilise le micro du clavier.",5000);arreterDictee()}
     else if(ev.error==="network"){toast("Dictée indisponible sans réseau : utilise le micro du clavier du téléphone.",5000);arreterDictee()}};
   r.onend=()=>{if(REC===r){try{r.start()}catch(e){arreterDictee()}}}; // Android coupe après un silence : on relance
@@ -1540,6 +1555,77 @@ function renderPlan(sel){sel=Array.isArray(sel)?sel:[];const box=$("planList");i
     const on=d.querySelector(".plOn"),det=d.querySelector(".plDet");on.onchange=()=>{det.hidden=!on.checked};
     if(s){on.checked=true;det.hidden=false;d.querySelector(".plArret").checked=!!s.arret;$("fPl"+n).value=s.commentaire||""}}}
 function majPlan(){const c=$("planCard");if(!c) return;c.hidden=!estInitiale(curAct());if(JSON.stringify(etapesPlan())!==PLAN_SIG) renderPlan(lirePlan())}
+/* ---------- avancement (v1.61) ----------
+   Activités d'avancement (tout ce qui n'est pas inspection initiale / complémentaire) : étapes du plan de réparation de la zone
+   (dernier constat de la même zone qui a un plan), sinon toutes les étapes de la mission. Par étape cochée : avancement CUMULÉ
+   en % ou en quantité fait / total (unité), point d'arrêt libéré ou non (si l'étape est un point d'arrêt du plan), commentaire. */
+const AV_UNITES=["m²","nb","ml","kg","m³"];
+const AV={tok:0,sig:null,pend:null,ctx:null,n:0};
+const numAv=v=>{const t=String(v??"").trim().replace(/\s/g,"").replace(",",".");if(!t) return null;const n=parseFloat(t);return isFinite(n)?n:null};
+const fmtNum=(n,l)=>n==null?"":(Math.round(n*100)/100).toString().replace(".",(l||"fr")==="en"?".":",");
+function pctAv(x){if(x.mode==="qte") return x.total>0&&x.fait!=null?Math.round(x.fait/x.total*1000)/10:null;return x.pct}
+function texteAv(x,l,unites){const p=pctAv(x);const u=unites?unites(x.unite):x.unite;
+  if(x.mode==="qte"){if(x.fait==null&&x.total==null) return "";return `${fmtNum(x.fait,l)||"?"} / ${fmtNum(x.total,l)||"?"} ${u||""}`.trim()+(p!=null?` (${fmtNum(p,l)} %)`:"")}
+  return p!=null?`${fmtNum(p,l)} %`:""}
+async function avContexte(){const e=curEq(),a=curAct();const sub=$("fSub").selectedOptions[0]?.textContent||"";
+  const ctx={key:(e?e.code:"")+"|"+sub,plan:null,etapes:[],prec:{}};
+  let en=[];try{en=(await allEntries()).filter(x=>belongs(x)&&e&&x.equipement.code===e.code&&x.sousEquipement===sub&&x.id!==form.editId)}catch(err){}
+  en.sort((x,y)=>(x.date+x.hms).localeCompare(y.date+y.hms));
+  const avecPlan=en.filter(x=>x.planReparation&&x.planReparation.length);ctx.plan=avecPlan.length?avecPlan[avecPlan.length-1]:null;
+  ctx.etapes=ctx.plan?ctx.plan.planReparation.map(x=>({code:x.code,nom:x.nom,groupe:x.groupe||"",arret:!!x.arret})):etapesPlan().map(x=>({...x,arret:false}));
+  for(const x of en) for(const s of (x.avancement||[])) ctx.prec[s.code+"|"+s.nom]={...s,date:x.date};
+  return ctx}
+function lireAv(){return [...document.querySelectorAll("#avList .avStep")].filter(d=>d.querySelector(".avOn").checked).map(d=>{
+  const mode=d.querySelector(".avM:checked")?.value||"pct";
+  const x={code:d.dataset.code,nom:d.dataset.nom,groupe:d.dataset.groupe,arret:d.dataset.arret==="1",mode,
+    pct:mode==="pct"?numAv(d.querySelector(".avP").value):null,fait:mode==="qte"?numAv(d.querySelector(".avF").value):null,
+    total:mode==="qte"?numAv(d.querySelector(".avT").value):null,unite:mode==="qte"?d.querySelector(".avU").value:"",
+    libere:d.dataset.arret==="1"?d.querySelector(".avLib").checked:false,commentaire:$(d.dataset.ed).value};
+  if(mode==="qte") x.pct=pctAv(x);return x})}
+async function majAv(sel){const c=$("avCard");if(!c) return;const a=curAct();c.hidden=!a||estInitiale(a);
+  if(sel!==undefined) AV.pend=sel;const tok=++AV.tok;const ctx=await avContexte();if(tok!==AV.tok) return;
+  const sig=JSON.stringify([ctx.key,ctx.etapes,!!ctx.plan&&ctx.plan.id]);
+  if(AV.pend==null&&sig===AV.sig){AV.ctx=ctx;majPrecAv();return}
+  const cur=AV.pend!=null?AV.pend:lireAv();AV.pend=null;AV.sig=sig;AV.ctx=ctx;renderAv(cur,ctx)}
+function majPrecAv(){if(!AV.ctx) return;document.querySelectorAll("#avList .avStep").forEach(d=>{const p=AV.ctx.prec[d.dataset.code+"|"+d.dataset.nom];const el=d.querySelector(".avPrec");
+  const t=p?texteAv(p,"fr"):"";el.textContent=t?`Précédent : ${t} (${frDate(p.date)})`:"";el.hidden=!t})}
+function renderAv(sel,ctx){sel=Array.isArray(sel)?sel:[];const box=$("avList");if(!box) return;
+  $("avSrc").textContent=ctx.plan?`Étapes du plan de réparation de cette zone (constat du ${frDate(ctx.plan.date)}).`:"Pas de plan de réparation pour cette zone : toutes les étapes de la mission sont proposées.";
+  const cle=x=>x.code+"|"+x.nom;const liste=ctx.etapes.slice();
+  for(const x of sel) if(!liste.some(y=>cle(y)===cle(x))) liste.push({...x,absent:true});
+  box.innerHTML="";
+  if(!liste.length){box.innerHTML='<p class="hint">Aucune étape de réparation dans les activités de la mission (à ajouter dans l\'onglet Missions, après les inspections).</p>';return}
+  // nouveau constat sans étape cochée : l'étape de la sous-activité choisie est cochée d'office
+  const sa=subActObj();const auto=!sel.length&&!form.editId&&sa?sa.code:null;
+  let grp=null;
+  for(const x of liste){const s=sel.find(y=>cle(y)===cle(x));
+    if(!x.absent&&(x.groupe||"")!==grp){grp=x.groupe||"";if(grp){const g=document.createElement("p");g.className="plGrp";g.dataset.noi18n="";g.textContent=grp;box.append(g)}}
+    const n=++AV.n;const d=document.createElement("div");d.className="avStep";Object.assign(d.dataset,{code:x.code,nom:x.nom,groupe:x.groupe||"",arret:x.arret?"1":"",ed:"fAv"+n});
+    d.innerHTML=`<label class="toggle"><input type="checkbox" class="avOn"> <span class="plNom" data-noi18n></span>${x.arret?' <span class="avHp">⛔</span>':""}${x.absent?' <span class="plAbs">(n\'existe plus dans la liste)</span>':""}</label>`
+      +`<div class="avDet" hidden><div class="avMode" role="radiogroup"><label><input type="radio" class="avM" name="avM${n}" value="pct" checked> %</label><label><input type="radio" class="avM" name="avM${n}" value="qte"> Quantité (fait / total)</label></div>`
+      +`<div class="avVal avPct"><input type="text" class="avP" inputmode="decimal" autocomplete="off" placeholder="0–100" aria-label="Avancement en %"><span>%</span></div>`
+      +`<div class="avVal avQte" hidden><input type="text" class="avF" inputmode="decimal" autocomplete="off" placeholder="fait" aria-label="Quantité faite"><span>/</span><input type="text" class="avT" inputmode="decimal" autocomplete="off" placeholder="total" aria-label="Quantité totale">`
+      +`<select class="avU" aria-label="Unité">${AV_UNITES.map(u=>`<option>${u}</option>`).join("")}</select><span class="avCalc"></span></div>`
+      +`<div class="avBar" hidden><i></i></div><p class="hint avPrec" hidden></p>`
+      +(x.arret?`<label class="toggle"><input type="checkbox" class="avLib"> ✅ Point d'arrêt libéré</label>`:"")
+      +`<div class="rtewrap"><span class="rtelab" id="lAv${n}">Commentaire</span>${PLAN_BARRE}<div class="rte" id="fAv${n}" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lAv${n}"></div></div></div>`;
+    d.querySelector(".plNom").textContent=x.nom;box.append(d);initEditeur("fAv"+n);
+    const on=d.querySelector(".avOn"),det=d.querySelector(".avDet");
+    const mode=v=>{d.querySelector(`.avM[value="${v}"]`).checked=true;d.querySelector(".avPct").hidden=v!=="pct";d.querySelector(".avQte").hidden=v!=="qte";calc()};
+    const calc=()=>{const m=d.querySelector(".avM:checked").value;const y={mode:m,pct:numAv(d.querySelector(".avP").value),fait:numAv(d.querySelector(".avF").value),total:numAv(d.querySelector(".avT").value)};
+      const p=pctAv(y);d.querySelector(".avCalc").textContent=m==="qte"&&p!=null?`= ${fmtNum(p)} %`:"";const b=d.querySelector(".avBar");b.hidden=p==null;b.firstChild.style.width=Math.max(0,Math.min(100,p||0))+"%"};
+    d.querySelectorAll(".avM").forEach(r=>r.onchange=()=>mode(r.value));d.querySelectorAll(".avP,.avF,.avT").forEach(i=>i.addEventListener("input",calc));
+    on.onchange=()=>{det.hidden=!on.checked;
+      // première coche : reprend le mode, le total et l'unité de la dernière saisie de cette étape
+      const p=AV.ctx&&AV.ctx.prec[x.code+"|"+x.nom];if(on.checked&&p&&!d.dataset.init){d.dataset.init="1";mode(p.mode||"pct");
+        if(p.mode==="qte"){if(p.total!=null) d.querySelector(".avT").value=fmtNum(p.total);if(p.unite) d.querySelector(".avU").value=p.unite}}};
+    if(s){d.dataset.init="1";on.checked=true;det.hidden=false;if(s.mode==="qte"){d.querySelector(".avF").value=fmtNum(s.fait);d.querySelector(".avT").value=fmtNum(s.total);
+        if(s.unite){if(![...d.querySelector(".avU").options].some(o=>o.value===s.unite)) d.querySelector(".avU").append(new Option(s.unite));d.querySelector(".avU").value=s.unite}}
+      else d.querySelector(".avP").value=fmtNum(s.pct);mode(s.mode||"pct");if(x.arret) d.querySelector(".avLib").checked=!!s.libere;$("fAv"+n).value=s.commentaire||""}
+    else if(auto&&x.code===auto){on.checked=true;on.onchange()}}
+  majPrecAv()}
+function avHtml(p){if(!p||!p.length) return "";
+  return '<ol class="plAp">'+p.map(x=>{const t=texteAv(x,"fr");return `<li><b>${esc(x.nom)}</b>${t?" : "+esc(t):""}${x.arret?(x.libere?' <span>✅ point d\'arrêt libéré</span>':' <span class="plArretOn">⛔ point d\'arrêt non libéré</span>'):""}${x.commentaire?versHtml(x.commentaire):""}</li>`}).join("")+"</ol>"}
 function planHtml(p){if(!p||!p.length) return "";
   return '<ol class="plAp">'+p.map(x=>`<li><b>${esc(x.nom)}</b>${x.arret?' <span class="plArretOn">⛔ point d\'arrêt</span>':""}${x.commentaire?versHtml(x.commentaire):""}</li>`).join("")+"</ol>"}
 function initDegats(){renderDegats();majDegats();$("degOk").onclick=validerDegat;$("degNo").onclick=()=>{DEG_EN_COURS=null;$("degParam").hidden=true};
@@ -1650,6 +1736,7 @@ async function remplirApercu(ap,e){
   ajouter("Observation",e.observation?versHtml(e.observation):"");
   ajouter("Recommandation",e.recommandation?versHtml(e.recommandation):"");
   ajouter("Plan de réparation",planHtml(e.planReparation));
+  ajouter("Avancement",avHtml(e.avancement));
   ajouter("Accès au revêtement",e.acces&&e.acces.nom?esc(e.acces.nom):"");
   const surf=[e.surface?esc(e.surface)+" m²":"",e.zonesMarquees?"zone(s) déjà marquée(s)":""].filter(Boolean).join(" · ");ajouter("Surface estimée à réparer",surf);
   ajouter("Décision client",e.decisionClient?"<b>attendue</b>":"");
@@ -2164,8 +2251,8 @@ let MAJ=null;
    dans le téléphone (photos à chaque changement, textes 1 s après la frappe, et dès que l'appli passe en arrière-plan). */
 const BR={silence:false,minuterie:null,photos:false,charge:false,session:false};
 function etatTexte(){return {mission:CFG.mission.id,t:Date.now(),eq:$("fEq").value,sub:$("fSub").value,act:$("fAct").value,subact:$("fSubAct").value,rep:$("fRep").value,date:$("fDate").value,
-  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,plan:lirePlan()}}
-const aDuContenu=t=>!!(form.photos.length||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||(t.plan&&t.plan.length)||t.editId);
+  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,plan:lirePlan(),av:lireAv()}}
+const aDuContenu=t=>!!(form.photos.length||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||(t.plan&&t.plan.length)||(t.av&&t.av.length)||t.editId);
 function planifierBrouillon(photos){if(BR.silence||!DB||!BR.charge) return;if(photos) BR.photos=true;clearTimeout(BR.minuterie);BR.minuterie=setTimeout(()=>sauverBrouillon().catch(()=>{}),photos?300:1000)}
 async function sauverBrouillon(){clearTimeout(BR.minuterie);if(!DB||!BR.charge) return;const t=etatTexte();
   // formulaire vidé : on ne supprime que le brouillon écrit pendant cette session (jamais celui d'avant, pas encore repris)
@@ -2185,7 +2272,7 @@ async function afficherBrouillon(){let t=null,ph=null;try{t=await kvGet("brouill
 async function reprendreBrouillon(){const t=await kvGet("brouillonTexte"),ph=await kvGet("brouillonPhotos");if(!t) return;
   BR.silence=true;try{showView("saisie");
     refreshSelects({eq:t.eq,act:t.act,subact:t.subact});if(t.sub) $("fSub").value=t.sub;fillSubAct(t.subact);
-    $("fRep").value=t.rep;$("fDate").value=t.date||today();$("fObs").value=t.obs;$("fReco").value=t.reco;$("fDec").checked=t.dec;$("fSurf").value=t.surf;$("fMarq").checked=t.marq;$("fAcces").value=t.acces||"";renderPlan(t.plan||[]);
+    $("fRep").value=t.rep;$("fDate").value=t.date||today();$("fObs").value=t.obs;$("fReco").value=t.reco;$("fDec").checked=t.dec;$("fSurf").value=t.surf;$("fMarq").checked=t.marq;$("fAcces").value=t.acces||"";renderPlan(t.plan||[]);majAv(t.av||[]);
     form={photos:ph&&ph.mission===t.mission?ph.photos:[],gravite:t.gravite||"",editId:t.editId,prevuId:t.prevuId};
     const pv=t.prevuId&&PREVUS.find(x=>x.id===t.prevuId);if(pv){$("prevuBanner").hidden=false;$("prevuTxt").textContent=pv.note}else{form.prevuId=null;$("prevuBanner").hidden=true}
     if(t.editId){$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false}
@@ -2220,7 +2307,12 @@ const PDFL={titre:["RAPPORT RAPIDE D'INSPECTION","QUICK INSPECTION REPORT","INFO
   marq:["zone(s) déjà marquée(s)","area(s) already marked","zona(s) ya marcada(s)","Bereich(e) bereits markiert"],
   dec:["Décision client","Client decision","Decisión del cliente","Kundenentscheidung"],decv:["attendue","required","pendiente","erforderlich"],
   obs:["Observation","Observation","Observación","Beobachtung"],reco:["Recommandation","Recommendation","Recomendación","Empfehlung"],
-  plan:["Plan de réparation","Repair plan","Plan de reparación","Reparaturplan"],hp:["POINT D'ARRÊT","HOLD POINT","PUNTO DE PARADA","HALTEPUNKT"],
+  plan:["Plan de réparation","Repair plan","Plan de reparación","Reparaturplan"],
+  av:["Avancement","Progress","Avance","Fortschritt"],titreAv:["RAPPORT D'AVANCEMENT","PROGRESS REPORT","INFORME DE AVANCE","FORTSCHRITTSBERICHT"],
+  rapAv:["Rapport d'avancement","Progress report","Informe de avance","Fortschrittsbericht"],
+  hpLib:["POINT D'ARRÊT LIBÉRÉ","HOLD POINT RELEASED","PUNTO DE PARADA LIBERADO","HALTEPUNKT FREIGEGEBEN"],
+  hpNon:["POINT D'ARRÊT NON LIBÉRÉ","HOLD POINT NOT RELEASED","PUNTO DE PARADA NO LIBERADO","HALTEPUNKT NICHT FREIGEGEBEN"],
+  nb:["nb","pcs","uds","Stk"],hp:["POINT D'ARRÊT","HOLD POINT","PUNTO DE PARADA","HALTEPUNKT"],
   photos:["Photos","Pictures","Fotos","Fotos"],photo:["Photo","Picture","Foto","Foto"],insp:["Inspecteur","Inspector","Inspector","Inspektor"],
   gen:["Généré le {a}","Generated on {a}","Generado el {a}","Erstellt am {a}"],page:["Page","Page","Página","Seite"],
   rapide:["Rapport rapide","Quick report","Informe rápido","Kurzbericht"],constats:["constats","findings","hallazgos","Befunde"]};
@@ -2300,6 +2392,15 @@ class PdfRapide{
         this.paragraphe([{t:x.nom||"",b:true}],M+ind,L-ind-(bw?bw+8:0),10);
         if(x.commentaire&&String(x.commentaire).trim()){this.y+=1;this.texteBalise(x.commentaire,M+ind,L-ind,9.5)}
         this.y+=5})}
+    // v1.61 : avancement cumulé par étape (progress report)
+    if(e.avancement&&e.avancement.length){this.titreSection(pdfL("av",l));const ind=20,unite=u=>u==="nb"?pdfL("nb",l):u;
+      e.avancement.forEach((x,k)=>{this.place(15);const y=this.y;const v=texteAv(x,l,unite);const vw=v?pdfLargeur(v,"B",10):0;
+        this.txt(M,y+10,(k+1)+".","B",10);if(v) this.txt(M+L-vw,y+10,v,"B",10,"0.12 0.40 0.20");
+        this.paragraphe([{t:x.nom||"",b:true}],M+ind,L-ind-(vw?vw+12:0),10);
+        const p=pctAv(x);if(p!=null){this.place(9);const bw=L-ind;this.rect(M+ind,this.y+1,bw,5,"0.88 0.88 0.88");if(p>0) this.rect(M+ind,this.y+1,bw*Math.min(100,p)/100,5,"0.18 0.49 0.31");this.y+=9}
+        if(x.arret){this.place(16);const t=pdfL(x.libere?"hpLib":"hpNon",l),w=pdfLargeur(t,"B",8)+12;this.rect(M+ind,this.y+1,w,12,x.libere?"0.18 0.49 0.31":"0.75 0.11 0.11");this.txt(M+ind+6,this.y+9.8,t,"B",8,"1 1 1");this.y+=16}
+        if(x.commentaire&&String(x.commentaire).trim()){this.y+=1;this.texteBalise(x.commentaire,M+ind,L-ind,9.5)}
+        this.y+=5})}
     if(photos.length){this.titreSection(pdfL("photos",l));const gap=12,cw=(L-gap)/2,maxH=230;
       for(let i=0;i<photos.length;i+=2){const lot=photos.slice(i,i+2).map(p=>{let w=cw,h=cw*p.im.h/p.im.w;if(h>maxH){h=maxH;w=maxH*p.im.w/p.im.h}
           const leg=`${pdfL("photo",l)} ${p.n}${p.leg?" – "+p.leg:""}`;const ll=this.lignes([{t:leg}],cw,8);return {...p,w,h,ll}});
@@ -2315,7 +2416,7 @@ class PdfRapide{
       // en-tête : logo, société, titre ; pied : inspecteur, date, page
       let x=M;if(logo){const h=38,w=h*logo.w/logo.h;this.image(logo,M,M,w,h);x=M+w+10}
       this.txt(x,M+15,nomSoc,"B",11);this.txt(x,M+29,actSoc,"R",8.5,"0.40 0.40 0.40");
-      const t1=pdfL("titre",l);this.txt(W-M-pdfLargeur(t1,"B",10),M+13,t1,"B",10,"0.42 0.16 0.08");
+      const t1=pdfL(this.prog?"titreAv":"titre",l);this.txt(W-M-pdfLargeur(t1,"B",10),M+13,t1,"B",10,"0.42 0.16 0.08");
       const t2=`${pdfL("mission",l)} ${this.m.no||""}`;this.txt(W-M-pdfLargeur(t2,"R",8.5),M+26,t2,"R",8.5,"0.40 0.40 0.40");
       if(this.soc!=="FTA"){const t3=pdfL("prelim",l);this.txt(W-M-pdfLargeur(t3,"I",8),M+38,t3,"I",8,"0.70 0.15 0.12")}
       this.trait(M,M+48,W-M,M+48,"0.42 0.16 0.08",1);
@@ -2336,7 +2437,7 @@ class PdfRapide{
     this.pages.forEach((p,i)=>{const c=enc(p.ops.join("\n"));const nP=nPg+2*i;
       obj(nP,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${this.H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R >> /XObject << ${[...p.ims].map(im=>`/Im${im.n} ${nIm+im.n-1} 0 R`).join(" ")} >> >> /Contents ${nP+1} 0 R >>`);
       obj(nP+1,`<< /Length ${c.length} >>`,c)});
-    const nInfo=nPg+2*N;obj(nInfo,`<< /Title ${pdfInfo(pdfL("rapide",l)+" – "+(this.m.no||""))} /Producer (The 982 Inspector Toolbox ${APP_VERSION}) /Creator (The 982 Inspector Toolbox) >>`);
+    const nInfo=nPg+2*N;obj(nInfo,`<< /Title ${pdfInfo(pdfL(this.prog?"rapAv":"rapide",l)+" – "+(this.m.no||""))} /Producer (The 982 Inspector Toolbox ${APP_VERSION}) /Creator (The 982 Inspector Toolbox) >>`);
     const xref=pos;let x=`xref\n0 ${nInfo+1}\n0000000000 65535 f \n`;for(let n=1;n<=nInfo;n++) x+=String(off[n]||0).padStart(10,"0")+" 00000 n \n";
     ecrire(enc(x+`trailer\n<< /Size ${nInfo+1} /Root 1 0 R /Info ${nInfo} 0 R >>\nstartxref\n${xref}\n%%EOF\n`));
     const out=new Uint8Array(pos);let o=0;for(const b of morceauxPdf){out.set(b,o);o+=b.length}return out}}
@@ -2392,8 +2493,9 @@ async function pdfRapide(liste){if(!liste.length){toast("Aucun constat sélectio
   try{toast("Création du PDF…",60000);const m=MISSIONS.find(x=>liste[0].mission&&x.id===liste[0].mission.id)||curMission()||CFG.mission;
     const so=socMission(m),l=m.langue||langueMission();const mk=new PdfRapide(l,so.societe,{...m,...so});
     const tri=[...liste].sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));
+    mk.prog=tri.every(e=>e.avancement&&e.avancement.length); // v1.61 : que des constats d'avancement -> « Progress report »
     for(const e of tri) await mk.constat(e,await photosPdf(e,mk));
-    const nom=tri.length===1?nomExplicite(tri[0])+".pdf":nomSur(`${m.no} - ${pdfL("rapide",l)} - ${today()} - ${tri.length} ${pdfL("constats",l)}`)+".pdf";
+    const nom=tri.length===1?nomExplicite(tri[0])+".pdf":nomSur(`${m.no} - ${pdfL(mk.prog?"rapAv":"rapide",l)} - ${today()} - ${tri.length} ${pdfL("constats",l)}`)+".pdf";
     const octets=await mk.octets();const f=new File([octets],nom,{type:"application/pdf"});
     $("toast").hidden=true;if(!await apercuPdf(mk,nom)){toast("PDF annulé.");return}
     const garde=tx("pdfs","readwrite",s=>s.put({id:newId(),nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:so.societe,
@@ -2831,6 +2933,15 @@ const TRAD_UI=[
 ["ex. 4,5","e.g. 4.5","p. ej. 4,5","z. B. 4,5"],
 ["Zone(s) déjà marquée(s)","Area(s) already marked","Zona(s) ya marcada(s)","Bereich(e) bereits markiert"],
 ["Plan de réparation","Repair plan","Plan de reparación","Reparaturplan"],
+["Avancement","Progress","Avance","Fortschritt"],
+["Coche la ou les étapes contrôlées et saisis l'avancement cumulé à ce jour, en % ou en quantité (fait / total).","Tick the step(s) checked and enter the cumulative progress to date, in % or as a quantity (done / total).","Marca el o los pasos controlados e introduce el avance acumulado hasta hoy, en % o en cantidad (hecho / total).","Geprüfte Schritte ankreuzen und den kumulierten Fortschritt bis heute eingeben, in % oder als Menge (erledigt / gesamt)."],
+["Étapes du plan de réparation de cette zone (constat du {a}).","Steps of the repair plan for this area (finding of {a}).","Pasos del plan de reparación de esta zona (hallazgo del {a}).","Schritte des Reparaturplans dieses Bereichs (Befund vom {a})."],
+["Pas de plan de réparation pour cette zone : toutes les étapes de la mission sont proposées.","No repair plan for this area: all the mission steps are offered.","No hay plan de reparación para esta zona: se proponen todos los pasos de la misión.","Kein Reparaturplan für diesen Bereich: alle Schritte der Mission werden angeboten."],
+["Quantité (fait / total)","Quantity (done / total)","Cantidad (hecho / total)","Menge (erledigt / gesamt)"],
+["fait","done","hecho","erledigt"],["total","total","total","gesamt"],
+["Avancement en %","Progress in %","Avance en %","Fortschritt in %"],["Quantité faite","Quantity done","Cantidad hecha","Erledigte Menge"],["Quantité totale","Total quantity","Cantidad total","Gesamtmenge"],["Unité","Unit","Unidad","Einheit"],
+["✅ Point d'arrêt libéré","✅ Hold point released","✅ Punto de parada liberado","✅ Haltepunkt freigegeben"],
+["Précédent : {a} ({b})","Previous: {a} ({b})","Anterior: {a} ({b})","Vorher: {a} ({b})"],
 ["Coche les étapes prévues pour réparer cette zone (reprises au §4 « Repair plan » de l'IR) ; pour chacune : point d'arrêt et commentaire.","Tick the steps planned to repair this area (shown in §4 “Repair plan” of the IR); for each one: hold point and comment.","Marca los pasos previstos para reparar esta zona (en el §4 «Repair plan» del IR); para cada uno: punto de parada y comentario.","Die geplanten Schritte zur Reparatur dieses Bereichs ankreuzen (in §4 „Repair plan“ des IR); für jeden: Haltepunkt und Kommentar."],
 ["⛔ Point d'arrêt (hold point)","⛔ Hold point","⛔ Punto de parada (hold point)","⛔ Haltepunkt (hold point)"],
 ["Commentaire","Comment","Comentario","Kommentar"],
@@ -3092,7 +3203,7 @@ async function start(){
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
   await loadCfg();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
   await chargerPrevus();renderPrevus();initDegats();renderAcces();
-  $("fEq").onchange=()=>{fillSub();updatePath()};$("fSub").onchange=updatePath;$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=()=>{updatePath();majPropDate()};$("bDatePrise").onclick=()=>{const j=$("bDatePrise").dataset.j;if(j){$("fDate").value=j;updatePath()}majPropDate()};
+  $("fEq").onchange=()=>{fillSub();updatePath();majAv()};$("fSub").onchange=()=>{updatePath();majAv()};$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=()=>{updatePath();majPropDate()};$("bDatePrise").onclick=()=>{const j=$("bDatePrise").dataset.j;if(j){$("fDate").value=j;updatePath()}majPropDate()};
   // v1.57 : appli restée ouverte d'un jour à l'autre -> un formulaire vide repasse sur la date du jour
   //  (seulement au changement de jour, et si la date affichée était celle de la veille : une date choisie à la main est gardée)
   let jour=today();const dateDuJour=()=>{const t=today();if(document.hidden||t===jour) return;
