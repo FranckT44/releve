@@ -127,7 +127,14 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .entry img{width:64px;height:48px;object-fit:cover;border-radius:6px;background:var(--bg)}
 .entry .t{font-weight:650;font-size:15px}
 .entry .m{font-size:13px;color:var(--muted)}
-.entry .o{font-size:14px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.entry .o{font-size:14px;margin-top:2px}
+.entry .t{line-height:1.3}.entry .acts button.ouvrir{min-width:108px}.entry .acts button[aria-expanded=true]{background:var(--accent-soft);border-color:var(--accent)}
+.apercu{grid-column:1/-1;display:grid;gap:8px;margin-top:2px;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--line)}.apercu[hidden]{display:none}
+.apercu .aph{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}.apercu figure{margin:0;position:relative}
+.apercu figure img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:6px;display:block}.apercu figcaption{font-size:12px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.apercu figure .hr{position:absolute;top:4px;left:4px;font:600 11px var(--font);background:rgba(0,0,0,.65);color:#fff;padding:1px 6px;border-radius:999px}
+.apercu dl{margin:0;display:grid;gap:6px}.apercu dt{font:600 12px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.03em}.apercu dd{margin:0;font-size:14px}
+.apercu dd ul,.apercu dd ol{margin:2px 0;padding-left:22px}.dayhead .tout{min-height:36px;padding:4px 10px;font-size:13px}
 .entry .acts{grid-column:2;display:flex;gap:8px;flex-wrap:wrap}
 .entry .acts button{min-height:38px;padding:4px 12px;font-size:14px}
 .pill{display:inline-block;font:600 11px var(--font);padding:2px 7px;border-radius:999px;color:#fff;margin-right:4px;vertical-align:1px}
@@ -555,7 +562,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.46";
+const APP_VERSION="1.47";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1549,6 +1556,26 @@ function initGalerie(){
   document.addEventListener("keydown",e=>{if($("gv").hidden||document.activeElement===$("gvLeg")) return;if(e.key==="ArrowRight") gvOuvrir(GAL.cur+1);else if(e.key==="ArrowLeft") gvOuvrir(GAL.cur-1);else if(e.key==="Escape") gvFermer()})}
 /* ---------- journal ---------- */
 async function refreshBadge(){const en=await allEntries();const n=en.filter(e=>!e.envoye&&belongs(e)).length;const b=$("nbPending");b.hidden=!n;b.textContent=n}
+/* ---------- liste du Journal (v1.47) : libellé complet, aperçu déroulant ---------- */
+const JOURNAL_OUVERTS=new Set(); // constats dont l'aperçu est déroulé (gardé tant que l'appli reste ouverte)
+function libelleConstat(e){return [e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom].filter(Boolean).join(" – ")}
+function fmtCourt(iso){const d=new Date(iso);if(isNaN(d)) return "";return `${pad(d.getDate())}/${pad(d.getMonth()+1)} à ${pad(d.getHours())}:${pad(d.getMinutes())}`}
+async function remplirApercu(ap,e){
+  const ph=document.createElement("div");ph.className="aph";
+  for(const [k,n] of e.photos.entries()){const f=document.createElement("figure");const leg=(e.legendes||[])[k]||"",hors=(e.rapport||[])[k]===false;
+    f.innerHTML=`<img alt="Photo ${k+1}${leg?" : "+esc(leg):""}">${hors?'<i class="hr">hors rapport</i>':""}<figcaption>${k+1}${leg?" – "+esc(leg):""}</figcaption>`;ph.append(f);
+    getPhoto(n).then(p=>{if(p) f.querySelector("img").src=p.thumb})}
+  if(e.photos.length) ap.append(ph);
+  const dl=document.createElement("dl");
+  const ajouter=(titre,html)=>{if(!html) return;const t=document.createElement("dt");t.textContent=titre;const d=document.createElement("dd");d.innerHTML=html;dl.append(t,d)};
+  ajouter("Observation",e.observation?versHtml(e.observation):"");
+  ajouter("Recommandation",e.recommandation?versHtml(e.recommandation):"");
+  ajouter("Accès au revêtement",e.acces&&e.acces.nom?esc(e.acces.nom):"");
+  const surf=[e.surface?esc(e.surface)+" m²":"",e.zonesMarquees?"zone(s) déjà marquée(s)":""].filter(Boolean).join(" · ");ajouter("Surface estimée à réparer",surf);
+  ajouter("Décision client",e.decisionClient?"<b>attendue</b>":"");
+  ajouter("Dossier sur le PC",e.dossierCible?`<span class="hint">${esc(e.dossierCible)}</span>`:"");
+  if(!dl.children.length&&!e.photos.length) dl.innerHTML='<dd class="hint">Rien d\'autre à afficher.</dd>';
+  ap.append(dl)}
 async function renderJournal(){
   const tous=await allEntries();const en=tous.filter(belongs).sort((a,b)=>(b.date+b.hms).localeCompare(a.date+a.hms));
   const pend=en.filter(e=>!e.envoye);const np=pend.reduce((s,e)=>s+e.photos.length,0);
@@ -1562,18 +1589,28 @@ async function renderJournal(){
   const byDay={};for(const e of en)(byDay[e.date]??=[]).push(e);
   for(const [day,list] of Object.entries(byDay)){
     const c=document.createElement("div");c.className="card";
-    c.innerHTML=`<div class="dayhead"><h3>${frDate(day)}</h3><span class="stat">${list.length} constat(s)</span></div>`;
+    c.innerHTML=`<div class="dayhead"><h3>${frDate(day)}</h3><span class="stat">${list.length} constat${list.length>1?"s":""}</span><button type="button" class="ghost tout">Tout dérouler</button></div>`;
+    const lignes=[];
     for(const e of list){const r=document.createElement("div");r.className="entry";
-      const g=e.gravite?`<span class="pill" style="background:${GCOL[e.gravite]}">${e.gravite}</span>`:"";
-      r.innerHTML=`<img alt=""><div><div class="t"></div><div class="m"></div><div class="o"></div></div><div class="acts"></div>`;
-      r.querySelector(".t").innerHTML=g;r.querySelector(".t").append(`${e.equipement.nom} · ${e.sousEquipement}`);
-      r.querySelector(".m").textContent=`${(e.sousActivite||e.activite).nom}${e.repere?" · "+e.repere:""} · ${e.photos.length} photo(s) · ${e.envoye?"envoyé ✓":"à envoyer"}`;
-      r.querySelector(".o").innerHTML=versHtml(e.observation);
+      const g=e.gravite?`<span class="pill" style="background:${GCOL[e.gravite]}">${esc(e.gravite)}</span>`:"";
+      r.innerHTML=`<img alt=""><div><div class="t"></div><div class="m"></div></div><div class="acts"></div><div class="apercu" hidden></div>`;
+      r.querySelector(".t").innerHTML=g;r.querySelector(".t").append(libelleConstat(e));
+      const h=e.hms?` · ${e.hms.slice(0,2)}:${e.hms.slice(2,4)}`:"";
+      const env=e.envoye?`envoyé ✓${e.envoyeLe?" le "+fmtCourt(e.envoyeLe):""}`:"à envoyer";
+      r.querySelector(".m").textContent=`${e.repere?"Repère "+e.repere+" · ":""}${e.photos.length} photo${e.photos.length>1?"s":""}${h} · ${env}`;
       if(e.photos[0]) getPhoto(e.photos[0]).then(p=>{if(p) r.querySelector("img").src=p.thumb});
-      const acts=r.querySelector(".acts");
+      const acts=r.querySelector(".acts"),ap=r.querySelector(".apercu");ap.id="ap_"+e.id;
+      const bO=document.createElement("button");bO.type="button";bO.className="ouvrir";bO.setAttribute("aria-controls",ap.id);
+      const basculer=ouvert=>{ap.hidden=!ouvert;bO.setAttribute("aria-expanded",String(ouvert));bO.textContent=ouvert?"▾ Replier":"▸ Aperçu";
+        if(ouvert){JOURNAL_OUVERTS.add(e.id);if(!ap.dataset.fait){ap.dataset.fait="1";remplirApercu(ap,e)}}else JOURNAL_OUVERTS.delete(e.id)};
+      bO.onclick=()=>{basculer(ap.hidden);majTout()};basculer(JOURNAL_OUVERTS.has(e.id));lignes.push(basculer);acts.append(bO);
+      r.querySelector("img").onclick=()=>bO.click();
       const bE=document.createElement("button");bE.type="button";bE.textContent="Modifier";bE.onclick=()=>editEntry(e.id);acts.append(bE);
       if(e.envoye){const bR=document.createElement("button");bR.type="button";bR.textContent="Renvoyer";bR.onclick=()=>sendEntries([e]);acts.append(bR)}
       c.append(r)}
+    // bouton « Tout dérouler / Tout replier » de la journée
+    const bT=c.querySelector(".tout"),majTout=()=>{const tous=list.every(e=>JOURNAL_OUVERTS.has(e.id));bT.textContent=tous?"Tout replier":"Tout dérouler";bT.dataset.ouvrir=tous?"":"1"};
+    bT.onclick=()=>{const o=!!bT.dataset.ouvrir;lignes.forEach(f=>f(o));majTout()};majTout();
     j.append(c)}
   if(!en.length) j.innerHTML=`<div class="card"><p class="hint">Aucun constat pour l'instant. Les constats enregistrés depuis l'onglet Saisie apparaissent ici, classés par jour.</p></div>`;
   try{const est=await navigator.storage.estimate();const per=navigator.storage.persisted?await navigator.storage.persisted():false;
