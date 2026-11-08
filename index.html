@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Relevé sur Site</title>
 <meta name="theme-color" content="#1d2a33">
-<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<meta name="color-scheme" content="light dark" id="metaScheme">
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t;document.getElementById("metaScheme").content=t==="light"?"only light":"only dark"}}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -35,7 +36,7 @@
   --ok:#5fbf86; --minor:#e0b43c; --repair:#ec8a52; --crit:#f0716a; --na:#9aa3a9;
   --tab:#0c1114; --tab-fg:#8e9ba3; --tab-on:#ffffff; color-scheme:dark;
   --c-bleu:#18232d;--c-bleu-b:#4f7fae;--c-vert:#17241d;--c-vert-b:#4c8a64;--c-ambre:#272017;--c-ambre-b:#a87533;--c-violet:#211d2b;--c-violet-b:#7462a8;--c-jaune:#26241a;--c-jaune-b:#a08a2e}
-:root[data-theme=light]{color-scheme:light}
+:root[data-theme=light]{color-scheme:only light}:root[data-theme=dark]{color-scheme:only dark}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--fg);font:16px/1.4 var(--font);-webkit-tap-highlight-color:transparent}
@@ -43,9 +44,10 @@ header{position:sticky;top:0;z-index:5;background:var(--tab);color:var(--tab-on)
   padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
   display:flex;align-items:center;gap:10px}
 header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.01em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-header .mission{font:600 13px var(--mono);color:var(--tab-on);background:transparent;border:1px solid var(--tab-fg);border-radius:999px;min-height:36px;padding:4px 12px;max-width:55vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+header .mission{font:650 14px var(--mono);color:var(--tab-on);background:transparent;border:1px solid var(--tab-fg);border-radius:999px;min-height:36px;padding:4px 12px;max-width:55vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 main{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-width:1240px;margin:0 auto}
 #v-saisie,#v-journal{max-width:720px;margin:0 auto}
+@media (min-width:700px){header .mission{font-size:17px;max-width:min(70vw,720px);min-height:42px;padding:6px 18px}header h1{font-size:19px;flex:0 1 auto}header .themeBtn{margin-left:auto}}
 [hidden]{display:none!important}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:12px;margin-bottom:14px}
 .card.c-bleu{background:var(--c-bleu);border-left:4px solid var(--c-bleu-b)}.card.c-vert{background:var(--c-vert);border-left:4px solid var(--c-vert-b)}
@@ -494,7 +496,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.29";
+const APP_VERSION="1.30";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1114,6 +1116,8 @@ function initDegats(){renderDegats();majDegats();$("degOk").onclick=validerDegat
 const THEMES=[["auto","🌓","automatique (réglage du téléphone)"],["light","☀️","clair"],["dark","🌙","sombre"]];
 function themeActuel(){try{return localStorage.getItem("theme")||"auto"}catch(e){return "auto"}}
 function appliquerTheme(t){const r=document.documentElement;if(t==="auto") delete r.dataset.theme;else r.dataset.theme=t;
+  // « only light » : empêche le navigateur (mode sombre forcé de Samsung / Chrome, DeX) d'assombrir l'appli quand le thème clair est choisi
+  $("metaScheme").content=t==="light"?"only light":t==="dark"?"only dark":"light dark";
   const x=THEMES.find(x=>x[0]===t)||THEMES[0];$("bTheme").textContent=x[1];$("bTheme").setAttribute("aria-label","Thème : "+x[2])}
 function initTheme(){appliquerTheme(themeActuel());
   $("bTheme").onclick=()=>{const i=THEMES.findIndex(x=>x[0]===themeActuel());const t=THEMES[(i+1)%THEMES.length];
