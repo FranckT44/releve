@@ -142,7 +142,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .edbar button.danger{color:#f0716a;border-color:#f0716a;background:transparent}
 .edopts{flex-wrap:wrap;row-gap:4px}
 .edl{display:flex;align-items:center;gap:6px;color:#c9d3d9;font-size:13px;font-weight:500;white-space:nowrap}
-.edl input[type=range]{width:80px}
+.edl input[type=range]{width:80px}.edn{width:3.6em;min-height:34px;font-size:15px;padding:2px 4px;border-radius:6px;border:1px solid #556;background:#0e1316;color:#e6ecef;text-align:center}
 .sw{display:flex;gap:5px}.sw button{width:28px;height:28px;min-height:28px;padding:0;border-radius:50%;border:2px solid #2e3a41}
 .sw button[aria-pressed=true]{outline:3px solid #fff;outline-offset:1px}
 #edZone{flex:1;min-height:0;position:relative;overflow:hidden;touch-action:none}.edvue span{min-width:2.6em;text-align:center;font-size:13px}.edvue .edsep{flex:1;min-width:0}
@@ -483,9 +483,9 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   </div>
   <div class="edbar edopts">
     <span class="sw" id="edCols"></span>
-    <label class="edl">Épaisseur<input type="range" id="edW" min="1" max="10" value="3"></label>
+    <label class="edl">Épaisseur<input type="range" id="edW" min="1" max="20" value="3"><input type="number" id="edWn" class="edn" min="1" max="20" value="3" inputmode="numeric" aria-label="Épaisseur du trait"></label>
     <label class="edl"><input type="checkbox" id="edFill"> Remplir</label>
-    <label class="edl">Opacité<input type="range" id="edOp" min="10" max="100" value="35"></label>
+    <label class="edl">Opacité<input type="range" id="edOp" min="10" max="100" value="35"><input type="number" id="edOpn" class="edn" min="10" max="100" step="5" value="35" inputmode="numeric" aria-label="Opacité en pourcentage">%</label>
     <button type="button" id="edUndo" aria-label="Annuler la dernière action">↶</button><button type="button" id="edRedo" aria-label="Rétablir">↷</button>
     <button type="button" id="edDel" class="danger" aria-label="Supprimer l'élément sélectionné">Suppr.</button>
   </div>
@@ -505,7 +505,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.33";
+const APP_VERSION="1.34";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -884,6 +884,7 @@ function edPoint(ev){const r=$("edCv").getBoundingClientRect();return [(ev.clien
 const PTR=new Map();
 function edPinchPos(){const [a,b]=[...PTR.values()],r=$("edCv").getBoundingClientRect();return {d:Math.hypot(a.x-b.x,a.y-b.y)||1,cx:(a.x+b.x)/2-r.left,cy:(a.y+b.y)/2-r.top}}
 function edOutil(t){ED.tool=t;document.querySelectorAll("#ed [data-t]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===t)));if(t!=="sel"){ED.sel=-1}if(ED.img) edDessiner()}
+function edSyncN(){$("edWn").value=$("edW").value;$("edOpn").value=$("edOp").value}
 function styleCourant(){return {col:ED.col,w:+$("edW").value*unite(),fill:$("edFill").checked,op:+$("edOp").value/100}}
 function toucher(pt){const tol=12*unite();for(let j=ED.obj.length-1;j>=0;j--){const b=boite(ED.obj[j]);if(pt[0]>=b[0]-tol&&pt[0]<=b[2]+tol&&pt[1]>=b[1]-tol&&pt[1]<=b[3]+tol) return j}return -1}
 function deplacer(o,dx,dy){if(o.t==="pen") o.pts=o.pts.map(q=>[q[0]+dx,q[1]+dy]);else if(o.t==="text"){o.x+=dx;o.y+=dy}else{o.x1+=dx;o.x2+=dx;o.y1+=dy;o.y2+=dy}}
@@ -898,7 +899,7 @@ function edDown(ev){ev.preventDefault();try{$("edCv").setPointerCapture(ev.point
       const q=edPinchPos();ED.pinch={...q,sc:ED.v.sc,ix:q.cx/ED.v.sc+ED.v.x0,iy:q.cy/ED.v.sc+ED.v.y0};edDessiner();return}
     if(PTR.size>2||ED.pinch) return}
   const pt=edPoint(ev);
-  if(ED.tool==="sel"){ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.t==="text") txtOuvrir(o)}edDessiner();return}
+  if(ED.tool==="sel"){ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.op!=null) $("edOp").value=Math.round(o.op*100);if(o.fill!=null) $("edFill").checked=!!o.fill;edSyncN();if(o.t==="text") txtOuvrir(o)}edDessiner();return}
   if(ED.tool==="text"){TXTPOS=pt;TXTEDIT=-1;txtOuvrir(null);return}
   const st=styleCourant();
   if(ED.tool==="pen") ED.cur={t:"pen",pts:[pt],...st};
@@ -931,7 +932,12 @@ function initEditeur2(){
   document.querySelectorAll("#ed [data-t]").forEach(b=>b.onclick=()=>{if(b.dataset.t==="crop"&&ED.tool==="crop"&&ED.crop){edPousser();ED.crop=null;edDessiner()}edOutil(b.dataset.t)});
   const cv=$("edCv");cv.addEventListener("pointerdown",edDown);cv.addEventListener("pointermove",edMove);cv.addEventListener("pointerup",edUp);cv.addEventListener("pointercancel",edUp);
   const majSel=()=>{if(ED.sel>=0){const o=ED.obj[ED.sel];o.w=+$("edW").value*unite();o.fill=$("edFill").checked;o.op=+$("edOp").value/100;edDessiner()}};
-  $("edW").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};$("edFill").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};$("edOp").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};
+  $("edW").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};
+  // valeurs chiffrées à côté des curseurs (épaisseur, opacité %), modifiables au clavier
+  for(const [r,n] of [["edW","edWn"],["edOp","edOpn"]]){
+    $(r).addEventListener("input",()=>{$(n).value=$(r).value});
+    $(n).onchange=()=>{const R=$(r);let v=Math.round(+$(n).value);if(!isFinite(v)) v=+R.value;v=Math.min(+R.max,Math.max(+R.min,v));$(n).value=v;R.value=v;if(ED.sel>=0) edPousser();majSel()};
+    $(n).onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$(n).blur()}}}$("edFill").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};$("edOp").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};
   $("edUndo").onclick=()=>{if(!ED.hist.length) return;ED.redo.push(edEtat());edRestaurer(ED.hist.pop())};
   $("edRedo").onclick=()=>{if(!ED.redo.length) return;ED.hist.push(edEtat());edRestaurer(ED.redo.pop())};
   $("edDel").onclick=()=>{if(ED.sel<0) return;edPousser();ED.obj.splice(ED.sel,1);ED.sel=-1;edDessiner()};
