@@ -142,7 +142,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .edbar button.danger{color:#f0716a;border-color:#f0716a;background:transparent}
 .edopts{flex-wrap:wrap;row-gap:4px}
 .edl{display:flex;align-items:center;gap:6px;color:#c9d3d9;font-size:13px;font-weight:500;white-space:nowrap}
-.edl input[type=range]{width:80px}.edn{width:3.6em;min-height:34px;font-size:15px;padding:2px 4px;border-radius:6px;border:1px solid #556;background:#0e1316;color:#e6ecef;text-align:center}
+.edl input[type=range]{width:80px}.edsel{width:auto!important;text-align:left}.edn{width:3.6em;min-height:34px;font-size:15px;padding:2px 4px;border-radius:6px;border:1px solid #556;background:#0e1316;color:#e6ecef;text-align:center}
 .sw{display:flex;gap:5px}.sw button{width:28px;height:28px;min-height:28px;padding:0;border-radius:50%;border:2px solid #2e3a41}
 .sw button[aria-pressed=true]{outline:3px solid #fff;outline-offset:1px}
 #edZone{flex:1;min-height:0;position:relative;overflow:hidden;touch-action:none}.edvue span{min-width:2.6em;text-align:center;font-size:13px}.edvue .edsep{flex:1;min-width:0}
@@ -484,6 +484,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   <div class="edbar edopts">
     <span class="sw" id="edCols"></span>
     <label class="edl">Épaisseur<input type="range" id="edW" min="1" max="20" value="3"><input type="number" id="edWn" class="edn" min="1" max="20" value="3" inputmode="numeric" aria-label="Épaisseur du trait"></label>
+    <label class="edl">Trait<select id="edDash" class="edn edsel" aria-label="Type de trait"><option value="">━ plein</option><option value="dash">╍ tirets</option><option value="dot">┈ pointillés</option></select></label>
     <label class="edl"><input type="checkbox" id="edFill"> Remplir</label>
     <label class="edl">Opacité<input type="range" id="edOp" min="10" max="100" value="35"><input type="number" id="edOpn" class="edn" min="10" max="100" step="5" value="35" inputmode="numeric" aria-label="Opacité en pourcentage">%</label>
     <button type="button" id="edUndo" aria-label="Annuler la dernière action">↶</button><button type="button" id="edRedo" aria-label="Rétablir">↷</button>
@@ -505,7 +506,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.34";
+const APP_VERSION="1.35";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -842,13 +843,15 @@ function edZoomer(f,cx,cy){const v=ED.v;if(cx==null){cx=ED.W/2;cy=ED.H/2}const i
 function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
 function dessinerObjet(g,o,s){ // s = échelle image -> sortie
   const w=o.w*s;g.lineWidth=w;g.strokeStyle=o.col;g.fillStyle=rgba(o.col,o.op);g.lineCap="round";g.lineJoin="round";
+  // type de trait : plein, tirets, pointillés (points ronds grâce au bout arrondi)
+  g.setLineDash(o.ds==="dash"?[w*3,w*2.2]:o.ds==="dot"?[0.01,w*2]:[]);
   if(o.t==="pen"){g.beginPath();o.pts.forEach((q,j)=>j?g.lineTo(q[0]*s,q[1]*s):g.moveTo(q[0]*s,q[1]*s));g.stroke()}
   else if(o.t==="line"||o.t==="arrow"){g.beginPath();g.moveTo(o.x1*s,o.y1*s);g.lineTo(o.x2*s,o.y2*s);g.stroke();
     if(o.t==="arrow"){const a=Math.atan2(o.y2-o.y1,o.x2-o.x1),L=Math.max(w*4,12*s);g.beginPath();g.moveTo(o.x2*s,o.y2*s);
-      g.lineTo(o.x2*s-L*Math.cos(a-0.45),o.y2*s-L*Math.sin(a-0.45));g.lineTo(o.x2*s-L*Math.cos(a+0.45),o.y2*s-L*Math.sin(a+0.45));g.closePath();g.fillStyle=o.col;g.fill()}}
+      g.setLineDash([]);g.lineTo(o.x2*s-L*Math.cos(a-0.45),o.y2*s-L*Math.sin(a-0.45));g.lineTo(o.x2*s-L*Math.cos(a+0.45),o.y2*s-L*Math.sin(a+0.45));g.closePath();g.fillStyle=o.col;g.fill()}}
   else if(o.t==="rect"){const x=Math.min(o.x1,o.x2)*s,y=Math.min(o.y1,o.y2)*s,ww=Math.abs(o.x2-o.x1)*s,hh=Math.abs(o.y2-o.y1)*s;if(o.fill) g.fillRect(x,y,ww,hh);g.strokeRect(x,y,ww,hh)}
   else if(o.t==="ell"){g.beginPath();g.ellipse((o.x1+o.x2)/2*s,(o.y1+o.y2)/2*s,Math.abs(o.x2-o.x1)/2*s,Math.abs(o.y2-o.y1)/2*s,0,0,Math.PI*2);if(o.fill) g.fill();g.stroke()}
-  else if(o.t==="text"){const L=mepTexte(o),fs=L.fs*s,lh=L.lh*s,pad=fs*0.25;g.font=L.police(fs);g.textBaseline="top";
+  else if(o.t==="text"){g.setLineDash([]);const L=mepTexte(o),fs=L.fs*s,lh=L.lh*s,pad=fs*0.25;g.font=L.police(fs);g.textBaseline="top";
     if(o.fill){g.fillStyle=rgba(o.col==="#ffffff"?"#000000":"#ffffff",o.op);g.fillRect(o.x*s-pad,o.y*s-pad,L.bw*s+2*pad,L.bh*s+2*pad)}
     g.fillStyle=o.col;L.lignes.forEach((t,k)=>{const y=o.y*s+k*lh;g.fillText(t,o.x*s,y);if(o.u&&t) g.fillRect(o.x*s,y+fs*0.98,g.measureText(t).width,Math.max(1,fs*0.07))})}}
 // mise en page d'un texte : taille, style, retour à la ligne au bord droit de la photo (ou du recadrage)
@@ -885,7 +888,7 @@ const PTR=new Map();
 function edPinchPos(){const [a,b]=[...PTR.values()],r=$("edCv").getBoundingClientRect();return {d:Math.hypot(a.x-b.x,a.y-b.y)||1,cx:(a.x+b.x)/2-r.left,cy:(a.y+b.y)/2-r.top}}
 function edOutil(t){ED.tool=t;document.querySelectorAll("#ed [data-t]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===t)));if(t!=="sel"){ED.sel=-1}if(ED.img) edDessiner()}
 function edSyncN(){$("edWn").value=$("edW").value;$("edOpn").value=$("edOp").value}
-function styleCourant(){return {col:ED.col,w:+$("edW").value*unite(),fill:$("edFill").checked,op:+$("edOp").value/100}}
+function styleCourant(){return {col:ED.col,w:+$("edW").value*unite(),fill:$("edFill").checked,op:+$("edOp").value/100,ds:$("edDash").value}}
 function toucher(pt){const tol=12*unite();for(let j=ED.obj.length-1;j>=0;j--){const b=boite(ED.obj[j]);if(pt[0]>=b[0]-tol&&pt[0]<=b[2]+tol&&pt[1]>=b[1]-tol&&pt[1]<=b[3]+tol) return j}return -1}
 function deplacer(o,dx,dy){if(o.t==="pen") o.pts=o.pts.map(q=>[q[0]+dx,q[1]+dy]);else if(o.t==="text"){o.x+=dx;o.y+=dy}else{o.x1+=dx;o.x2+=dx;o.y1+=dy;o.y2+=dy}}
 let TXTPOS=null,TXTEDIT=-1;const TXT={b:false,i:false,u:false,t:7};
@@ -899,7 +902,7 @@ function edDown(ev){ev.preventDefault();try{$("edCv").setPointerCapture(ev.point
       const q=edPinchPos();ED.pinch={...q,sc:ED.v.sc,ix:q.cx/ED.v.sc+ED.v.x0,iy:q.cy/ED.v.sc+ED.v.y0};edDessiner();return}
     if(PTR.size>2||ED.pinch) return}
   const pt=edPoint(ev);
-  if(ED.tool==="sel"){ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.op!=null) $("edOp").value=Math.round(o.op*100);if(o.fill!=null) $("edFill").checked=!!o.fill;edSyncN();if(o.t==="text") txtOuvrir(o)}edDessiner();return}
+  if(ED.tool==="sel"){ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.op!=null) $("edOp").value=Math.round(o.op*100);if(o.fill!=null) $("edFill").checked=!!o.fill;if(o.t!=="text") $("edDash").value=o.ds||"";edSyncN();if(o.t==="text") txtOuvrir(o)}edDessiner();return}
   if(ED.tool==="text"){TXTPOS=pt;TXTEDIT=-1;txtOuvrir(null);return}
   const st=styleCourant();
   if(ED.tool==="pen") ED.cur={t:"pen",pts:[pt],...st};
@@ -931,13 +934,13 @@ function initEditeur2(){
     b.onclick=()=>{ED.col=c;sw.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));if(ED.sel>=0){edPousser();ED.obj[ED.sel].col=c;ED.obj[ED.sel].op=ED.obj[ED.sel].op;edDessiner()}};sw.append(b)}
   document.querySelectorAll("#ed [data-t]").forEach(b=>b.onclick=()=>{if(b.dataset.t==="crop"&&ED.tool==="crop"&&ED.crop){edPousser();ED.crop=null;edDessiner()}edOutil(b.dataset.t)});
   const cv=$("edCv");cv.addEventListener("pointerdown",edDown);cv.addEventListener("pointermove",edMove);cv.addEventListener("pointerup",edUp);cv.addEventListener("pointercancel",edUp);
-  const majSel=()=>{if(ED.sel>=0){const o=ED.obj[ED.sel];o.w=+$("edW").value*unite();o.fill=$("edFill").checked;o.op=+$("edOp").value/100;edDessiner()}};
+  const majSel=()=>{if(ED.sel>=0){const o=ED.obj[ED.sel];o.w=+$("edW").value*unite();o.fill=$("edFill").checked;o.op=+$("edOp").value/100;if(o.t!=="text") o.ds=$("edDash").value;edDessiner()}};
   $("edW").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};
   // valeurs chiffrées à côté des curseurs (épaisseur, opacité %), modifiables au clavier
   for(const [r,n] of [["edW","edWn"],["edOp","edOpn"]]){
     $(r).addEventListener("input",()=>{$(n).value=$(r).value});
     $(n).onchange=()=>{const R=$(r);let v=Math.round(+$(n).value);if(!isFinite(v)) v=+R.value;v=Math.min(+R.max,Math.max(+R.min,v));$(n).value=v;R.value=v;if(ED.sel>=0) edPousser();majSel()};
-    $(n).onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$(n).blur()}}}$("edFill").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};$("edOp").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};
+    $(n).onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$(n).blur()}}}$("edFill").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};$("edDash").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};$("edOp").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};
   $("edUndo").onclick=()=>{if(!ED.hist.length) return;ED.redo.push(edEtat());edRestaurer(ED.hist.pop())};
   $("edRedo").onclick=()=>{if(!ED.redo.length) return;ED.hist.push(edEtat());edRestaurer(ED.redo.pop())};
   $("edDel").onclick=()=>{if(ED.sel<0) return;edPousser();ED.obj.splice(ED.sel,1);ED.sel=-1;edDessiner()};
