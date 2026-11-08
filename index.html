@@ -608,7 +608,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.59";
+const APP_VERSION="1.60";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2220,6 +2220,7 @@ const PDFL={titre:["RAPPORT RAPIDE D'INSPECTION","QUICK INSPECTION REPORT","INFO
   marq:["zone(s) déjà marquée(s)","area(s) already marked","zona(s) ya marcada(s)","Bereich(e) bereits markiert"],
   dec:["Décision client","Client decision","Decisión del cliente","Kundenentscheidung"],decv:["attendue","required","pendiente","erforderlich"],
   obs:["Observation","Observation","Observación","Beobachtung"],reco:["Recommandation","Recommendation","Recomendación","Empfehlung"],
+  plan:["Plan de réparation","Repair plan","Plan de reparación","Reparaturplan"],hp:["POINT D'ARRÊT","HOLD POINT","PUNTO DE PARADA","HALTEPUNKT"],
   photos:["Photos","Pictures","Fotos","Fotos"],photo:["Photo","Picture","Foto","Foto"],insp:["Inspecteur","Inspector","Inspector","Inspektor"],
   gen:["Généré le {a}","Generated on {a}","Generado el {a}","Erstellt am {a}"],page:["Page","Page","Página","Seite"],
   rapide:["Rapport rapide","Quick report","Informe rápido","Kurzbericht"],constats:["constats","findings","hallazgos","Befunde"]};
@@ -2291,6 +2292,14 @@ class PdfRapide{
     this.y+=6;
     if(e.observation){this.titreSection(pdfL("obs",l));this.texteBalise(e.observation,M,L,10)}
     if(e.recommandation){this.titreSection(pdfL("reco",l));this.texteBalise(e.recommandation,M,L,10)}
+    // v1.60 : plan de réparation (étapes cochées dans la Saisie), avec points d'arrêt et commentaires
+    if(e.planReparation&&e.planReparation.length){this.titreSection(pdfL("plan",l));const ind=20;
+      e.planReparation.forEach((x,k)=>{this.place(15);const y=this.y;let bw=0;
+        this.txt(M,y+10,(k+1)+".","B",10);
+        if(x.arret){const hp=pdfL("hp",l);bw=pdfLargeur(hp,"B",8)+12;this.rect(M+L-bw,y+1,bw,12,"0.75 0.11 0.11");this.txt(M+L-bw+6,y+9.8,hp,"B",8,"1 1 1")}
+        this.paragraphe([{t:x.nom||"",b:true}],M+ind,L-ind-(bw?bw+8:0),10);
+        if(x.commentaire&&String(x.commentaire).trim()){this.y+=1;this.texteBalise(x.commentaire,M+ind,L-ind,9.5)}
+        this.y+=5})}
     if(photos.length){this.titreSection(pdfL("photos",l));const gap=12,cw=(L-gap)/2,maxH=230;
       for(let i=0;i<photos.length;i+=2){const lot=photos.slice(i,i+2).map(p=>{let w=cw,h=cw*p.im.h/p.im.w;if(h>maxH){h=maxH;w=maxH*p.im.w/p.im.h}
           const leg=`${pdfL("photo",l)} ${p.n}${p.leg?" – "+p.leg:""}`;const ll=this.lignes([{t:leg}],cw,8);return {...p,w,h,ll}});
