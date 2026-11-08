@@ -444,6 +444,12 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
       <option value="4">4 – Tous types de fichiers</option>
     </select></label>
     <p class="hint">Android choisit lui-même l'appli proposée selon la façon dont les photos sont demandées. Essaie les variantes et garde celle qui ouvre la Galerie Samsung. Ce réglage ne concerne que ce téléphone.</p>
+    <label>Envoi vers le PC<select id="cEnvoi">
+      <option value="auto">Automatique (Quick Share, ou Téléchargements en DeX)</option>
+      <option value="dl">Toujours enregistrer dans Téléchargements (DeX)</option>
+      <option value="share">Toujours ouvrir le partage (Quick Share)</option>
+    </select></label>
+    <p class="hint">En DeX, la fenêtre de partage peut s'ouvrir et se fermer aussitôt : choisis « Toujours enregistrer dans Téléchargements », puis envoie depuis Mes fichiers &gt; Téléchargements &gt; Partager &gt; Quick Share. Navigateur détecté : <span id="uaInfo"></span></p>
   </div>
 </section>
 </main>
@@ -499,7 +505,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.32";
+const APP_VERSION="1.33";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1213,7 +1219,8 @@ async function renderJournal(){
   $("sendInfo").textContent=(pend.length?`Mission ${CFG.mission.no} : ${pend.length} constat(s) et ${np} photo(s) pas encore envoyés au PC.`:`Mission ${CFG.mission.no} : tout a été envoyé au PC.`)
     +(autres.length?` Il reste aussi des constats à envoyer pour la mission ${autres.join(", ")}.`:"");
   $("bSend").disabled=!pend.length;$("bDl").disabled=!pend.length;
-  if(estDeX()){$("bSend").textContent="Enregistrer pour le PC (DeX : Téléchargements)";$("bDl").hidden=true}PREP=null;if(pend.length) prepareSend();
+  if(estDeX()){$("bSend").textContent="Enregistrer pour le PC (DeX : Téléchargements)";$("bDl").hidden=true}
+  else{$("bSend").textContent="Envoyer au PC (Quick Share)";$("bDl").hidden=false}PREP=null;if(pend.length) prepareSend();
   const j=$("journal");j.innerHTML="";
   const byDay={};for(const e of en)(byDay[e.date]??=[]).push(e);
   for(const [day,list] of Object.entries(byDay)){
@@ -1266,7 +1273,13 @@ async function downloadFiles(list,files){pendingSent=list.map(e=>e.id);
   for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,300))}
   toast("Fichiers enregistrés dans Téléchargements : envoie-les au PC depuis « Mes fichiers » > Téléchargements > Partager > Quick Share.",7000);$("sentConfirm").hidden=false}
 // Samsung DeX (écran externe) : la fenêtre de partage s'ouvre et se referme aussitôt -> on enregistre dans Téléchargements
-function estDeX(){const ua=navigator.userAgent;return (/SamsungBrowser/i.test(ua)&&!/Mobile/i.test(ua))||(/Android/i.test(ua)&&matchMedia("(pointer:fine)").matches&&screen.width>=1024)}
+function modeEnvoi(){try{return localStorage.getItem("envoi")||"auto"}catch(e){return "auto"}}
+function estDeX(){const m=modeEnvoi();if(m==="dl") return true;if(m==="share") return false;
+  const ua=navigator.userAgent;
+  return (/SamsungBrowser/i.test(ua)&&!/Mobile/i.test(ua))||/X11; Linux/i.test(ua)&&/SamsungBrowser|Android/i.test(ua)
+    ||(/Android/i.test(ua)&&innerWidth>=1000)}
+function initEnvoi(){const s=$("cEnvoi");s.value=modeEnvoi();$("uaInfo").textContent=(estDeX()?"mode DeX / grand écran – ":"")+navigator.userAgent;
+  s.onchange=()=>{try{localStorage.setItem("envoi",s.value)}catch(e){}$("uaInfo").textContent=(estDeX()?"mode DeX / grand écran – ":"")+navigator.userAgent;toast("Réglage d'envoi enregistré");if(!$("v-journal").hidden) renderJournal()}}
 async function shareFiles(list,files){
   pendingSent=list.map(e=>e.id);
   if(estDeX()){await downloadFiles(list,files);return}
@@ -1635,7 +1648,7 @@ async function start(){
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
   $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
-  initTrad();initAccueil();showView("accueil");
+  initTrad();initAccueil();initEnvoi();showView("accueil");
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
 start();
