@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Relevé sur Site</title>
 <meta name="theme-color" content="#1d2a33">
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -19,11 +20,22 @@
   --mono:ui-monospace,"Roboto Mono",Menlo,monospace;
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root{
+/* couleurs légères des cartes (repérage rapide) */
+:root{--c-bleu:#eef4fb;--c-bleu-b:#6f9fd2;--c-vert:#eef7f1;--c-vert-b:#5fa57a;--c-ambre:#fdf4e8;--c-ambre-b:#d0943f;--c-violet:#f3f0fa;--c-violet-b:#8c78c4;--c-jaune:#fdf8df;--c-jaune-b:#c9a227}
+/* thème : automatique (réglage du téléphone), ou forcé clair / sombre par le bouton de l'en-tête */
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
   --bg:#12181c; --surface:#1b2328; --fg:#e6ecef; --muted:#9aa8b1; --line:#2e3a41;
   --accent:#e0703f; --accent-fg:#14100e; --accent-soft:#3a2419;
   --ok:#5fbf86; --minor:#e0b43c; --repair:#ec8a52; --crit:#f0716a; --na:#9aa3a9;
-  --tab:#0c1114; --tab-fg:#8e9ba3; --tab-on:#ffffff; color-scheme:dark}}
+  --tab:#0c1114; --tab-fg:#8e9ba3; --tab-on:#ffffff; color-scheme:dark;
+  --c-bleu:#18232d;--c-bleu-b:#4f7fae;--c-vert:#17241d;--c-vert-b:#4c8a64;--c-ambre:#272017;--c-ambre-b:#a87533;--c-violet:#211d2b;--c-violet-b:#7462a8;--c-jaune:#26241a;--c-jaune-b:#a08a2e}}
+:root[data-theme=dark]{
+  --bg:#12181c; --surface:#1b2328; --fg:#e6ecef; --muted:#9aa8b1; --line:#2e3a41;
+  --accent:#e0703f; --accent-fg:#14100e; --accent-soft:#3a2419;
+  --ok:#5fbf86; --minor:#e0b43c; --repair:#ec8a52; --crit:#f0716a; --na:#9aa3a9;
+  --tab:#0c1114; --tab-fg:#8e9ba3; --tab-on:#ffffff; color-scheme:dark;
+  --c-bleu:#18232d;--c-bleu-b:#4f7fae;--c-vert:#17241d;--c-vert-b:#4c8a64;--c-ambre:#272017;--c-ambre-b:#a87533;--c-violet:#211d2b;--c-violet-b:#7462a8;--c-jaune:#26241a;--c-jaune-b:#a08a2e}
+:root[data-theme=light]{color-scheme:light}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--fg);font:16px/1.4 var(--font);-webkit-tap-highlight-color:transparent}
@@ -36,6 +48,19 @@ main{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-
 #v-saisie,#v-journal{max-width:720px;margin:0 auto}
 [hidden]{display:none!important}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:12px;margin-bottom:14px}
+.card.c-bleu{background:var(--c-bleu);border-left:4px solid var(--c-bleu-b)}.card.c-vert{background:var(--c-vert);border-left:4px solid var(--c-vert-b)}
+.card.c-ambre{background:var(--c-ambre);border-left:4px solid var(--c-ambre-b)}.card.c-violet{background:var(--c-violet);border-left:4px solid var(--c-violet-b)}
+.card.c-jaune{background:var(--c-jaune);border-left:4px solid var(--c-jaune-b)}
+.card[class*="c-"] :is(select,input[type=text],input[type=date],textarea,.rte){background:var(--surface)}
+.themeBtn{background:transparent;color:var(--tab-on);border:1px solid var(--tab-fg);border-radius:999px;min-height:36px;min-width:40px;padding:2px 8px;font-size:16px}
+#v-accueil{max-width:720px;margin:0 auto}.acc-mission{font:650 18px var(--font)}
+.acc-grille{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.acc{display:grid;gap:4px;justify-items:start;text-align:left;min-height:118px;padding:14px;border-radius:var(--radius);border:1px solid var(--line);color:var(--fg)}
+.acc b{font-size:16px}.acc .hint{font-size:13px}.acc-ic{font-size:28px;line-height:1}
+.acc.c-bleu{background:var(--c-bleu);border-left:4px solid var(--c-bleu-b)}.acc.c-vert{background:var(--c-vert);border-left:4px solid var(--c-vert-b)}
+.acc.c-ambre{background:var(--c-ambre);border-left:4px solid var(--c-ambre-b)}.acc.c-violet{background:var(--c-violet);border-left:4px solid var(--c-violet-b)}
+.acc.c-jaune{background:var(--c-jaune);border-left:4px solid var(--c-jaune-b)}
+@media (min-width:640px){.acc-grille{grid-template-columns:repeat(3,1fr)}}
 .card h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:650}
 label{display:grid;gap:5px;font-size:13px;color:var(--muted);font-weight:600}
 select,input[type=text],input[type=date],textarea{width:100%;font:16px var(--font);color:var(--fg);background:var(--bg);
@@ -163,12 +188,27 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 <header>
   <h1 id="hTitle">Relevé sur Site</h1>
   <button type="button" class="mission" id="hMission" aria-label="Changer de mission"></button>
+  <button type="button" class="themeBtn" id="bTheme" aria-label="Thème : automatique">🌓</button>
 </header>
 
 <main>
+<!-- ============ ACCUEIL ============ -->
+<section id="v-accueil">
+  <div class="card c-bleu acc-tete"><h2>Mission active</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div></div>
+  <div class="acc-grille">
+    <button type="button" class="acc c-ambre" data-go="saisie"><span class="acc-ic">📷</span><b>Nouveau constat</b><span class="hint">Photos, constat, observation</span></button>
+    <button type="button" class="acc c-violet" data-go="prep"><span class="acc-ic">🎤</span><b>Préparer</b><span class="hint">Dicter les contrôles prévus</span></button>
+    <button type="button" class="acc c-jaune" data-go="prevus"><span class="acc-ic">📋</span><b>Constats prévus</b><span class="hint" id="accPrevus">Aucun</span></button>
+    <button type="button" class="acc c-bleu" data-go="journal"><span class="acc-ic">📤</span><b>Journal / Envoi</b><span class="hint" id="accJournal">Rien à envoyer</span></button>
+    <button type="button" class="acc c-violet" data-go="galerie"><span class="acc-ic">🖼️</span><b>Galerie</b><span class="hint">Légendes, ordre, annotations</span></button>
+    <button type="button" class="acc c-vert" data-go="reglages"><span class="acc-ic">📁</span><b>Missions</b><span class="hint">Listes, partage, réglages</span></button>
+    <button type="button" class="acc c-bleu" data-go="trad" id="accTrad" hidden><span class="acc-ic">🌐</span><b>Traduction</b><span class="hint">Observations du CSV (PC)</span></button>
+  </div>
+</section>
+
 <!-- ============ SAISIE ============ -->
-<section id="v-saisie">
-  <div class="card" id="prepCard" hidden>
+<section id="v-saisie" hidden>
+  <div class="card c-violet" id="prepCard" hidden>
     <div class="ghead"><h2>Préparer des constats</h2><button type="button" class="ghost" id="prepClose">Fermer</button></div>
     <p class="hint">Avant d'aller en unité : dicte ou tape les contrôles prévus, séparés par « puis » ou « ensuite » (ou un retour à la ligne). Ex. : « je vais dans le régénérateur pour contrôler le soudage de l'hexmetal dans les cyclones primaires, puis les cyclones secondaires, ensuite la démolition du riser au MH2 ».</p>
     <div class="row2"><label>Langue de la dictée<select id="prepLang"><option value="fr-FR">Français</option><option value="en-GB">English</option><option value="es-ES">Español</option><option value="de-DE">Deutsch</option></select></label>
@@ -179,11 +219,11 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <div id="prepRes"></div>
     <button type="button" class="primary" id="prepSave" hidden>Créer les constats prévus</button>
   </div>
-  <div class="card" id="prevusCard" hidden>
+  <div class="card c-jaune" id="prevusCard" hidden>
     <h2>Constats prévus (<span id="prevusN">0</span>)</h2>
     <ul id="prevusList" class="prevus"></ul>
   </div>
-  <div class="card">
+  <div class="card c-bleu">
     <div class="ghead"><h2 id="formTitle">Nouveau constat</h2><button type="button" id="bPrep">🎤 Préparer</button></div>
     <div id="prevuBanner" class="prevuBanner" hidden><span>Constat prévu : <i id="prevuTxt"></i></span><button type="button" class="ghost" id="prevuQuit" aria-label="Ne plus lier ce constat au prévu">✕</button></div>
     <div class="field"><span class="rtelab" id="l_fEq">Équipement</span><div class="selrow"><select id="fEq" aria-labelledby="l_fEq"></select><button type="button" class="plus" data-add="eq" aria-label="Ajouter : équipement">+</button></div></div>
@@ -204,7 +244,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     </div>
   </div>
 
-  <div class="card">
+  <div class="card c-vert">
     <h2>Photos</h2>
     <div class="btns">
       <button class="primary" id="bGal" type="button">Choisir dans la galerie</button>
@@ -217,7 +257,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <p class="hint">Conseil : photographie avec l'appareil Samsung (tous les modes), puis choisis les photos ici. La photo rapide ouvre un appareil simplifié.</p>
   </div>
 
-  <div class="card">
+  <div class="card c-ambre">
     <h2>Constat</h2>
     <div class="chips" id="grav" role="group" aria-label="Gravité"></div>
     <label>Accès au revêtement inspecté<select id="fAcces"></select></label>
@@ -237,7 +277,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <!-- ============ JOURNAL ============ -->
 <section id="v-journal" hidden>
-  <div class="card">
+  <div class="card c-bleu">
     <h2>Envoi vers le PC</h2>
     <p class="hint" id="sendInfo"></p>
     <button class="primary big" id="bSend" type="button">Envoyer au PC (Quick Share)</button>
@@ -261,7 +301,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <!-- ============ GALERIE ============ -->
 <section id="v-galerie" hidden>
-  <div class="card">
+  <div class="card c-violet">
     <h2>Galerie</h2>
     <div class="row2"><label>Équipement<select id="gEq"></select></label><label>Date<select id="gDate"></select></label></div>
     <p class="hint" id="gInfo"></p>
@@ -273,7 +313,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 <!-- ============ TRADUCTION (PC uniquement) ============ -->
 <section id="v-trad" hidden>
   <div class="duo">
-  <div class="card">
+  <div class="card c-bleu">
     <h2>Traduire les observations</h2>
     <p class="hint">Ouvre le fichier « Observations_releve.csv » du dossier de la mission. Les traductions sont ajoutées dans des colonnes à part : le texte d'origine n'est jamais modifié. La traduction se fait sur ce PC, sans envoyer le texte sur internet.</p>
     <div class="row2">
@@ -297,7 +337,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     </div>
     <p class="hint" id="tState"></p>
   </div>
-  <div class="card">
+  <div class="card c-vert">
     <h2>Glossaire réfractaire</h2>
     <p class="hint" id="tGlossHint">Une ligne par terme : « terme d'origine = traduction ». Ces termes sont remplacés avant la traduction automatique, pour garder le vocabulaire du métier. Un glossaire par sens de traduction.</p>
     <textarea class="cfg" id="tGloss" spellcheck="false"></textarea>
@@ -311,7 +351,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 <!-- ============ MISSIONS ============ -->
 <section id="v-reglages" hidden>
   <div class="duo">
-  <div class="card">
+  <div class="card c-bleu">
     <h2>Mission active</h2>
     <label>Mission<select id="mSel"></select></label>
     <div class="btns">
@@ -334,7 +374,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
       <div class="btns"><button class="primary" id="bArchOk" type="button">Archiver</button><button id="bArchCancel" type="button">Annuler</button></div>
     </div>
   </div>
-  <div class="card">
+  <div class="card c-bleu">
     <h2>Informations de la mission</h2>
     <div class="row2">
       <label>N° mission<input type="text" id="cNo"></label>
@@ -348,12 +388,12 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   </div>
   </div>
   <div class="listes">
-  <div class="card">
+  <div class="card c-vert">
     <h2>Équipements et sous-équipements</h2>
     <p class="hint">Une ligne par équipement avec son code entre crochets, puis ses sous-équipements précédés d'un tiret.</p>
     <textarea class="cfg" id="cEq" spellcheck="false"></textarea>
   </div>
-  <div class="card">
+  <div class="card c-ambre">
     <h2>Activités et sous-activités</h2>
     <p class="hint">Même principe : code entre crochets, sous-activités précédées d'un tiret.</p>
     <textarea class="cfg" id="cAct" spellcheck="false"></textarea>
@@ -376,7 +416,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   </div>
   <button class="primary big" id="bCfgSave" type="button">Enregistrer la mission</button>
   <p></p>
-  <div class="card">
+  <div class="card c-violet">
     <h2>Partager une mission</h2>
     <div id="impCard" class="card confirm" hidden>
       <strong id="impTxt"></strong>
@@ -404,7 +444,8 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 </main>
 
 <nav>
-  <button type="button" data-v="saisie" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Saisie</button>
+  <button type="button" data-v="accueil" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>Accueil</button>
+  <button type="button" data-v="saisie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Saisie</button>
   <button type="button" data-v="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Journal<span class="badge" id="nbPending" hidden></span></span></button>
   <button type="button" data-v="galerie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><circle cx="9" cy="10" r="2"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>Galerie</button>
   <button type="button" data-v="trad" id="navTrad" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 6 8M11 5c-1 4-4 7-7 8"/><path d="M13 21l4-9 4 9M14.5 18h5"/></svg>Traduction</button>
@@ -453,7 +494,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.27";
+const APP_VERSION="1.29";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1069,6 +1110,14 @@ function estInitiale(a){return !!a&&(a.code==="1"||a.code==="2"||/initia|inicial
 function majDegats(){const w=document.querySelector(".degats");if(!w) return;const v=estInitiale(curAct());w.hidden=!v;if(!v){$("degParam").hidden=true;DEG_EN_COURS=null}}
 function initDegats(){renderDegats();majDegats();$("degOk").onclick=validerDegat;$("degNo").onclick=()=>{DEG_EN_COURS=null;$("degParam").hidden=true};
   $("degVal").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();validerDegat()}}}
+/* ---------- thème clair / sombre ---------- */
+const THEMES=[["auto","🌓","automatique (réglage du téléphone)"],["light","☀️","clair"],["dark","🌙","sombre"]];
+function themeActuel(){try{return localStorage.getItem("theme")||"auto"}catch(e){return "auto"}}
+function appliquerTheme(t){const r=document.documentElement;if(t==="auto") delete r.dataset.theme;else r.dataset.theme=t;
+  const x=THEMES.find(x=>x[0]===t)||THEMES[0];$("bTheme").textContent=x[1];$("bTheme").setAttribute("aria-label","Thème : "+x[2])}
+function initTheme(){appliquerTheme(themeActuel());
+  $("bTheme").onclick=()=>{const i=THEMES.findIndex(x=>x[0]===themeActuel());const t=THEMES[(i+1)%THEMES.length];
+    try{localStorage.setItem("theme",t[0])}catch(e){}appliquerTheme(t[0]);toast("Thème "+t[2],1500)}}
 /* ---------- galerie ---------- */
 const GAL={items:[],vis:[],cur:-1,attente:null,url:null,drag:null};
 async function chargerGalerie(){const en=(await allEntries()).filter(belongs).sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));const items=[];
@@ -1524,12 +1573,24 @@ async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobil
   $("bTAll").onclick=()=>traduireLignes(T.rows.map((_,i)=>i),false);$("bTSave").onclick=enregistrerCsv;
   window.addEventListener("beforeunload",e=>{if(T.modif){e.preventDefault();e.returnValue=""}})}
 /* ---------- navigation ---------- */
-function showView(v){for(const s of ["saisie","journal","galerie","reglages","trad"]) $("v-"+s).hidden=s!==v;
+function showView(v){for(const s of ["accueil","saisie","journal","galerie","reglages","trad"]) $("v-"+s).hidden=s!==v;
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v?"page":"false"));
-  if(v==="journal") renderJournal();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();window.scrollTo(0,0)}
+  if(v==="journal") renderJournal();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();window.scrollTo(0,0)}
+/* ---------- accueil ---------- */
+async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`${m.no} · ${m.client||""}`;
+  $("accInfo").textContent=`${m.inspecteur||""}${m.inspecteur?" · ":""}appli ${APP_VERSION}`;
+  const np=PREVUS.filter(p=>p.mission===m.id).length;$("accPrevus").textContent=np?`${np} à faire`:"Aucun";
+  const en=(await allEntries()).filter(belongs);const n=en.filter(e=>!e.envoye).length;
+  $("accJournal").textContent=n?`${n} constat${n>1?"s":""} à envoyer`:(en.length?`${en.length} constat${en.length>1?"s":""}, tout est envoyé`:"Aucun constat");
+  $("accTrad").hidden=$("navTrad").hidden}
+function initAccueil(){document.querySelectorAll("#v-accueil .acc").forEach(b=>b.onclick=()=>{const g=b.dataset.go;
+  if(g==="prep"){showView("saisie");$("prepCard").hidden=false;$("prepTxt").focus();return}
+  if(g==="prevus"){showView("saisie");if(!$("prevusCard").hidden) $("prevusCard").scrollIntoView({block:"start"});return}
+  showView(g)});
+  document.querySelector("header h1").style.cursor="pointer";document.querySelector("header h1").onclick=()=>showView("accueil")}
 /* ---------- démarrage ---------- */
 async function start(){
-  initEditeur2();initGalerie();initPrep();
+  initEditeur2();initGalerie();initPrep();initTheme();
   initEditeur("fObs");initEditeur("fReco");
   try{DB=await openDB()}catch(e){document.querySelector("main").innerHTML=`<div class="card"><strong>Stockage indisponible.</strong><p class="hint">Ouvre l'appli dans Chrome (pas en navigation privée).</p></div>`;return}
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
@@ -1562,7 +1623,7 @@ async function start(){
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
   $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
-  initTrad();
+  initTrad();initAccueil();showView("accueil");
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
 start();
