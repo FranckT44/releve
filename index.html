@@ -55,7 +55,7 @@ main{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-
 .card.c-jaune{background:var(--c-jaune);border-left:4px solid var(--c-jaune-b)}
 .card[class*="c-"] :is(select,input[type=text],input[type=date],textarea,.rte){background:var(--surface)}
 .themeBtn{background:transparent;color:var(--tab-on);border:1px solid var(--tab-fg);border-radius:999px;min-height:36px;min-width:40px;padding:2px 8px;font-size:16px}
-#v-accueil{max-width:720px;margin:0 auto}.acc-titre{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:2px 0 12px;font:700 22px var(--font);letter-spacing:.01em}
+#v-accueil{max-width:720px;margin:0 auto}.acc-lang{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:500 15px var(--font)}.acc-lang select{min-height:40px;padding:4px 8px;font-size:15px;width:auto}.acc-titre{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:2px 0 12px;font:700 22px var(--font);letter-spacing:.01em}
 .acc-ver{font:650 13px var(--mono);background:var(--accent);color:var(--accent-fg);border-radius:999px;padding:3px 10px}
 header h1 .tCourt{display:none}@media (max-width:699px){header h1{flex:0 0 auto;font-size:16px}header .mission{flex:1 1 auto;min-width:0}header h1 .tLong{display:none}header h1 .tCourt{display:inline}}.acc-mission{font:650 18px var(--font)}
 .acc-grille{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -227,7 +227,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 <main>
 <!-- ============ ACCUEIL ============ -->
 <section id="v-accueil">
-  <div class="acc-titre"><span>The 982 Inspector Toolbox</span><span class="acc-ver" id="accVer"></span></div>
+  <div class="acc-titre"><span>The 982 Inspector Toolbox</span><span class="acc-ver" id="accVer"></span><label class="acc-lang" data-noi18n title="Langue de l'appli"><span aria-hidden="true">🌐</span><select id="uiLang" aria-label="Langue de l'appli / App language"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label></div>
   <div class="card c-bleu acc-tete"><h2>Mission active</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div><div class="acc-alerte" id="accAlerte" hidden></div></div>
   <div class="card confirm brCard" id="brCardA" hidden><strong class="brTxt"></strong><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
   <div class="acc-grille">
@@ -568,7 +568,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.48";
+const APP_VERSION="1.49";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2061,7 +2061,353 @@ function initBrouillon(){document.querySelectorAll(".brGo").forEach(b=>b.onclick
   const vite=()=>{if(document.visibilityState==="hidden"&&BR.minuterie) sauverBrouillon().catch(()=>{})};
   document.addEventListener("visibilitychange",vite);addEventListener("pagehide",()=>{if(BR.minuterie) sauverBrouillon().catch(()=>{})});
   BR.charge=true;afficherBrouillon()}
+/* ---------- langue de l'interface (v1.49) ---------- */
+/* ---------- langue de l'interface (v1.49) : [français, anglais, espagnol, allemand] ----------
+   Les listes de la mission (équipements, activités, accès, dégâts courants) gardent la langue de la mission.
+   {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
+const TRAD_UI=[
+// en-tête, navigation, accueil
+["Mission active","Active job","Misión activa","Aktiver Auftrag"],
+["Nouveau constat","New finding","Nuevo hallazgo","Neuer Befund"],
+["Photos, constat, observation","Photos, finding, observation","Fotos, hallazgo, observación","Fotos, Befund, Beobachtung"],
+["Préparer","Prepare","Preparar","Vorbereiten"],
+["Dicter les contrôles prévus","Dictate the planned checks","Dictar los controles previstos","Geplante Prüfungen diktieren"],
+["Constats prévus","Planned findings","Hallazgos previstos","Geplante Befunde"],
+["Constats prévus (","Planned findings (","Hallazgos previstos (","Geplante Befunde ("],
+["Aucun","None","Ninguno","Keine"],
+["Journal / Envoi","Log / Send","Registro / Envío","Protokoll / Senden"],
+["Rien à envoyer","Nothing to send","Nada que enviar","Nichts zu senden"],
+["Galerie","Gallery","Galería","Galerie"],
+["Légendes, ordre, annotations","Captions, order, annotations","Leyendas, orden, anotaciones","Bildtexte, Reihenfolge, Anmerkungen"],
+["Missions","Jobs","Misiones","Aufträge"],
+["Listes, partage, réglages","Lists, sharing, settings","Listas, compartir, ajustes","Listen, Teilen, Einstellungen"],
+["Traduction","Translation","Traducción","Übersetzung"],
+["Observations du CSV (PC)","CSV observations (PC)","Observaciones del CSV (PC)","Beobachtungen aus der CSV (PC)"],
+["Accueil","Home","Inicio","Start"],
+["Saisie","Entry","Captura","Erfassung"],
+["Journal","Log","Registro","Protokoll"],
+["Changer de mission","Change job","Cambiar de misión","Auftrag wechseln"],
+["Thème : automatique","Theme: automatic","Tema: automático","Design: automatisch"],
+["Langue de l'appli","App language","Idioma de la app","App-Sprache"],
+["version {a}","version {a}","versión {a}","Version {a}"],
+["Pour QUARTIS","For QUARTIS","Para QUARTIS","Für QUARTIS"],
+["Compte propre – {a}","Own account – {a}","Cuenta propia – {a}","Eigene Rechnung – {a}"],
+["{a} à faire","{a} to do","{a} pendientes","{a} offen"],
+["{a} constat à envoyer","{a} finding to send","{a} hallazgo por enviar","{a} Befund zu senden"],
+["{a} constats à envoyer","{a} findings to send","{a} hallazgos por enviar","{a} Befunde zu senden"],
+["{a} constat, tout est envoyé","{a} finding, all sent","{a} hallazgo, todo enviado","{a} Befund, alles gesendet"],
+["{a} constats, tout est envoyé","{a} findings, all sent","{a} hallazgos, todo enviado","{a} Befunde, alles gesendet"],
+["Aucun constat","No findings","Ningún hallazgo","Keine Befunde"],
+["⚠ 1 constat non envoyé au PC (le plus ancien : {a} à {b}). Tant qu'il n'est pas envoyé, il n'existe que sur ce téléphone.","⚠ 1 finding not sent to the PC (oldest: {a} at {b}). Until it is sent, it only exists on this phone.","⚠ 1 hallazgo no enviado al PC (el más antiguo: {a} a las {b}). Mientras no se envíe, solo existe en este teléfono.","⚠ 1 Befund nicht an den PC gesendet (ältester: {a} um {b}). Solange er nicht gesendet ist, existiert er nur auf diesem Telefon."],
+["⚠ {c} constats non envoyés au PC (le plus ancien : {a} à {b}). Tant qu'ils ne sont pas envoyés, ils n'existent que sur ce téléphone.","⚠ {c} findings not sent to the PC (oldest: {a} at {b}). Until they are sent, they only exist on this phone.","⚠ {c} hallazgos no enviados al PC (el más antiguo: {a} a las {b}). Mientras no se envíen, solo existen en este teléfono.","⚠ {c} Befunde nicht an den PC gesendet (ältester: {a} um {b}). Solange sie nicht gesendet sind, existieren sie nur auf diesem Telefon."],
+// brouillon, mise à jour
+["Un constat en cours n'a pas été enregistré : {a} ({b}).","A finding in progress was not saved: {a} ({b}).","Un hallazgo en curso no se guardó: {a} ({b}).","Ein laufender Befund wurde nicht gespeichert: {a} ({b})."],
+["Une modification de constat n'a pas été enregistrée : {a} ({b}).","A finding edit was not saved: {a} ({b}).","Una modificación de hallazgo no se guardó: {a} ({b}).","Eine Befundänderung wurde nicht gespeichert: {a} ({b})."],
+["{a} photo","{a} photo","{a} foto","{a} Foto"],
+["{a} photos","{a} photos","{a} fotos","{a} Fotos"],
+["Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).","It was kept automatically (the app was closed or reloaded before “Save”).","Se guardó automáticamente (la app se cerró o se recargó antes de «Guardar»).","Er wurde automatisch aufbewahrt (die App wurde vor „Speichern“ geschlossen oder neu geladen)."],
+["Reprendre","Resume","Retomar","Fortsetzen"],
+["Supprimer le brouillon","Delete the draft","Eliminar el borrador","Entwurf löschen"],
+["Confirmer : supprimer (photos comprises)","Confirm: delete (photos included)","Confirmar: eliminar (fotos incluidas)","Bestätigen: löschen (inkl. Fotos)"],
+["Constat en cours repris. Pense à l'enregistrer.","Finding in progress restored. Remember to save it.","Hallazgo en curso recuperado. Recuerda guardarlo.","Laufender Befund wiederhergestellt. Bitte speichern."],
+["Nouvelle version de l'appli disponible.","New version of the app available.","Nueva versión de la app disponible.","Neue App-Version verfügbar."],
+["Recharger","Reload","Recargar","Neu laden"],
+["Plus tard","Later","Más tarde","Später"],
+// saisie
+["🎤 Préparer","🎤 Prepare","🎤 Preparar","🎤 Vorbereiten"],
+["Constat prévu :","Planned finding:","Hallazgo previsto:","Geplanter Befund:"],
+["Ne plus lier ce constat au prévu","Unlink this finding from the planned one","Desvincular este hallazgo del previsto","Diesen Befund vom geplanten lösen"],
+["Commencer","Start","Empezar","Beginnen"],
+["Supprimer ce constat prévu","Delete this planned finding","Eliminar este hallazgo previsto","Diesen geplanten Befund löschen"],
+["Modifier le constat","Edit finding","Modificar el hallazgo","Befund bearbeiten"],
+["Équipement","Equipment","Equipo","Ausrüstung"],
+["Sous-équipement","Sub-equipment","Subequipo","Unterausrüstung"],
+["Activité","Activity","Actividad","Tätigkeit"],
+["Sous-activité","Sub-activity","Subactividad","Untertätigkeit"],
+["Ajouter : équipement","Add: equipment","Añadir: equipo","Hinzufügen: Ausrüstung"],
+["Ajouter : sous-équipement","Add: sub-equipment","Añadir: subequipo","Hinzufügen: Unterausrüstung"],
+["Ajouter : activité","Add: activity","Añadir: actividad","Hinzufügen: Tätigkeit"],
+["Ajouter : sous-activité","Add: sub-activity","Añadir: subactividad","Hinzufügen: Untertätigkeit"],
+["Nouvel équipement","New equipment","Nuevo equipo","Neue Ausrüstung"],
+["Nouveau sous-équipement de {a}","New sub-equipment of {a}","Nuevo subequipo de {a}","Neue Unterausrüstung von {a}"],
+["Nouvelle activité","New activity","Nueva actividad","Neue Tätigkeit"],
+["Nouvelle sous-activité de {a}","New sub-activity of {a}","Nueva subactividad de {a}","Neue Untertätigkeit von {a}"],
+["Nom","Name","Nombre","Name"],
+["Code (court)","Code (short)","Código (corto)","Code (kurz)"],
+["Ajouter à la mission","Add to the job","Añadir a la misión","Zum Auftrag hinzufügen"],
+["Annuler","Cancel","Cancelar","Abbrechen"],
+["Repère (optionnel)","Tag (optional)","Referencia (opcional)","Markierung (optional)"],
+["MH1, section 402…","MH1, section 402…","MH1, sección 402…","MH1, Abschnitt 402…"],
+["Date","Date","Fecha","Datum"],
+["Photos","Photos","Fotos","Fotos"],
+["Choisir dans la galerie","Choose from gallery","Elegir de la galería","Aus der Galerie wählen"],
+["Photo rapide","Quick photo","Foto rápida","Schnellfoto"],
+["Aucune photo pour ce constat.","No photo for this finding.","Ninguna foto para este hallazgo.","Kein Foto für diesen Befund."],
+["{a} photo(s) pour ce constat. Touche une photo pour l'annoter.","{a} photo(s) for this finding. Tap a photo to annotate it.","{a} foto(s) para este hallazgo. Toca una foto para anotarla.","{a} Foto(s) für diesen Befund. Foto antippen, um es zu beschriften."],
+["Conseil : photographie avec l'appareil Samsung (tous les modes), puis choisis les photos ici. La photo rapide ouvre un appareil simplifié.","Tip: take photos with the Samsung camera (all modes), then pick them here. Quick photo opens a simplified camera.","Consejo: fotografía con la cámara Samsung (todos los modos) y luego elige las fotos aquí. La foto rápida abre una cámara simplificada.","Tipp: mit der Samsung-Kamera fotografieren (alle Modi) und die Fotos dann hier auswählen. Schnellfoto öffnet eine vereinfachte Kamera."],
+["annotée","annotated","anotada","beschriftet"],
+["hors rapport","not in report","fuera del informe","nicht im Bericht"],
+["Constat","Finding","Hallazgo","Befund"],
+["Gravité","Severity","Gravedad","Schweregrad"],
+["OK","OK","OK","OK"],
+["Mineur","Minor","Menor","Gering"],
+["À réparer","To be repaired","A reparar","Zu reparieren"],
+["Critique","Critical","Crítico","Kritisch"],
+["Non inspecté","Not inspected","No inspeccionado","Nicht inspiziert"],
+["Info","Info","Info","Info"],
+["Accès au revêtement inspecté","Access to the inspected lining","Acceso al revestimiento inspeccionado","Zugang zur geprüften Auskleidung"],
+["Dégâts courants – inspection initiale / complémentaire (ajoutés à l'observation)","Common damage – initial / complementary inspection (added to the observation)","Daños habituales – inspección inicial / complementaria (añadidos a la observación)","Häufige Schäden – Erst- / Ergänzungsinspektion (zur Beobachtung hinzugefügt)"],
+["Ajouter","Add","Añadir","Hinzufügen"],
+["Observation","Observation","Observación","Beobachtung"],
+["Mise en forme de l'observation","Observation formatting","Formato de la observación","Formatierung der Beobachtung"],
+["Mise en forme de la recommandation","Recommendation formatting","Formato de la recomendación","Formatierung der Empfehlung"],
+["Gras","Bold","Negrita","Fett"],
+["G","B","N","F"],
+["I","I","K","K"],
+["S","U","S","U"],
+["Italique","Italic","Cursiva","Kursiv"],
+["Souligné","Underline","Subrayado","Unterstrichen"],
+["• Liste","• List","• Lista","• Liste"],
+["1. Liste","1. List","1. Lista","1. Liste"],
+["Liste à puces","Bulleted list","Lista con viñetas","Aufzählung"],
+["Liste numérotée","Numbered list","Lista numerada","Nummerierte Liste"],
+["Remonter d'un niveau","Up one level","Subir un nivel","Eine Ebene höher"],
+["Descendre d'un niveau","Down one level","Bajar un nivel","Eine Ebene tiefer"],
+["Recommandation (pour l'IPR)","Recommendation (for the IPR)","Recomendación (para el IPR)","Empfehlung (für den IPR)"],
+["Surface estimée à réparer (m²)","Estimated area to be repaired (m²)","Superficie estimada a reparar (m²)","Geschätzte Reparaturfläche (m²)"],
+["ex. 4,5","e.g. 4.5","p. ej. 4,5","z. B. 4,5"],
+["Zone(s) déjà marquée(s)","Area(s) already marked","Zona(s) ya marcada(s)","Bereich(e) bereits markiert"],
+["Décision client attendue","Client decision required","Decisión del cliente pendiente","Kundenentscheidung erforderlich"],
+["Enregistrer le constat","Save finding","Guardar el hallazgo","Befund speichern"],
+["Enregistrer les modifications","Save changes","Guardar los cambios","Änderungen speichern"],
+["Annuler la modification","Cancel the edit","Cancelar la modificación","Bearbeitung abbrechen"],
+["Constat enregistré ({a} photo)","Finding saved ({a} photo)","Hallazgo guardado ({a} foto)","Befund gespeichert ({a} Foto)"],
+["Constat enregistré ({a} photos)","Finding saved ({a} photos)","Hallazgo guardado ({a} fotos)","Befund gespeichert ({a} Fotos)"],
+["Constat modifié","Finding updated","Hallazgo modificado","Befund geändert"],
+["Choisis un équipement et une activité dans la liste.","Choose an equipment and an activity from the list.","Elige un equipo y una actividad de la lista.","Ausrüstung und Tätigkeit aus der Liste wählen."],
+["Choisis un sous-équipement dans la liste.","Choose a sub-equipment from the list.","Elige un subequipo de la lista.","Unterausrüstung aus der Liste wählen."],
+["Ajoute au moins une photo ou une observation.","Add at least one photo or an observation.","Añade al menos una foto o una observación.","Mindestens ein Foto oder eine Beobachtung hinzufügen."],
+["Enregistrement impossible : mémoire du navigateur pleine. Envoie puis libère la place dans le Journal.","Cannot save: browser storage full. Send, then free up space in the Log.","No se puede guardar: memoria del navegador llena. Envía y libera espacio en el Registro.","Speichern nicht möglich: Browserspeicher voll. Senden und dann im Protokoll Platz freigeben."],
+["L'équipement de ce constat n'existe plus dans la liste : choisis-le à nouveau avant d'enregistrer.","This finding's equipment is no longer in the list: choose it again before saving.","El equipo de este hallazgo ya no está en la lista: elígelo de nuevo antes de guardar.","Die Ausrüstung dieses Befunds ist nicht mehr in der Liste: vor dem Speichern neu wählen."],
+["Le sous-équipement de ce constat n'existe plus : choisis-le à nouveau avant d'enregistrer.","This finding's sub-equipment no longer exists: choose it again before saving.","El subequipo de este hallazgo ya no existe: elígelo de nuevo antes de guardar.","Die Unterausrüstung dieses Befunds existiert nicht mehr: vor dem Speichern neu wählen."],
+["Date réglée sur la prise de vue : {a}","Date set to the shooting date: {a}","Fecha ajustada a la de la toma: {a}","Datum auf das Aufnahmedatum gesetzt: {a}"],
+["Attention : les photos ont été prises sur plusieurs jours.","Warning: the photos were taken over several days.","Atención: las fotos se tomaron en varios días.","Achtung: Die Fotos wurden an mehreren Tagen aufgenommen."],
+["Choisis d'abord l'équipement.","Choose the equipment first.","Elige primero el equipo.","Zuerst die Ausrüstung wählen."],
+["Choisis d'abord l'activité.","Choose the activity first.","Elige primero la actividad.","Zuerst die Tätigkeit wählen."],
+["Indique un nom.","Enter a name.","Indica un nombre.","Namen eingeben."],
+["Cet équipement existe déjà.","This equipment already exists.","Este equipo ya existe.","Diese Ausrüstung gibt es schon."],
+["Ce sous-équipement existe déjà.","This sub-equipment already exists.","Este subequipo ya existe.","Diese Unterausrüstung gibt es schon."],
+["Cette activité existe déjà.","This activity already exists.","Esta actividad ya existe.","Diese Tätigkeit gibt es schon."],
+["Cette sous-activité existe déjà.","This sub-activity already exists.","Esta subactividad ya existe.","Diese Untertätigkeit gibt es schon."],
+["« {a} » ajouté à la mission. Pense à envoyer la mission à tes autres appareils.","“{a}” added to the job. Remember to send the job to your other devices.","«{a}» añadido a la misión. Recuerda enviar la misión a tus otros dispositivos.","„{a}“ zum Auftrag hinzugefügt. Auftrag an die anderen Geräte senden."],
+["Ajouté à l'observation : {a}","Added to the observation: {a}","Añadido a la observación: {a}","Zur Beobachtung hinzugefügt: {a}"],
+["Termine ou annule d'abord la modification en cours.","Finish or cancel the current edit first.","Termina o cancela primero la modificación en curso.","Zuerst die laufende Bearbeitung beenden oder abbrechen."],
+// journal
+["Envoi vers le PC","Sending to the PC","Envío al PC","An den PC senden"],
+["Envoyer au PC (Quick Share)","Send to PC (Quick Share)","Enviar al PC (Quick Share)","An PC senden (Quick Share)"],
+["Enregistrer pour le PC (DeX : Téléchargements)","Save for the PC (DeX: Downloads)","Guardar para el PC (DeX: Descargas)","Für den PC speichern (DeX: Downloads)"],
+["Enregistrer dans Téléchargements (secours)","Save to Downloads (backup)","Guardar en Descargas (alternativa)","In Downloads speichern (Notlösung)"],
+["Mission {a} : {b} constat(s) et {c} photo(s) pas encore envoyés au PC.","Job {a}: {b} finding(s) and {c} photo(s) not yet sent to the PC.","Misión {a}: {b} hallazgo(s) y {c} foto(s) aún no enviados al PC.","Auftrag {a}: {b} Befund(e) und {c} Foto(s) noch nicht an den PC gesendet."],
+["Mission {a} : tout a été envoyé au PC.","Job {a}: everything has been sent to the PC.","Misión {a}: todo se ha enviado al PC.","Auftrag {a}: alles wurde an den PC gesendet."],
+["Mission {a} : {b} constat(s) et {c} photo(s) pas encore envoyés au PC. Il reste aussi des constats à envoyer pour la mission {d}.","Job {a}: {b} finding(s) and {c} photo(s) not yet sent to the PC. There are also findings to send for job {d}.","Misión {a}: {b} hallazgo(s) y {c} foto(s) aún no enviados al PC. También quedan hallazgos por enviar de la misión {d}.","Auftrag {a}: {b} Befund(e) und {c} Foto(s) noch nicht an den PC gesendet. Für Auftrag {d} sind ebenfalls Befunde zu senden."],
+["Mission {a} : tout a été envoyé au PC. Il reste aussi des constats à envoyer pour la mission {d}.","Job {a}: everything has been sent to the PC. There are also findings to send for job {d}.","Misión {a}: todo se ha enviado al PC. También quedan hallazgos por enviar de la misión {d}.","Auftrag {a}: alles wurde an den PC gesendet. Für Auftrag {d} sind ebenfalls Befunde zu senden."],
+["Le PC a-t-il bien reçu les fichiers ?","Did the PC receive the files?","¿Recibió el PC los archivos?","Hat der PC die Dateien erhalten?"],
+["Oui, marquer envoyé","Yes, mark as sent","Sí, marcar como enviado","Ja, als gesendet markieren"],
+["Non","No","No","Nein"],
+["Stockage sur le téléphone","Storage on the phone","Almacenamiento en el teléfono","Speicher auf dem Telefon"],
+["Libérer la place : supprimer les constats déjà envoyés","Free up space: delete findings already sent","Liberar espacio: eliminar los hallazgos ya enviados","Platz freigeben: bereits gesendete Befunde löschen"],
+["Supprimer","Delete","Eliminar","Löschen"],
+["{a} constat(s)","{a} finding(s)","{a} hallazgo(s)","{a} Befund(e)"],
+["{a} Mo utilisés sur {b} Go","{a} MB used of {b} GB","{a} MB usados de {b} GB","{a} MB von {b} GB belegt"],
+["stockage protégé","storage protected","almacenamiento protegido","Speicher geschützt"],
+["stockage non protégé","storage not protected","almacenamiento no protegido","Speicher nicht geschützt"],
+["{a} constat","{a} finding","{a} hallazgo","{a} Befund"],
+["{a} constats","{a} findings","{a} hallazgos","{a} Befunde"],
+["Tout dérouler","Expand all","Desplegar todo","Alle aufklappen"],
+["Tout replier","Collapse all","Plegar todo","Alle zuklappen"],
+["▸ Aperçu","▸ Preview","▸ Vista previa","▸ Vorschau"],
+["▾ Replier","▾ Collapse","▾ Plegar","▾ Zuklappen"],
+["Modifier","Edit","Modificar","Bearbeiten"],
+["Renvoyer","Resend","Reenviar","Erneut senden"],
+["Repère {a}","Tag {a}","Referencia {a}","Markierung {a}"],
+["à envoyer","to send","por enviar","zu senden"],
+["envoyé ✓","sent ✓","enviado ✓","gesendet ✓"],
+["envoyé ✓ le {a} à {b}","sent ✓ on {a} at {b}","enviado ✓ el {a} a las {b}","gesendet ✓ am {a} um {b}"],
+["Accès au revêtement","Access to the lining","Acceso al revestimiento","Zugang zur Auskleidung"],
+["Surface estimée à réparer","Estimated area to be repaired","Superficie estimada a reparar","Geschätzte Reparaturfläche"],
+["zone(s) déjà marquée(s)","area(s) already marked","zona(s) ya marcada(s)","Bereich(e) bereits markiert"],
+["Décision client","Client decision","Decisión del cliente","Kundenentscheidung"],
+["attendue","required","pendiente","erforderlich"],
+["Dossier sur le PC","Folder on the PC","Carpeta en el PC","Ordner auf dem PC"],
+["Rien d'autre à afficher.","Nothing else to show.","Nada más que mostrar.","Sonst nichts anzuzeigen."],
+["Aucun constat pour l'instant. Les constats enregistrés depuis l'onglet Saisie apparaissent ici, classés par jour.","No findings yet. Findings saved from the Entry tab appear here, sorted by day.","Aún no hay hallazgos. Los hallazgos guardados desde la pestaña Captura aparecen aquí, por día.","Noch keine Befunde. In „Erfassung“ gespeicherte Befunde erscheinen hier, nach Tag sortiert."],
+["Marqué comme envoyé","Marked as sent","Marcado como enviado","Als gesendet markiert"],
+["{a} constat(s) supprimé(s) du téléphone","{a} finding(s) deleted from the phone","{a} hallazgo(s) eliminado(s) del teléfono","{a} Befund(e) vom Telefon gelöscht"],
+["Aucun constat envoyé à supprimer.","No sent findings to delete.","No hay hallazgos enviados que eliminar.","Keine gesendeten Befunde zum Löschen."],
+["Supprimer du téléphone {a} constat(s) de la mission {b} déjà envoyé(s) au PC ? Vérifie d'abord qu'ils sont bien rangés sur le PC.","Delete from the phone {a} finding(s) of job {b} already sent to the PC? First check they are filed on the PC.","¿Eliminar del teléfono {a} hallazgo(s) de la misión {b} ya enviado(s) al PC? Comprueba antes que están archivados en el PC.","{a} bereits an den PC gesendete(n) Befund(e) des Auftrags {b} vom Telefon löschen? Zuerst prüfen, ob sie auf dem PC abgelegt sind."],
+["Fichiers enregistrés dans Téléchargements : envoie-les au PC depuis « Mes fichiers » > Téléchargements > Partager > Quick Share.","Files saved to Downloads: send them to the PC from “My Files” > Downloads > Share > Quick Share.","Archivos guardados en Descargas: envíalos al PC desde «Mis archivos» > Descargas > Compartir > Quick Share.","Dateien in Downloads gespeichert: über „Eigene Dateien“ > Downloads > Teilen > Quick Share an den PC senden."],
+["La fenêtre de partage s'est fermée toute seule (fréquent en DeX) : utilise « Enregistrer dans Téléchargements », puis Mes fichiers > Téléchargements > Partager > Quick Share.","The share window closed by itself (common in DeX): use “Save to Downloads”, then My Files > Downloads > Share > Quick Share.","La ventana de compartir se cerró sola (frecuente en DeX): usa «Guardar en Descargas» y luego Mis archivos > Descargas > Compartir > Quick Share.","Das Teilen-Fenster hat sich selbst geschlossen (häufig in DeX): „In Downloads speichern“ verwenden, dann Eigene Dateien > Downloads > Teilen > Quick Share."],
+["Partage impossible ({a}) : {b}. Utilise le bouton « Enregistrer dans Téléchargements ».","Sharing failed ({a}): {b}. Use the “Save to Downloads” button.","No se puede compartir ({a}): {b}. Usa el botón «Guardar en Descargas».","Teilen nicht möglich ({a}): {b}. Schaltfläche „In Downloads speichern“ verwenden."],
+// galerie
+["Tous","All","Todos","Alle"],
+["Toutes","All","Todas","Alle"],
+["{a} photo(s) affichée(s), dont {b} dans le rapport.","{a} photo(s) shown, {b} in the report.","{a} foto(s) mostrada(s), {b} en el informe.","{a} Foto(s) angezeigt, davon {b} im Bericht."],
+["Touche une photo pour l'agrandir, la légender, l'annoter ou la retirer du rapport. Appui long puis glisser : change l'ordre des photos d'un constat.","Tap a photo to enlarge, caption, annotate or remove it from the report. Long press then drag: change the order of a finding's photos.","Toca una foto para ampliarla, ponerle leyenda, anotarla o quitarla del informe. Mantén pulsado y arrastra: cambia el orden de las fotos de un hallazgo.","Foto antippen zum Vergrößern, Beschriften, Anmerken oder Entfernen aus dem Bericht. Lange drücken und ziehen: Reihenfolge der Fotos eines Befunds ändern."],
+["{a}/{b} au rapport","{a}/{b} in report","{a}/{b} en el informe","{a}/{b} im Bericht"],
+["Aucune photo enregistrée pour la mission {a}. Les photos des constats enregistrés (onglet Saisie) apparaissent ici, jusqu'à ce qu'ils soient supprimés du téléphone.","No photos saved for job {a}. Photos of saved findings (Entry tab) appear here until they are deleted from the phone.","No hay fotos guardadas para la misión {a}. Las fotos de los hallazgos guardados (pestaña Captura) aparecen aquí hasta que se eliminan del teléfono.","Keine Fotos für Auftrag {a} gespeichert. Fotos gespeicherter Befunde (Erfassung) erscheinen hier, bis sie vom Telefon gelöscht werden."],
+["photo {a}","photo {a}","foto {a}","Foto {a}"],
+["Photo {a} de {b} (hors rapport)","Photo {a} of {b} (not in report)","Foto {a} de {b} (fuera del informe)","Foto {a} von {b} (nicht im Bericht)"],
+["Photo {a} de {b}","Photo {a} of {b}","Foto {a} de {b}","Foto {a} von {b}"],
+["✕ Fermer","✕ Close","✕ Cerrar","✕ Schließen"],
+["Fermer","Close","Cerrar","Schließen"],
+["Dans le rapport","In the report","En el informe","Im Bericht"],
+["← Avant","← Before","← Antes","← Davor"],
+["Après →","After →","Después →","Danach →"],
+["Annoter","Annotate","Anotar","Anmerken"],
+["Première photo","First photo","Primera foto","Erstes Foto"],
+["Photo précédente","Previous photo","Foto anterior","Vorheriges Foto"],
+["Photo suivante","Next photo","Foto siguiente","Nächstes Foto"],
+["Placer avant la photo précédente","Move before the previous photo","Colocar antes de la foto anterior","Vor das vorherige Foto setzen"],
+["Placer après la photo suivante","Move after the next photo","Colocar después de la foto siguiente","Hinter das nächste Foto setzen"],
+["Légende (facultative), ex. : Spalling at MH1, lower part","Caption (optional), e.g. Spalling at MH1, lower part","Leyenda (opcional), p. ej.: Spalling at MH1, lower part","Bildtext (optional), z. B. Spalling at MH1, lower part"],
+["Ce constat est ouvert dans l'onglet Saisie : enregistre-le ou annule la modification d'abord.","This finding is open in the Entry tab: save it or cancel the edit first.","Este hallazgo está abierto en la pestaña Captura: guárdalo o cancela la modificación primero.","Dieser Befund ist in „Erfassung“ geöffnet: zuerst speichern oder die Bearbeitung abbrechen."],
+// missions
+["Mission","Job","Misión","Auftrag"],
+["Mission {a} active","Job {a} active","Misión {a} activa","Auftrag {a} aktiv"],
+["Nouvelle mission","New job","Nueva misión","Neuer Auftrag"],
+["Archiver","Archive","Archivar","Archivieren"],
+["Désarchiver","Unarchive","Desarchivar","Wiederherstellen"],
+["Afficher les missions archivées","Show archived jobs","Mostrar misiones archivadas","Archivierte Aufträge anzeigen"],
+["Partir de","Start from","Partir de","Ausgehend von"],
+["Copie de la mission {a}","Copy of job {a}","Copia de la misión {a}","Kopie des Auftrags {a}"],
+["Langue des listes","Language of the lists","Idioma de las listas","Sprache der Listen"],
+["N° mission","Job no.","N.º de misión","Auftragsnr."],
+["Client / site","Client / site","Cliente / sitio","Kunde / Standort"],
+["Rapports émis au nom de","Reports issued on behalf of","Informes emitidos en nombre de","Berichte ausgestellt im Namen von"],
+["QUARTIS (consultant)","QUARTIS (consultant)","QUARTIS (consultor)","QUARTIS (Berater)"],
+["Mon entreprise (compte propre)","My company (own account)","Mi empresa (cuenta propia)","Mein Unternehmen (eigene Rechnung)"],
+["Activité affichée","Activity shown","Actividad mostrada","Angezeigte Tätigkeit"],
+["Activité affichée dans l'en-tête","Activity shown in the header","Actividad mostrada en el encabezado","Tätigkeit in der Kopfzeile"],
+["Change le logo et l'en-tête des IPR / IR générés sur le PC pour cette mission (dossier _OUTILS\\Sociétés).","Changes the logo and header of the IPR / IR generated on the PC for this job (_OUTILS\\Sociétés folder).","Cambia el logotipo y el encabezado de los IPR / IR generados en el PC para esta misión (carpeta _OUTILS\\Sociétés).","Ändert Logo und Kopfzeile der auf dem PC erzeugten IPR / IR für diesen Auftrag (Ordner _OUTILS\\Sociétés)."],
+["Créer la mission","Create job","Crear la misión","Auftrag anlegen"],
+["Informations de la mission","Job information","Información de la misión","Auftragsinformationen"],
+["Inspecteur","Inspector","Inspector","Inspektor"],
+["Dossier de la mission sur le PC","Job folder on the PC","Carpeta de la misión en el PC","Auftragsordner auf dem PC"],
+["Langue des listes (activités, sous-activités)","Language of the lists (activities, sub-activities)","Idioma de las listas (actividades, subactividades)","Sprache der Listen (Tätigkeiten, Untertätigkeiten)"],
+["Les photos seront rangées dans ce dossier, sous « Dossier Photo\\Équipement\\Sous-équipement\\Activité\\Date ».","Photos will be filed in this folder, under “Dossier Photo\\Equipment\\Sub-equipment\\Activity\\Date”.","Las fotos se archivarán en esta carpeta, en «Dossier Photo\\Equipo\\Subequipo\\Actividad\\Fecha».","Die Fotos werden in diesem Ordner abgelegt, unter „Dossier Photo\\Ausrüstung\\Unterausrüstung\\Tätigkeit\\Datum“."],
+["Équipements et sous-équipements","Equipment and sub-equipment","Equipos y subequipos","Ausrüstungen und Unterausrüstungen"],
+["Une ligne par équipement avec son code entre crochets, puis ses sous-équipements précédés d'un tiret.","One line per equipment with its code in square brackets, then its sub-equipment preceded by a dash.","Una línea por equipo con su código entre corchetes y luego sus subequipos precedidos de un guion.","Eine Zeile pro Ausrüstung mit Code in eckigen Klammern, darunter die Unterausrüstungen mit Bindestrich."],
+["Activités et sous-activités","Activities and sub-activities","Actividades y subactividades","Tätigkeiten und Untertätigkeiten"],
+["Même principe : code entre crochets, sous-activités précédées d'un tiret.","Same principle: code in square brackets, sub-activities preceded by a dash.","Mismo principio: código entre corchetes, subactividades precedidas de un guion.","Gleiches Prinzip: Code in eckigen Klammern, Untertätigkeiten mit Bindestrich."],
+["Importer les équipements depuis Excel","Import equipment from Excel","Importar los equipos desde Excel","Ausrüstungen aus Excel importieren"],
+["Copie les lignes de l'onglet « Équipements » du registre (avec la ligne de titres), ou un tableau à 2 colonnes Équipement | Sous-équipement (3 si un code est en première colonne), puis colle-les ici avec Ctrl+V.","Copy the rows of the register's “Équipements” sheet (with the header row), or a 2-column table Equipment | Sub-equipment (3 if a code is in the first column), then paste them here with Ctrl+V.","Copia las filas de la hoja «Équipements» del registro (con la fila de títulos), o una tabla de 2 columnas Equipo | Subequipo (3 si hay un código en la primera columna), y pégalas aquí con Ctrl+V.","Zeilen des Blatts „Équipements“ im Register kopieren (mit Titelzeile) oder eine 2-spaltige Tabelle Ausrüstung | Unterausrüstung (3 bei Code in der ersten Spalte), dann hier mit Strg+V einfügen."],
+["Colle ici les cellules copiées dans Excel","Paste the cells copied from Excel here","Pega aquí las celdas copiadas de Excel","Die aus Excel kopierten Zellen hier einfügen"],
+["Rien à importer pour l'instant.","Nothing to import yet.","Nada que importar por ahora.","Noch nichts zu importieren."],
+["Remplacer la liste","Replace the list","Reemplazar la lista","Liste ersetzen"],
+["Ajouter à la liste","Add to the list","Añadir a la lista","Zur Liste hinzufügen"],
+["Renommage détecté","Renaming detected","Cambio de nombre detectado","Umbenennung erkannt"],
+["Enregistrer et mettre à jour les constats","Save and update the findings","Guardar y actualizar los hallazgos","Speichern und Befunde aktualisieren"],
+["Enregistrer sans modifier les constats","Save without changing the findings","Guardar sin modificar los hallazgos","Speichern ohne Befunde zu ändern"],
+["Enregistrer la mission","Save job","Guardar la misión","Auftrag speichern"],
+["Partager une mission","Share a job","Compartir una misión","Auftrag teilen"],
+["Remplacer","Replace","Reemplazar","Ersetzen"],
+["Garder celle de cet appareil","Keep this device's version","Conservar la de este dispositivo","Version dieses Geräts behalten"],
+["Envoyer cette mission","Send this job","Enviar esta misión","Diesen Auftrag senden"],
+["Charger une mission","Load a job","Cargar una misión","Auftrag laden"],
+["Version de l'appli : {a}","App version: {a}","Versión de la app: {a}","App-Version: {a}"],
+["Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.","Send the “mission-No.jpg” image via Quick Share, then load it on the other phone. A job already present (same no.) is updated, otherwise it is added.","Envía la imagen «mission-N.º.jpg» por Quick Share y cárgala en el otro teléfono. Una misión ya existente (mismo n.º) se actualiza; si no, se añade.","Bild „mission-Nr.jpg“ per Quick Share senden und auf dem anderen Telefon laden. Ein vorhandener Auftrag (gleiche Nr.) wird aktualisiert, sonst hinzugefügt."],
+["Réglage de ce téléphone","Settings of this phone","Ajustes de este teléfono","Einstellungen dieses Telefons"],
+["Sélecteur de photos (bouton « Choisir dans la galerie »)","Photo picker (“Choose from gallery” button)","Selector de fotos (botón «Elegir de la galería»)","Fotoauswahl (Schaltfläche „Aus der Galerie wählen“)"],
+["1 – Standard","1 – Standard","1 – Estándar","1 – Standard"],
+["2 – Une photo à la fois","2 – One photo at a time","2 – Una foto a la vez","2 – Ein Foto nach dem anderen"],
+["3 – Formats photo précis (JPEG, HEIC, PNG)","3 – Specific photo formats (JPEG, HEIC, PNG)","3 – Formatos de foto concretos (JPEG, HEIC, PNG)","3 – Bestimmte Fotoformate (JPEG, HEIC, PNG)"],
+["4 – Tous types de fichiers","4 – All file types","4 – Todos los tipos de archivo","4 – Alle Dateitypen"],
+["Android choisit lui-même l'appli proposée selon la façon dont les photos sont demandées. Essaie les variantes et garde celle qui ouvre la Galerie Samsung. Ce réglage ne concerne que ce téléphone.","Android chooses the app offered depending on how photos are requested. Try the variants and keep the one that opens the Samsung Gallery. This setting only applies to this phone.","Android elige la app que propone según cómo se piden las fotos. Prueba las variantes y quédate con la que abre la Galería de Samsung. Este ajuste solo afecta a este teléfono.","Android wählt die angebotene App je nach Art der Fotoanfrage. Varianten testen und die behalten, die die Samsung-Galerie öffnet. Diese Einstellung gilt nur für dieses Telefon."],
+["Envoi vers le PC","Sending to the PC","Envío al PC","An den PC senden"],
+["Automatique (Quick Share, ou Téléchargements en DeX)","Automatic (Quick Share, or Downloads in DeX)","Automático (Quick Share, o Descargas en DeX)","Automatisch (Quick Share oder Downloads in DeX)"],
+["Toujours enregistrer dans Téléchargements (DeX)","Always save to Downloads (DeX)","Guardar siempre en Descargas (DeX)","Immer in Downloads speichern (DeX)"],
+["Toujours ouvrir le partage (Quick Share)","Always open sharing (Quick Share)","Abrir siempre compartir (Quick Share)","Immer Teilen öffnen (Quick Share)"],
+["En DeX, la fenêtre de partage peut s'ouvrir et se fermer aussitôt : choisis « Toujours enregistrer dans Téléchargements », puis envoie depuis Mes fichiers > Téléchargements > Partager > Quick Share. Navigateur détecté :","In DeX, the share window may open and close immediately: choose “Always save to Downloads”, then send from My Files > Downloads > Share > Quick Share. Browser detected:","En DeX, la ventana de compartir puede abrirse y cerrarse enseguida: elige «Guardar siempre en Descargas» y envía desde Mis archivos > Descargas > Compartir > Quick Share. Navegador detectado:","In DeX kann sich das Teilen-Fenster sofort wieder schließen: „Immer in Downloads speichern“ wählen und über Eigene Dateien > Downloads > Teilen > Quick Share senden. Erkannter Browser:"],
+["Cette mission n'a pas encore été envoyée à un autre appareil.","This job has not been sent to another device yet.","Esta misión aún no se ha enviado a otro dispositivo.","Dieser Auftrag wurde noch an kein anderes Gerät gesendet."],
+["✓ À jour : version du {a} envoyée le {b}.","✓ Up to date: version of {a} sent on {b}.","✓ Al día: versión del {a} enviada el {b}.","✓ Aktuell: Version vom {a}, gesendet am {b}."],
+["✓ Version du {a}, reçue le {b}.","✓ Version of {a}, received on {b}.","✓ Versión del {a}, recibida el {b}.","✓ Version vom {a}, empfangen am {b}."],
+["⚠ Modifiée le {a} et pas encore envoyée aux autres appareils. Touche « Envoyer cette mission », puis charge-la sur tes téléphones.","⚠ Changed on {a} and not yet sent to the other devices. Tap “Send this job”, then load it on your phones.","⚠ Modificada el {a} y aún no enviada a los otros dispositivos. Toca «Enviar esta misión» y cárgala en tus teléfonos.","⚠ Geändert am {a} und noch nicht an die anderen Geräte gesendet. „Diesen Auftrag senden“ antippen und auf den Telefonen laden."],
+["Mission enregistrée. Pense à l'envoyer à tes autres appareils.","Job saved. Remember to send it to your other devices.","Misión guardada. Recuerda enviarla a tus otros dispositivos.","Auftrag gespeichert. An die anderen Geräte senden."],
+["Aucun changement","No changes","Ningún cambio","Keine Änderung"],
+["Il faut au moins un équipement et une activité.","At least one equipment and one activity are needed.","Se necesita al menos un equipo y una actividad.","Mindestens eine Ausrüstung und eine Tätigkeit sind nötig."],
+["Indique le n° de mission.","Enter the job number.","Indica el n.º de misión.","Auftragsnummer eingeben."],
+["Indique le n° de la nouvelle mission.","Enter the number of the new job.","Indica el n.º de la nueva misión.","Nummer des neuen Auftrags eingeben."],
+["La mission {a} existe déjà.","Job {a} already exists.","La misión {a} ya existe.","Auftrag {a} existiert bereits."],
+["Mission {a} créée : vérifie le dossier PC et complète les listes","Job {a} created: check the PC folder and complete the lists","Misión {a} creada: comprueba la carpeta del PC y completa las listas","Auftrag {a} angelegt: PC-Ordner prüfen und Listen ergänzen"],
+["Mission {a} désarchivée","Job {a} unarchived","Misión {a} desarchivada","Auftrag {a} wiederhergestellt"],
+["Crée d'abord une autre mission : il faut au moins une mission active.","Create another job first: at least one active job is needed.","Crea primero otra misión: se necesita al menos una misión activa.","Zuerst einen anderen Auftrag anlegen: mindestens ein aktiver Auftrag ist nötig."],
+["Mission enregistrée et {a} constat(s) mis à jour.","Job saved and {a} finding(s) updated.","Misión guardada y {a} hallazgo(s) actualizado(s).","Auftrag gespeichert und {a} Befund(e) aktualisiert."],
+["Ce fichier n'est pas un fichier de mission valide.","This file is not a valid job file.","Este archivo no es un archivo de misión válido.","Diese Datei ist keine gültige Auftragsdatei."],
+["Ce fichier ne contient pas de n° de mission.","This file contains no job number.","Este archivo no contiene n.º de misión.","Diese Datei enthält keine Auftragsnummer."],
+["Mission {a} mise à jour","Job {a} updated","Misión {a} actualizada","Auftrag {a} aktualisiert"],
+["Mission {a} ajoutée","Job {a} added","Misión {a} añadida","Auftrag {a} hinzugefügt"],
+["Liste mise à jour : vérifie-la puis « Enregistrer la mission ».","List updated: check it, then “Save job”.","Lista actualizada: compruébala y luego «Guardar la misión».","Liste aktualisiert: prüfen und dann „Auftrag speichern“."],
+["Réglage d'envoi enregistré","Sending setting saved","Ajuste de envío guardado","Sendeeinstellung gespeichert"],
+["Sélecteur de photos : variante {a}. Essaie « Choisir dans la galerie ».","Photo picker: variant {a}. Try “Choose from gallery”.","Selector de fotos: variante {a}. Prueba «Elegir de la galería».","Fotoauswahl: Variante {a}. „Aus der Galerie wählen“ testen."],
+// préparer, traduction (titres)
+["Préparer des constats","Prepare findings","Preparar hallazgos","Befunde vorbereiten"],
+["Langue de la dictée","Dictation language","Idioma del dictado","Diktiersprache"],
+["🎤 Dicter","🎤 Dictate","🎤 Dictar","🎤 Diktieren"],
+["Analyser","Analyse","Analizar","Analysieren"],
+["Créer les constats prévus","Create the planned findings","Crear los hallazgos previstos","Geplante Befunde anlegen"],
+["Contrôles prévus…","Planned checks…","Controles previstos…","Geplante Prüfungen…"],
+["Contrôles prévus","Planned checks","Controles previstos","Geplante Prüfungen"],
+["Traduire les observations","Translate the observations","Traducir las observaciones","Beobachtungen übersetzen"],
+["Glossaire réfractaire","Refractory glossary","Glosario de refractarios","Feuerfest-Glossar"]
+];
+// morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
+const TRAD_UI_PARTS=[
+["aujourd'hui","today","hoy","heute"],
+["hier","yesterday","ayer","gestern"],
+["le {a} à {b}","on {a} at {b}","el {a} a las {b}","am {a} um {b}"],
+["le {a}","on {a}","el {a}","am {a}"],
+["{a} photo, observation saisie","{a} photo, observation entered","{a} foto, observación escrita","{a} Foto, Beobachtung erfasst"],
+["{a} photos, observation saisie","{a} photos, observation entered","{a} fotos, observación escrita","{a} Fotos, Beobachtung erfasst"],
+["{a} photo","{a} photo","{a} foto","{a} Foto"],
+["{a} photos","{a} photos","{a} fotos","{a} Fotos"]
+];
+const LANGUI={codes:["fr","en","es","de"],lang:"fr",exact:new Map(),pats:[],parts:[]};
+const normUI=t=>String(t).replace(/[\u00a0\u202f]/g," ").replace(/\s+/g," ").trim();
+function compilerUI(liste,exact,pats){for(const [fr,...tr] of liste){const k=normUI(fr);
+  if(!/\{[a-z]\}/.test(k)){if(exact) exact.set(k,tr);continue}
+  const noms=[];const rx=k.replace(/[.*+?^$()|[\]\\]/g,"\\$&").replace(/\\?\{([a-z])\\?\}/g,(m,n)=>{noms.push(n);return "(.+?)"});
+  pats.push({re:new RegExp("^"+rx+"$"),noms,tr})}}
+compilerUI(TRAD_UI,LANGUI.exact,LANGUI.pats);{const ex=new Map();compilerUI(TRAD_UI_PARTS,ex,LANGUI.parts);LANGUI.partsExact=ex}
+// texte français -> langue de l'interface (null si inconnu)
+function tradUI(fr,interne){const k=normUI(fr);if(!k) return null;const i=LANGUI.codes.indexOf(LANGUI.lang)-1;if(i<0) return null;
+  const ex=LANGUI.exact.get(k)||(interne&&LANGUI.partsExact.get(k));if(ex) return ex[i];
+  // lignes « a · b · c » : chaque morceau traduit à part
+  if(k.includes(" · ")){const parts=k.split(" · ");let chg=false;const out=parts.map(x=>{const t=tradUI(x,true);if(t!=null){chg=true;return t}return x});return chg?out.join(" · "):null}
+  for(const p of interne?[...LANGUI.pats,...LANGUI.parts]:LANGUI.pats){const m=k.match(p.re);if(!m) continue;
+    const v={};p.noms.forEach((n,j)=>{const x=m[j+1];v[n]=tradUI(x,true)??x});return p.tr[i].replace(/\{([a-z])\}/g,(q,n)=>v[n]??q)}
+  return null}
+// zones à ne jamais traduire : textes saisis, noms des listes de la mission, données
+const UI_EXCLU='[data-noi18n],.rte,[contenteditable],textarea,input,script,style,#fEq,#fSub,#fAct,#fSubAct,#fAcces,#mSel,#degats,#degParam,.apercu dd,figcaption,#accMission,#hMission,#tList,#prepRes,#prevusList,#gvInfo,#gvLeg,.gt .lg,#renTxt,#pastePreview,#fPath,#uaInfo';
+function traduireNoeudUI(n){
+  if(n.nodeType===3){const el=n.parentElement;if(!el||el.closest(UI_EXCLU)) return;
+    const fr=n.__fr??n.data;if(LANGUI.lang==="fr"){if(n.__fr!=null){n.data=n.__fr;n.__fr=null}return}
+    const t=tradUI(fr);if(t==null){if(n.__fr!=null){n.data=n.__fr;n.__fr=null}return}
+    const l=fr.match(/^\s*/)[0],r=fr.match(/\s*$/)[0];n.__fr=fr;const nv=l+t+r;if(n.data!==nv) n.data=nv;return}
+  if(n.nodeType!==1||n.closest(UI_EXCLU)&&!n.matches("input,textarea")) return;
+  for(const el of [n,...n.querySelectorAll("[placeholder],[aria-label],[title]")]){if(el.closest&&el.closest("[data-noi18n],#fEq,#fSub,#fAct,#fSubAct,#mSel")) continue;
+    for(const a of ["placeholder","aria-label","title"]){if(!el.hasAttribute||!el.hasAttribute(a)) continue;el.__frA=el.__frA||{};
+      const fr=el.__frA[a]??el.getAttribute(a);el.__frA[a]=fr;const t=LANGUI.lang==="fr"?null:tradUI(fr);el.setAttribute(a,t??fr)}}
+  const w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT);let x;while((x=w.nextNode())) traduireNoeudUI(x)}
+function langueUI(){try{return localStorage.getItem("langueUI")||"fr"}catch(e){return "fr"}}
+function appliquerLangueUI(l){LANGUI.lang=LANGUI.codes.includes(l)?l:"fr";document.documentElement.lang=LANGUI.lang;
+  try{localStorage.setItem("langueUI",LANGUI.lang)}catch(e){}const s=$("uiLang");if(s) s.value=LANGUI.lang;traduireNoeudUI(document.body)}
+function initLangueUI(){LANGUI.lang=langueUI();
+  // tout ce que l'appli affiche ensuite (listes, messages, cartes) est traduit au passage
+  new MutationObserver(ms=>{if(LANGUI.lang==="fr") return;for(const m of ms) m.addedNodes.forEach(traduireNoeudUI)})
+    .observe(document.body,{childList:true,subtree:true});
+  const s=$("uiLang");if(s) s.onchange=()=>appliquerLangueUI(s.value);appliquerLangueUI(LANGUI.lang)}
 async function start(){
+  initLangueUI();
   initEditeur2();initGalerie();initPrep();initTheme();
   initEditeur("fObs");initEditeur("fReco");
   try{DB=await openDB()}catch(e){document.querySelector("main").innerHTML=`<div class="card"><strong>Stockage indisponible.</strong><p class="hint">Ouvre l'appli dans Chrome (pas en navigation privée).</p></div>`;return}
