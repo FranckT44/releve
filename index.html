@@ -144,6 +144,11 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .edbar button{min-height:38px;padding:4px 9px;font-size:13px;background:#1b2328;color:#e6ecef;border-color:#2e3a41;white-space:nowrap}
 .edbar button[aria-pressed=true]{background:#e0703f;color:#14100e;border-color:#e0703f}
 .edbar button.primary{background:#e0703f;color:#14100e;border-color:#e0703f}
+.edsw{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 6px;font-size:13px;color:#e6ecef;cursor:pointer;user-select:none}
+.edsw input{position:absolute;opacity:0;width:1px;height:1px}.edswk{position:relative;width:38px;height:22px;border-radius:11px;background:#3a464d;border:1px solid #556;transition:background .15s;flex:none}
+.edswk::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#cfd8dc;transition:transform .15s}
+.edsw input:checked+.edswk{background:#e0703f;border-color:#e0703f}.edsw input:checked+.edswk::after{transform:translateX(16px);background:#fff}
+.edsw input:focus-visible+.edswk{outline:2px solid #fff;outline-offset:2px}
 .edbar button.danger{color:#f0716a;border-color:#f0716a;background:transparent}
 .edopts{flex-wrap:wrap;row-gap:4px}
 .edl{display:flex;align-items:center;gap:6px;color:#c9d3d9;font-size:13px;font-weight:500;white-space:nowrap}
@@ -490,8 +495,9 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <button type="button" data-t="line">Ligne</button><button type="button" data-t="arrow" aria-pressed="true">Flèche</button>
     <button type="button" data-t="rect">Rectangle</button><button type="button" data-t="ell">Ellipse</button>
     <button type="button" data-t="text">Texte</button><button type="button" data-t="crop">Recadrer</button>
+    <label class="edsw" title="Activé : toucher un tracé existant le sélectionne, quel que soit l'outil (sauf Recadrer). Désactivé : on dessine même par-dessus un tracé."><input type="checkbox" id="edDirect" role="switch"><span class="edswk" aria-hidden="true"></span>Sél. directe</label>
   </div>
-  <div class="edbar edopts">
+  <div class="edbar edopts" id="edOpts">
     <span class="sw" id="edCols"></span>
     <label class="edl">Épaisseur<input type="range" id="edW" min="1" max="20" value="3"><input type="number" id="edWn" class="edn" min="1" max="20" value="3" inputmode="numeric" aria-label="Épaisseur du trait"></label>
     <label class="edl">Trait<select id="edDash" class="edn edsel" aria-label="Type de trait"><option value="">━ plein</option><option value="dash">╍ tirets</option><option value="dot">┈ pointillés</option></select></label>
@@ -502,7 +508,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <button type="button" id="edDel" class="danger" aria-label="Supprimer l'élément sélectionné">Suppr.</button>
     <button type="button" id="edRotG" aria-label="Tourner la photo d'un quart de tour à gauche">⟲ 90°</button><button type="button" id="edRotD" aria-label="Tourner la photo d'un quart de tour à droite">⟳ 90°</button>
   </div>
-  <div class="edbar edvue"><button type="button" id="edFirst" aria-label="Première photo">⏮</button><button type="button" id="edPrev" aria-label="Photo précédente">‹</button><span id="edNum">1/1</span><button type="button" id="edNext" aria-label="Photo suivante">›</button><span class="edsep"></span>
+  <div class="edbar edvue"><button type="button" id="edFirst" aria-label="Première photo">⏮</button><button type="button" id="edPrev" aria-label="Photo précédente">‹</button><span id="edNum">1/1</span><button type="button" id="edNext" aria-label="Photo suivante">›</button><span class="edsep"></span><button type="button" id="edOptsBtn" aria-expanded="true" aria-controls="edOpts" title="Afficher / masquer les réglages (couleur, épaisseur…)">⚙ ▴</button>
     <button type="button" id="edFit" aria-label="Voir la photo entière">Tout</button><button type="button" id="edCropVue" aria-label="Recadrer sur la vue affichée">Cadrer vue</button></div>
   <div id="edZone"><canvas id="edCv"></canvas></div>
   <div id="edTxt" hidden><textarea id="edTxtIn" rows="2" placeholder="Texte à placer (il passe à la ligne tout seul au bord de la photo)" autocomplete="off"></textarea>
@@ -523,7 +529,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.41";
+const APP_VERSION="1.42";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -967,12 +973,17 @@ function edDown(ev){ev.preventDefault();try{$("edCv").setPointerCapture(ev.point
       const q=edPinchPos();ED.pinch={...q,sc:ED.v.sc,ix:q.cx/ED.v.sc+ED.v.x0,iy:q.cy/ED.v.sc+ED.v.y0};edDessiner();return}
     if(PTR.size>2||ED.pinch) return}
   const pt=edPoint(ev);
+  // sélection directe : avec un outil de dessin, toucher un tracé (ou une poignée du tracé sélectionné) le sélectionne au lieu de dessiner
+  if(ED.tool!=="sel"&&ED.tool!=="crop"&&$("edDirect").checked){const h=toucherPoignee(pt);if(h!==-1){edPousser();ED.poignee=h;ED.drag=pt;return}
+    if(toucher(pt)>=0){selToucher(pt);return}if(ED.sel>=0){ED.sel=-1;edDessiner()}}
   if(ED.tool==="sel"){const h=toucherPoignee(pt);if(h!==-1){edPousser();ED.poignee=h;ED.drag=pt;return}
-    ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.op!=null) $("edOp").value=Math.round(o.op*100);if(o.fill!=null) $("edFill").checked=!!o.fill;if(o.t!=="text") $("edDash").value=o.ds||"";if(o.col){ED.col=o.col.toLowerCase();majPastilles()}edSyncN();if(o.t==="text") txtOuvrir(o)}edDessiner();return}
+    selToucher(pt);return}
   if(ED.tool==="text"){TXTPOS=pt;TXTEDIT=-1;txtOuvrir(null);return}
   const st=styleCourant();
   if(ED.tool==="pen") ED.cur={t:"pen",pts:[pt],...st};
   else ED.cur={t:ED.tool,x1:pt[0],y1:pt[1],x2:pt[0],y2:pt[1],...st};edDessiner()}
+function selToucher(pt){
+    ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.op!=null) $("edOp").value=Math.round(o.op*100);if(o.fill!=null) $("edFill").checked=!!o.fill;if(o.t!=="text") $("edDash").value=o.ds||"";if(o.col){ED.col=o.col.toLowerCase();majPastilles()}edSyncN();if(o.t==="text") txtOuvrir(o)}edDessiner()}
 function edMove(ev){if(PTR.has(ev.pointerId)) PTR.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
   if(ED.pinch){ev.preventDefault();if(PTR.size<2) return;const q=edPinchPos(),p=ED.pinch,v=ED.v;v.sc=p.sc*q.d/p.d;edBorner();v.x0=p.ix-q.cx/v.sc;v.y0=p.iy-q.cy/v.sc;edBorner();edDessiner();return}
   if(!ED.cur&&!ED.drag) return;ev.preventDefault();const pt=edPoint(ev);
@@ -1013,6 +1024,11 @@ function renderCouleurs(){const sw=$("edCols");sw.innerHTML="";const perso=coule
   majPastilles()}
 function initEditeur2(){
   renderCouleurs();
+  try{$("edDirect").checked=localStorage.getItem("selDirecte")==="1"}catch(e){}
+  const montrerOpts=v=>{$("edOpts").hidden=!v;$("edOptsBtn").setAttribute("aria-expanded",String(v));$("edOptsBtn").textContent=v?"⚙ ▴":"⚙ ▾"};
+  let vOpts=true;try{vOpts=localStorage.getItem("edOpts")!=="0"}catch(e){}montrerOpts(vOpts);
+  $("edOptsBtn").onclick=()=>{const v=$("edOpts").hidden;try{localStorage.setItem("edOpts",v?"1":"0")}catch(e){}montrerOpts(v)};
+  $("edDirect").onchange=()=>{try{localStorage.setItem("selDirecte",$("edDirect").checked?"1":"0")}catch(e){}if(!$("edDirect").checked&&ED.tool!=="sel"&&ED.sel>=0){ED.sel=-1;edDessiner()}};
   document.querySelectorAll("#ed [data-t]").forEach(b=>b.onclick=()=>{if(b.dataset.t==="crop"&&ED.tool==="crop"&&ED.crop){edPousser();ED.crop=null;edDessiner()}edOutil(b.dataset.t)});
   const cv=$("edCv");cv.addEventListener("pointerdown",edDown);cv.addEventListener("pointermove",edMove);cv.addEventListener("pointerup",edUp);cv.addEventListener("pointercancel",edUp);
   const majSel=()=>{if(ED.sel>=0){const o=ED.obj[ED.sel];o.w=+$("edW").value*unite();o.fill=$("edFill").checked;o.op=+$("edOp").value/100;if(o.t!=="text") o.ds=$("edDash").value;edDessiner()}};
