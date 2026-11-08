@@ -501,7 +501,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <button type="button" data-t="text">Texte</button><button type="button" data-t="crop">Recadrer</button>
     <label class="edsw" title="Activé : toucher un tracé existant le sélectionne, quel que soit l'outil (sauf Recadrer). Désactivé : on dessine même par-dessus un tracé."><input type="checkbox" id="edDirect" role="switch"><span class="edswk" aria-hidden="true"></span>Sél. directe</label>
     <label class="edsw" title="Affiche les outils avancés : zone hachurée, repères numérotés, cotes, bulles, flou, pipette, étalonnage, modèles, redressement, cartouche"><input type="checkbox" id="edProSw" role="switch"><span class="edswk" aria-hidden="true"></span>Annotations pro</label>
-    <span class="pro edprot"><button type="button" data-t="poly" title="Zone libre : toucher point par point puis toucher le 1er point (ou ✓ / double-clic / Entrée) ; ou tracer d'un seul geste">Zone</button><button type="button" data-t="num" title="Repère numéroté : chaque toucher pose le numéro suivant">N°</button><button type="button" data-t="cote" title="Cote : flèche à chaque bout et valeur au milieu (mesurée si l'échelle est étalonnée)">Cote</button><button type="button" data-t="bulle" title="Bulle : tirer de l'endroit visé vers l'emplacement du texte">Bulle</button><button type="button" data-t="flou" title="Flouter une zone (visage, plaque, écran)">Flou</button><button type="button" data-t="pip" title="Pipette : toucher la photo pour prendre sa couleur">Pipette</button><button type="button" data-t="etal" title="Étalonner : tracer un trait sur un objet de longueur connue (marteau, mètre…)">Étalon</button></span>
+    <span class="pro edprot"><button type="button" data-t="poly" title="Zone libre : toucher point par point puis toucher le 1er point (ou ✓ / double-clic / Entrée) ; ou tracer d'un seul geste">Zone</button><button type="button" data-t="num" title="Repère numéroté : chaque toucher pose le numéro suivant">N°</button><button type="button" data-t="cote" title="Cote : flèche à chaque bout et valeur au milieu (mesurée si l'échelle est étalonnée)">Cote</button><button type="button" data-t="bulle" title="Bulle : tirer de l'endroit visé vers l'emplacement du texte ; toucher une bulle pour modifier son texte, sa taille, G / I / S et son fond">Bulle</button><button type="button" data-t="flou" title="Flouter une zone (visage, plaque, écran)">Flou</button><button type="button" data-t="pip" title="Pipette : toucher la photo pour prendre sa couleur">Pipette</button><button type="button" data-t="etal" title="Étalonner : tracer un trait sur un objet de longueur connue (marteau, mètre…)">Étalon</button></span>
   </div>
   <div class="edbar edopts" id="edOpts">
     <span class="sw" id="edCols"></span>
@@ -548,7 +548,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.44";
+const APP_VERSION="1.45";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -896,7 +896,7 @@ async function ouvrirEditeur(i,ctx){if(ctx) ED.ctx=ctx;const C=ED.ctx;if(C.charg
   try{ED.base=await createImageBitmap(p.orig||p.blob,{imageOrientation:"from-image"})}catch(e){try{ED.base=await createImageBitmap(p.orig||p.blob)}catch(e2){toast("Impossible d'ouvrir cette photo.");return}}
   ED.rot=p.annot&&p.annot.rot||0;ED.redr=p.annot&&p.annot.redr||0;ED.ech=p.annot&&p.annot.ech||null;ED.poly=null;ED.img=imageTournee(ED.base,ED.rot,ED.redr);
   ED.i=i;ED.obj=p.annot?structuredClone(p.annot.obj||[]):[];ED.crop=p.annot?p.annot.crop||null:null;ED.etat0=JSON.stringify({o:ED.obj,c:ED.crop,r:ED.rot||0,d:ED.redr||0,e:ED.ech||null});ED.hist=[];ED.redo=[];ED.sel=-1;ED.cur=null;ED.v=null;PTR.clear();ED.pinch=null;
-  $("edTxt").hidden=true;TXTPOS=null;TXTEDIT=-1;
+  $("edTxt").hidden=true;TXTPOS=null;TXTEDIT=-1;BULNEUVE=false;
   const n=C.src.length;$("edNum").textContent=`${i+1}/${n}`;$("edFirst").disabled=$("edPrev").disabled=i===0;$("edNext").disabled=i>=n-1;
   $("ed").hidden=false;document.body.style.overflow="hidden";edOutil(ED.tool);majPro();edTaille();edDessiner()}
 // passer à une autre photo : la photo en cours est enregistrée si elle a été modifiée
@@ -1009,14 +1009,18 @@ function tirerPoignee(o,k,pt){if(o.t==="poly"){o.pts[k]=[pt[0],pt[1]];return}
   if(a){const cs2=[[o.x1,o.y1],[o.x2,o.y1],[o.x1,o.y2],[o.x2,o.y2]],oppApres=tourne(cs2[opp],centre(o),a);const dx=oppAvant[0]-oppApres[0],dy=oppAvant[1]-oppApres[1];o.x1+=dx;o.x2+=dx;o.y1+=dy;o.y2+=dy}}
 function toucher(pt){const tol=12*unite();for(let j=ED.obj.length-1;j>=0;j--){const b=boite(ED.obj[j]);if(pt[0]>=b[0]-tol&&pt[0]<=b[2]+tol&&pt[1]>=b[1]-tol&&pt[1]<=b[3]+tol) return j}return -1}
 function deplacer(o,dx,dy){mapObj(o,(x,y)=>[x+dx,y+dy])}
-let TXTPOS=null,TXTEDIT=-1;const TXT={b:false,i:false,u:false,t:7};
+let TXTPOS=null,TXTEDIT=-1,BULNEUVE=false;const TXT={b:false,i:false,u:false,t:7};
 function txtBoutons(){$("edTxtBg").value=TXT.bg||"";for(const k of ["b","i","u"]) $("edTxt"+k.toUpperCase()).setAttribute("aria-pressed",String(TXT[k]));$("edTxtT").value=TXT.t;$("edTxtTv").textContent=TXT.t}
-function txtOuvrir(o){if(o){TXTEDIT=ED.sel;TXT.bg=o.bg||"";TXT.b=!!o.b;TXT.i=!!o.i;TXT.u=!!o.u;TXT.t=o.fs?Math.round(o.fs/unite()/3):Math.round(o.w*7/unite()/3);$("edTxtIn").value=o.txt}else $("edTxtIn").value="";
-  txtBoutons();$("edTxtOk").textContent=o?"Modifier":"OK";$("edTxt").hidden=false;if(!o) $("edTxtIn").focus()}
+function txtOuvrir(o){const bul=!!o&&o.t==="bulle";if(o){TXTEDIT=ED.sel;TXT.bg=bul?(o.bg==null?"#ffffff":o.bg):o.bg||"";TXT.b=!!o.b;TXT.i=!!o.i;TXT.u=!!o.u;
+    TXT.t=Math.max(2,Math.round((o.fs||(bul?mepBulle(o).fs:o.w*7))/unite()/3));$("edTxtIn").value=o.txt||""}else $("edTxtIn").value="";
+  $("edTxtIn").placeholder=bul?"Texte de la bulle":"Texte à placer (il passe à la ligne tout seul au bord de la photo)";
+  txtBoutons();$("edTxtOk").textContent=o&&!(bul&&BULNEUVE)?"Modifier":"OK";$("edTxt").hidden=false;if(!o||bul&&BULNEUVE) $("edTxtIn").focus()}
+// bulle tracée puis abandonnée sans texte : on la retire
+function bulleAbandon(){if(!BULNEUVE) return;BULNEUVE=false;const k=ED.obj.findIndex(o=>o.t==="bulle"&&!o.txt);if(k>=0){ED.obj.splice(k,1);if(ED.hist.length) ED.hist.pop();ED.sel=-1}TXTEDIT=-1}
 function txtStyle(){const st={fs:TXT.t*unite()*3,b:TXT.b,i:TXT.i,u:TXT.u};if(modePro()) st.bg=TXT.bg||"";return st}
-function edDown(ev){ev.preventDefault();try{$("edCv").setPointerCapture(ev.pointerId)}catch(e){}
+function edDown(ev){ev.preventDefault();try{$("edCv").setPointerCapture(ev.pointerId)}catch(e){}ED.tap={x:ev.clientX,y:ev.clientY};
   if(ev.pointerType==="touch"){PTR.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
-    if(PTR.size===2){ED.cur=null;if(ED.drag){ED.drag=null;ED.poignee=null;if(ED.hist.length) edRestaurer(ED.hist.pop())}$("edTxt").hidden=true;TXTPOS=null;TXTEDIT=-1;
+    if(PTR.size===2){bulleAbandon();ED.cur=null;if(ED.drag){ED.drag=null;ED.poignee=null;if(ED.hist.length) edRestaurer(ED.hist.pop())}$("edTxt").hidden=true;TXTPOS=null;TXTEDIT=-1;
       const q=edPinchPos();ED.pinch={...q,sc:ED.v.sc,ix:q.cx/ED.v.sc+ED.v.x0,iy:q.cy/ED.v.sc+ED.v.y0};edDessiner();return}
     if(PTR.size>2||ED.pinch) return}
   const pt=edPoint(ev);
@@ -1037,7 +1041,7 @@ function edDown(ev){ev.preventDefault();try{$("edCv").setPointerCapture(ev.point
   if(ED.tool==="pen") ED.cur={t:"pen",pts:[pt],...st};
   else ED.cur={t:ED.tool,x1:pt[0],y1:pt[1],x2:pt[0],y2:pt[1],...st};edDessiner()}
 function selToucher(pt){
-    ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.op!=null) $("edOp").value=Math.round(o.op*100);if(o.fill!=null) $("edFill").checked=!!o.fill;if(o.t!=="text") $("edDash").value=o.ds||"";if(o.col){ED.col=o.col.toLowerCase();majPastilles()}edSyncN();if(o.t==="text") txtOuvrir(o)}edDessiner()}
+    bulleAbandon();ED.sel=toucher(pt);TXTEDIT=-1;$("edTxt").hidden=true;if(ED.sel>=0){edPousser();ED.drag=pt;const o=ED.obj[ED.sel];$("edW").value=Math.round(o.w/unite());if(o.op!=null) $("edOp").value=Math.round(o.op*100);if(o.fill!=null) $("edFill").checked=!!o.fill;if(o.t!=="text") $("edDash").value=o.ds||"";if(o.col){ED.col=o.col.toLowerCase();majPastilles()}edSyncN();if(o.t==="text"||o.t==="bulle") txtOuvrir(o)}edDessiner()}
 function edMove(ev){if(PTR.has(ev.pointerId)) PTR.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
   if(ED.pinch){ev.preventDefault();if(PTR.size<2) return;const q=edPinchPos(),p=ED.pinch,v=ED.v;v.sc=p.sc*q.d/p.d;edBorner();v.x0=p.ix-q.cx/v.sc;v.y0=p.iy-q.cy/v.sc;edBorner();edDessiner();return}
   if(ED.poly&&!ED.drag){const pt=edPoint(ev);ED.poly.survol=pt;const D=ED.polyDown;
@@ -1048,7 +1052,10 @@ function edMove(ev){if(PTR.has(ev.pointerId)) PTR.set(ev.pointerId,{x:ev.clientX
   if(ED.drag&&ED.sel>=0){if(ED.poignee!=null) tirerPoignee(ED.obj[ED.sel],ED.poignee,pt);else deplacer(ED.obj[ED.sel],pt[0]-ED.drag[0],pt[1]-ED.drag[1]);ED.drag=pt;edDessiner();return}
   if(ED.cur.t==="pen") ED.cur.pts.push(pt);else{ED.cur.x2=pt[0];ED.cur.y2=pt[1]}edDessiner()}
 async function edUp(ev){if(ev&&PTR.has(ev.pointerId)){PTR.delete(ev.pointerId);if(ED.pinch){if(!PTR.size) ED.pinch=null;return}}
-  if(ED.drag){ED.drag=null;ED.poignee=null;return}
+  if(ED.drag){ED.drag=null;ED.poignee=null;
+    // simple toucher (sans glisser) sur une bulle déjà sélectionnée : on ouvre son texte
+    const o=ED.obj[ED.sel],T=ED.tap;if(o&&o.t==="bulle"&&ev&&T&&Math.hypot(ev.clientX-T.x,ev.clientY-T.y)<8&&$("edTxt").hidden){if(ED.hist.length) ED.hist.pop();txtOuvrir(o)}
+    return}
   if(ED.poly){const D=ED.polyDown;ED.polyDown=null;if(D&&D.lasso&&D.n===1) finirPoly();else if(D&&D.lasso){ED.poly.survol=null;edDessiner()}return}
   if(!ED.cur) return;const c=ED.cur;ED.cur=null;
   const taille=c.t==="pen"?c.pts.length>1:Math.hypot(c.x2-c.x1,c.y2-c.y1)*ED.v.sc>8;
@@ -1057,12 +1064,12 @@ async function edUp(ev){if(ev&&PTR.has(ev.pointerId)){PTR.delete(ev.pointerId);i
   if(c.t==="crop"){const x=Math.max(0,Math.min(c.x1,c.x2)),y=Math.max(0,Math.min(c.y1,c.y2));ED.crop={x,y,w:Math.min(ED.img.width,Math.max(c.x1,c.x2))-x,h:Math.min(ED.img.height,Math.max(c.y1,c.y2))-y};toast("Zone de recadrage définie. Touche à nouveau « Recadrer » pour l'annuler.",3500)}
   else if(c.t==="etal"){ED.hist.pop();etalonner(c);return}
   else if(c.t==="cote"){ED.obj.push(c);edDessiner();if(!await finCote(c)){ED.obj.pop();ED.hist.pop()}edDessiner();return}
-  else if(c.t==="bulle"){const v=await edDemander("Texte de la bulle :","",true);if(!v){ED.hist.pop();edDessiner();return}c.txt=v;ED.obj.push(c);ED.sel=-1}
+  else if(c.t==="bulle"){if(BULNEUVE){bulleAbandon();edPousser()}c.txt="";ED.obj.push(c);ED.sel=ED.obj.length-1;BULNEUVE=true;txtOuvrir(c)}
   else ED.obj.push(c);edDessiner()}
-async function edExporter(){const p=ED.ctx.src[ED.i];
+async function edExporter(){const p=ED.ctx.src[ED.i];ED.obj=ED.obj.filter(o=>!(o.t==="bulle"&&!o.txt));
   const c=ED.crop||{x:0,y:0,w:ED.img.width,h:ED.img.height};const k=Math.min(1,3000/Math.max(c.w,c.h));
   const cv=document.createElement("canvas");cv.width=Math.round(c.w*k);cv.height=Math.round(c.h*k);const g=cv.getContext("2d");
-  g.drawImage(ED.img,c.x,c.y,c.w,c.h,0,0,cv.width,cv.height);g.save();g.scale(1,1);g.translate(-c.x*k,-c.y*k);for(const o of ED.obj) dessinerObjet(g,o,k);g.restore();
+  g.drawImage(ED.img,c.x,c.y,c.w,c.h,0,0,cv.width,cv.height);g.save();g.scale(1,1);g.translate(-c.x*k,-c.y*k);for(const o of ED.obj) if(!(o.t==="bulle"&&!o.txt)) dessinerObjet(g,o,k);g.restore();
   const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",0.9));
   if(!p.orig) p.orig=p.blob;p.blob=blob;p.type="image/jpeg";p.annot={obj:ED.obj,crop:ED.crop,rot:ED.rot||0,redr:ED.redr||0,ech:ED.ech||null};p.thumb=await makeThumb(blob)}
 async function edEnregistrer(){if(!ED.hist.length){fermerEditeur();return}const rien=!ED.obj.length&&!ED.crop&&!ED.rot&&!ED.redr;await edValider();fermerEditeur();
@@ -1089,8 +1096,9 @@ function etiqAire(g,o,s){if(!estZone(o)||!ED.ech||o.aire===false) return;const m
 function hachures(g,o,s,x,y,w,h){const lw=Math.max(1,o.w*s*0.55),sp=Math.max(o.w*s*3.2,lw*4);g.setLineDash([]);g.lineWidth=lw;g.strokeStyle=rgba(o.col,Math.max(o.op||0.35,0.7));
   g.beginPath();for(let t=-h;t<w+h;t+=sp){g.moveTo(x+t,y+h);g.lineTo(x+t+h,y)}g.stroke()}
 function rayonNum(o){return Math.max(o.w*3.2,unite()*7)}
-function mepBulle(o){const fs=o.fs||Math.max(o.w*3.5,unite()*5.5);MESURE.font=`600 ${fs}px system-ui,sans-serif`;const maxW=fs*16,lignes=[];
-  for(const par of String(o.txt||"").split("\n")){let cur="";for(const mot of par.split(/ +/)){if(cur&&MESURE.measureText(cur+" "+mot).width>maxW){lignes.push(cur);cur=mot}else cur=cur?cur+" "+mot:mot}lignes.push(cur)}
+function policeBulle(o,f){return `${o.i?"italic ":""}${o.b==null?"600":o.b?"700":"400"} ${f}px system-ui,sans-serif`}
+function mepBulle(o){const fs=o.fs||Math.max(o.w*3.5,unite()*5.5);MESURE.font=policeBulle(o,fs);const maxW=fs*16,lignes=[];
+  for(const par of String(o.txt||"…").split("\n")){let cur="";for(const mot of par.split(/ +/)){if(cur&&MESURE.measureText(cur+" "+mot).width>maxW){lignes.push(cur);cur=mot}else cur=cur?cur+" "+mot:mot}lignes.push(cur)}
   const pad=fs*0.45,lh=fs*1.2,w=Math.max(fs,...lignes.map(t=>MESURE.measureText(t).width))+2*pad,h=lignes.length*lh+2*pad-(lh-fs);
   return {fs,lignes,pad,lh,w,h,x:o.x2-w/2,y:o.y2-h/2}}
 function flecheBout(g,x1,y1,x2,y2,L,col){const a=Math.atan2(y2-y1,x2-x1);g.setLineDash([]);g.beginPath();g.moveTo(x2,y2);g.lineTo(x2-L*Math.cos(a-0.42),y2-L*Math.sin(a-0.42));g.lineTo(x2-L*Math.cos(a+0.42),y2-L*Math.sin(a+0.42));g.closePath();g.fillStyle=col;g.fill()}
@@ -1116,8 +1124,9 @@ const PRO_DESSIN={
   bulle(g,o,s){const B=mepBulle(o),w=o.w*s;g.lineWidth=w;g.strokeStyle=o.col;g.lineCap="round";g.setLineDash([]);
     const cx=o.x2*s,cy=o.y2*s,tx=o.x1*s,ty=o.y1*s;g.beginPath();g.moveTo(cx,cy);g.lineTo(tx,ty);g.stroke();flecheBout(g,cx,cy,tx,ty,Math.max(w*4,12*s),o.col);
     const x=B.x*s,y=B.y*s,bw=B.w*s,bh=B.h*s,r=Math.min(bh/2,B.fs*0.4*s);g.beginPath();if(g.roundRect) g.roundRect(x,y,bw,bh,r);else g.rect(x,y,bw,bh);
-    g.fillStyle="rgba(255,255,255,.94)";g.fill();g.stroke();g.fillStyle="#111";g.font=`600 ${B.fs*s}px system-ui,sans-serif`;g.textBaseline="top";g.textAlign="center";
-    B.lignes.forEach((t,k)=>g.fillText(t,x+bw/2,y+(B.pad+k*B.lh)*s))},
+    const fond=o.bg==null?"#ffffff":o.bg;if(fond){g.fillStyle=rgba(fond,0.94);g.fill()}g.stroke();
+    g.fillStyle=fond==="#000000"?"#ffffff":fond?"#111111":o.col;g.font=policeBulle(o,B.fs*s);g.textBaseline="top";g.textAlign="center";
+    B.lignes.forEach((t,k)=>{const ly=y+(B.pad+k*B.lh)*s;g.fillText(t,x+bw/2,ly);if(o.u&&t){const lw=g.measureText(t).width;g.fillRect(x+bw/2-lw/2,ly+B.fs*s*0.98,lw,Math.max(1,B.fs*s*0.07))}})},
   flou(g,o,s){if(!ED.img) return;const W=ED.img.width,H=ED.img.height,x=Math.max(0,Math.min(o.x1,o.x2)),y=Math.max(0,Math.min(o.y1,o.y2)),
       w=Math.min(W,Math.max(o.x1,o.x2))-x,h=Math.min(H,Math.max(o.y1,o.y2))-y;if(w<2||h<2) return;
     const b=Math.max(4,unite()*5),tw=Math.max(1,Math.ceil(w/b)),th=Math.max(1,Math.ceil(h/b)),t=document.createElement("canvas");t.width=tw;t.height=th;
@@ -1205,7 +1214,7 @@ function initEditeur2(){
   $("edAr").onclick=()=>{if(ED.sel<0) return;edPousser();const [o]=ED.obj.splice(ED.sel,1);ED.obj.unshift(o);ED.sel=0;edDessiner()};
   $("edLbl").onclick=async()=>{const k=ED.sel,o=ED.obj[k];if(!o) return;
     if(o.t==="num"){const v=await edDemander("Numéro (ou lettre) du repère :",String(o.n),false);if(v===null||!v) return;edPousser();o.n=v.slice(0,4)}
-    else if(o.t==="bulle"){const v=await edDemander("Texte de la bulle :",o.txt,true);if(v===null) return;edPousser();if(!v){ED.obj.splice(k,1);ED.sel=-1}else o.txt=v}
+    else if(o.t==="bulle"){txtOuvrir(o);return}
     else if(o.t==="cote"){const v=await edDemander(ED.ech?"Valeur de la cote (laisser vide = mesure automatique) :":"Valeur de la cote :",o.lbl||"",false);if(v===null) return;edPousser();o.lbl=v}
     edDessiner()};
   $("edPolyOk").onclick=finirPoly;$("edCv").addEventListener("dblclick",e=>{if(ED.poly){e.preventDefault();finirPoly()}});
@@ -1247,9 +1256,11 @@ function initEditeur2(){
   $("edRedo").onclick=()=>{if(!ED.redo.length) return;ED.hist.push(edEtat());edRestaurer(ED.redo.pop())};
   $("edDel").onclick=()=>{if(ED.sel<0) return;edPousser();ED.obj.splice(ED.sel,1);ED.sel=-1;edDessiner()};
   $("edTxtOk").onclick=()=>{const t=$("edTxtIn").value.replace(/[ \t]+\n/g,"\n").trim();$("edTxt").hidden=true;
+    if(TXTEDIT>=0&&ED.obj[TXTEDIT]&&ED.obj[TXTEDIT].t==="bulle"){const o=ED.obj[TXTEDIT];if(!t){if(BULNEUVE) bulleAbandon();else{edPousser();ED.obj.splice(TXTEDIT,1);ED.sel=-1}}
+      else{if(!BULNEUVE) edPousser();Object.assign(o,{txt:t,col:ED.col},txtStyle());if(o.bg==null) o.bg="#ffffff"}BULNEUVE=false;TXTEDIT=-1;edDessiner();return}
     if(TXTEDIT>=0&&ED.obj[TXTEDIT]){const o=ED.obj[TXTEDIT];edPousser();if(!t){ED.obj.splice(TXTEDIT,1);ED.sel=-1}else Object.assign(o,{txt:t,col:ED.col,fill:$("edFill").checked,op:+$("edOp").value/100},txtStyle());TXTEDIT=-1;edDessiner();return}
     if(!t||!TXTPOS) return;edPousser();ED.obj.push({t:"text",x:TXTPOS[0],y:TXTPOS[1],txt:t,...styleCourant(),...txtStyle()});TXTPOS=null;edDessiner()};
-  $("edTxtNo").onclick=()=>{$("edTxt").hidden=true;TXTPOS=null;TXTEDIT=-1};
+  $("edTxtNo").onclick=()=>{$("edTxt").hidden=true;TXTPOS=null;bulleAbandon();TXTEDIT=-1;edDessiner()};
   for(const k of ["b","i","u"]){const b=$("edTxt"+k.toUpperCase());b.onmousedown=e=>e.preventDefault();b.onclick=()=>{TXT[k]=!TXT[k];txtBoutons()}}
   $("edTxtT").oninput=()=>{TXT.t=+$("edTxtT").value;$("edTxtTv").textContent=TXT.t};
   for(const [id,d] of [["edTxtTm",-1],["edTxtTp",1]]){const b=$(id);b.onmousedown=e=>e.preventDefault();b.onclick=()=>{TXT.t=Math.min(25,Math.max(2,TXT.t+d));txtBoutons()}}
