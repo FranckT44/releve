@@ -127,6 +127,9 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .prevuBanner{display:flex;justify-content:space-between;gap:8px;align-items:center;background:#fff4d6;color:#5a4300;border-radius:8px;padding:6px 10px;font-size:14px}
 .prepItem{border:1px solid var(--line);border-radius:8px;padding:8px;display:grid;gap:6px;margin-bottom:8px}.prepItem.doute{border-color:#e08a00;background:rgba(224,138,0,.08)}
 .prepTete{display:flex;gap:6px;align-items:baseline}.prepTete .hint{flex:1}.prepSel{display:grid;grid-template-columns:1fr 1fr;gap:6px}.prepSel select,.prepSel input{min-height:40px;font-size:15px}
+.degats{display:grid;gap:6px}.degats[hidden]{display:none!important}#degats .chip{min-height:38px;padding:6px 10px;font-size:13px}
+.degParam{display:flex;flex-wrap:wrap;gap:8px;align-items:end;background:var(--surface-2,rgba(0,0,0,.04));border-radius:8px;padding:8px}.degParam[hidden]{display:none!important}
+.degParam label{flex:1 1 100%;font-size:14px}.degVal{display:flex;gap:6px;align-items:center;margin-top:4px}.degVal input{width:7em;font-size:16px;min-height:42px}
 #prepCard[hidden],#prevusCard[hidden],.prevuBanner[hidden],#prepSave[hidden],#prepMic[hidden]{display:none!important}
 #prepMic.rec{background:#c0392b;color:#fff;border-color:#c0392b}
 .thumb.hors img{opacity:.38}.thumb .hr{position:absolute;right:4px;bottom:4px;font:600 10px var(--font);background:#555;color:#fff;padding:1px 5px;border-radius:4px}
@@ -217,6 +220,10 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   <div class="card">
     <h2>Constat</h2>
     <div class="chips" id="grav" role="group" aria-label="Gravité"></div>
+    <label>Accès au revêtement inspecté<select id="fAcces"></select></label>
+    <div class="degats"><span class="rtelab" id="lDeg">Dégâts courants – inspection initiale / complémentaire (ajoutés à l'observation)</span><div class="chips" id="degats" role="group" aria-labelledby="lDeg"></div>
+      <div id="degParam" class="degParam" hidden><label><span id="degParamLab"></span><span class="degVal"><input type="text" id="degVal" inputmode="decimal" autocomplete="off" aria-describedby="degParamLab"><span>mm</span></span></label>
+        <button type="button" class="primary" id="degOk">Ajouter</button><button type="button" class="ghost" id="degNo">Annuler</button></div></div>
     <div class="rtewrap"><span class="rtelab" id="lObs">Observation</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de l'observation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="italic" aria-label="Italique"><i>I</i></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fObs" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lObs" data-ph="Ex. : Lining around MH1 manhole is half disappeared"></div></div>
     <div class="rtewrap"><span class="rtelab" id="lReco">Recommandation (pour l'IPR)</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de la recommandation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="italic" aria-label="Italique"><i>I</i></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fReco" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lReco" data-ph="Ex. : Lining to be renewed as per green marking"></div></div>
     <label class="toggle"><input type="checkbox" id="fDec"> Décision client attendue</label>
@@ -446,7 +453,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.24";
+const APP_VERSION="1.27";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -629,7 +636,7 @@ function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m
 const curMission=()=>MISSIONS.find(m=>m.id===CFG.mission.id);
 const belongs=e=>e.mission&&(e.mission.id?e.mission.id===CFG.mission.id:e.mission.no===CFG.mission.no);
 async function saveMissions(){await kvSet("missions",MISSIONS)}
-async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);resetForm(true);refreshSelects();renderHeader();renderCfg();refreshBadge();renderPrevus();toast(`Mission ${m.no} active`)}
+async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);resetForm(true);refreshSelects();renderHeader();renderCfg();refreshBadge();renderPrevus();renderDegats();renderAcces();toast(`Mission ${m.no} active`)}
 /* ---------- formulaire ---------- */
 function fillSelect(sel,items,keep){const v=keep??sel.value;sel.innerHTML="";for(const it of items){const o=document.createElement("option");o.value=it.code;o.textContent=it.nom;sel.append(o)}
   if(items.some(i=>i.code===v)) sel.value=v}
@@ -637,7 +644,7 @@ function curEq(){return EQ.find(e=>e.code===$("fEq").value)}
 function curAct(){return ACT.find(a=>a.code===$("fAct").value)}
 function refreshSelects(keep={}){fillSelect($("fEq"),EQ,keep.eq);fillSub(keep.sub);fillSelect($("fAct"),ACT,keep.act);fillSubAct(keep.subact)}
 function fillSub(keep){const e=curEq();fillSelect($("fSub"),e&&e.enfants.length?e.enfants:[{nom:GENERAL[langueMission()]||"(général)",code:"GEN"}],keep)}
-function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],keep);updatePath()}
+function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],keep);updatePath();if(typeof majDegats==="function") majDegats()}
 function subActObj(){if(!$("fSubAct").value) return null;const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
 function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=$("fSub").selectedOptions[0]?.textContent||"";
   const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
@@ -673,7 +680,7 @@ async function addFiles(files){const nouv=[];
   if(jours.length===1&&jours[0]!==$("fDate").value){$("fDate").value=jours[0];updatePath();toast(`Date réglée sur la prise de vue : ${frDate(jours[0])}`)}
   else if(jours.length>1) toast("Attention : les photos ont été prises sur plusieurs jours.");
   renderThumbs()}
-function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";
+function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";if($("fAcces").options.length) $("fAcces").value="";
   if(!keepContext) $("fDate").value=today();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
 async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
@@ -700,7 +707,7 @@ async function saveEntry(){
   const originaux=photoRecs.filter(r=>r.orig).map(r=>r.id.replace(/\.jpg$/i,"_original.jpg"));
   const entry={schema:"releve-refractaire/1",id,hms:old?old.hms:hms,creeLe:old?old.creeLe:now.toISOString(),modifieLe:now.toISOString(),
     mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa?{code:sa.code,nom:sa.nom}:null,
-    repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,
+    repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,acces:$("fAcces").value?{code:$("fAcces").value,nom:$("fAcces").selectedOptions[0].textContent}:null,
     photos:names,photosPrisesLe:prises,legendes:form.photos.map(p=>p.leg||""),rapport:form.photos.map(p=>p.inc!==false),originaux,dossierCible:targetDir(),envoye:false,envoyeLe:null};
   try{
     await tx("photos","readwrite",s=>{if(old) for(const n of old.photos) s.delete(n);for(const r of photoRecs) s.put(r)});
@@ -718,7 +725,7 @@ async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id)
   else{const e=curEq();const sub=e?.enfants.find(x=>x.nom===en.sousEquipement);if(sub) $("fSub").value=sub.code;
     else if(e&&e.enfants.length){absent($("fSub"),en.sousEquipement);toast("Le sous-équipement de ce constat n'existe plus : choisis-le à nouveau avant d'enregistrer.",6000)}}
   if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
-  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;
+  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fAcces").value=en.acces?en.acces.code:"";
   form={photos:[],gravite:en.gravite,editId:id};
   for(const [k,n] of en.photos.entries()){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null,leg:(en.legendes||[])[k]||"",inc:(en.rapport||[])[k]!==false})}
   renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
@@ -1003,6 +1010,65 @@ function lancerDictee(SR){const r=new SR();REC=r;r.lang=$("prepLang").value;r.co
   try{r.start()}catch(e){REC=null;return}
   $("prepMic").classList.add("rec");$("prepMic").textContent="■ Arrêter";$("prepLive").textContent="…"}
 function arreterDictee(){const r=REC;REC=null;if(r){try{r.stop()}catch(e){}}$("prepMic").classList.remove("rec");$("prepMic").textContent="🎤 Dicter";$("prepLive").textContent=""}
+/* ---------- accès au revêtement inspecté ---------- */
+const ACCES={
+ fr:[["","(non précisé)"],["FULL","Accès complet, test au marteau possible (échafaudage)"],["PART","Accès partiel, test au marteau sur les zones accessibles"],["MH","Inspection visuelle depuis le trou d'homme / une ouverture"],["DIST","Inspection visuelle à distance uniquement"],["NA","Zone non accessible"]],
+ en:[["","(not specified)"],["FULL","Full access, hammer test possible (scaffolding)"],["PART","Partial access, hammer test on accessible areas only"],["MH","Visual inspection from manhole / opening"],["DIST","Visual inspection from distance only"],["NA","Area not accessible"]],
+ es:[["","(no indicado)"],["FULL","Acceso completo, prueba de martillo posible (andamio)"],["PART","Acceso parcial, prueba de martillo en zonas accesibles"],["MH","Inspección visual desde boca de hombre / abertura"],["DIST","Inspección visual a distancia únicamente"],["NA","Zona no accesible"]],
+ de:[["","(nicht angegeben)"],["FULL","Voller Zugang, Hammerprüfung möglich (Gerüst)"],["PART","Teilweiser Zugang, Hammerprüfung nur an zugänglichen Stellen"],["MH","Sichtprüfung vom Mannloch / einer Öffnung"],["DIST","Nur Sichtprüfung aus der Ferne"],["NA","Bereich nicht zugänglich"]]};
+function renderAcces(){const s=$("fAcces"),v=s.value;s.innerHTML="";for(const [c,n] of (ACCES[langueMission()]||ACCES.en)){const o=document.createElement("option");o.value=c;o.textContent=n;s.append(o)}s.value=v||""}
+/* ---------- dégâts courants (inspection) ---------- */
+// t = phrase insérée (« {v} » = valeur saisie), c = phrase sans valeur ; q = question si une valeur est demandée
+const DEGATS={
+ fr:[{n:"Lamination",q:"Épaisseur estimée de la couche laminée",t:"Lamination, épaisseur estimée de la couche laminée : {v} mm",c:"Lamination"},
+  {n:"Spalling / écaillage",t:"Spalling / écaillage"},{n:"Son creux",t:"Son creux au marteau"},{n:"Son mat",t:"Son mat au marteau"},
+  {n:"Perte d'épaisseur",q:"Perte d'épaisseur estimée",t:"Perte d'épaisseur : {v} mm",c:"Perte d'épaisseur"},
+  {n:"Fissuration anormale",q:"Largeur des fissures (maxi)",t:"Fissuration anormale, largeur des fissures jusqu'à {v} mm",c:"Fissuration anormale"},
+  {n:"Ancrages visibles",q:"Longueur visible des branches",t:"Ancrages visibles, longueur visible des branches : {v} mm",c:"Ancrages visibles"},
+  {n:"Perte d'intégrité",t:"Perte d'intégrité du matériau"},
+  {n:"Érosion",q:"Profondeur d'érosion estimée",t:"Érosion, profondeur estimée : {v} mm",c:"Érosion"},
+  {n:"Cokéfaction",q:"Épaisseur du dépôt de coke",t:"Dépôt de coke, épaisseur : {v} mm",c:"Dépôt de coke"},
+  {n:"Décollement",q:"Jeu entre garnissage et tôle",t:"Décollement du garnissage par rapport à la tôle, jeu : {v} mm",c:"Décollement du garnissage par rapport à la tôle"}],
+ en:[{n:"Lamination",q:"Estimated thickness of the laminated layer",t:"Lamination, estimated thickness of the laminated layer: {v} mm",c:"Lamination"},
+  {n:"Spalling / scaling",t:"Spalling / scaling"},{n:"Hollow sound",t:"Hollow sound at hammer test"},{n:"Dull sound",t:"Dull sound at hammer test"},
+  {n:"Loss of thickness",q:"Estimated loss of thickness",t:"Loss of thickness: {v} mm",c:"Loss of thickness"},
+  {n:"Abnormal cracking",q:"Crack width (max.)",t:"Abnormal cracking, crack width up to {v} mm",c:"Abnormal cracking"},
+  {n:"Visible anchors",q:"Visible length of the tines",t:"Anchors visible, visible length of the tines: {v} mm",c:"Anchors visible"},
+  {n:"Loss of integrity",t:"Loss of material integrity"},
+  {n:"Erosion",q:"Estimated erosion depth",t:"Erosion, estimated depth: {v} mm",c:"Erosion"},
+  {n:"Coking",q:"Thickness of the coke deposit",t:"Coke deposit, thickness: {v} mm",c:"Coke deposit"},
+  {n:"Detachment",q:"Gap between lining and shell",t:"Lining detached from the shell, gap: {v} mm",c:"Lining detached from the shell"}],
+ es:[{n:"Laminación",q:"Espesor estimado de la capa laminada",t:"Laminación, espesor estimado de la capa laminada: {v} mm",c:"Laminación"},
+  {n:"Spalling / descascarillado",t:"Spalling / descascarillado"},{n:"Sonido hueco",t:"Sonido hueco al martillo"},{n:"Sonido sordo",t:"Sonido sordo al martillo"},
+  {n:"Pérdida de espesor",q:"Pérdida de espesor estimada",t:"Pérdida de espesor: {v} mm",c:"Pérdida de espesor"},
+  {n:"Fisuración anormal",q:"Ancho de fisuras (máx.)",t:"Fisuración anormal, ancho de fisuras hasta {v} mm",c:"Fisuración anormal"},
+  {n:"Anclajes visibles",q:"Longitud visible de las patas",t:"Anclajes visibles, longitud visible de las patas: {v} mm",c:"Anclajes visibles"},
+  {n:"Pérdida de integridad",t:"Pérdida de integridad del material"},
+  {n:"Erosión",q:"Profundidad de erosión estimada",t:"Erosión, profundidad estimada: {v} mm",c:"Erosión"},
+  {n:"Coquización",q:"Espesor del depósito de coque",t:"Depósito de coque, espesor: {v} mm",c:"Depósito de coque"},
+  {n:"Despegue",q:"Holgura entre revestimiento y chapa",t:"Revestimiento despegado de la chapa, holgura: {v} mm",c:"Revestimiento despegado de la chapa"}],
+ de:[{n:"Delamination",q:"Geschätzte Dicke der delaminierten Schicht",t:"Delamination, geschätzte Dicke der delaminierten Schicht: {v} mm",c:"Delamination"},
+  {n:"Abplatzungen",t:"Abplatzungen / Abschalungen"},{n:"Hohlklang",t:"Hohlklang bei Hammerprüfung"},{n:"Dumpfer Klang",t:"Dumpfer Klang bei Hammerprüfung"},
+  {n:"Dickenverlust",q:"Geschätzter Dickenverlust",t:"Dickenverlust: {v} mm",c:"Dickenverlust"},
+  {n:"Anormale Rissbildung",q:"Rissbreite (max.)",t:"Anormale Rissbildung, Rissbreite bis {v} mm",c:"Anormale Rissbildung"},
+  {n:"Sichtbare Anker",q:"Sichtbare Länge der Ankerschenkel",t:"Anker sichtbar, sichtbare Länge der Ankerschenkel: {v} mm",c:"Anker sichtbar"},
+  {n:"Integritätsverlust",t:"Verlust der Materialintegrität"},
+  {n:"Erosion",q:"Geschätzte Erosionstiefe",t:"Erosion, geschätzte Tiefe: {v} mm",c:"Erosion"},
+  {n:"Verkokung",q:"Dicke der Koksablagerung",t:"Koksablagerung, Dicke: {v} mm",c:"Koksablagerung"},
+  {n:"Ablösung",q:"Spalt zwischen Auskleidung und Mantel",t:"Auskleidung vom Mantel abgelöst, Spalt: {v} mm",c:"Auskleidung vom Mantel abgelöst"}]};
+let DEG_EN_COURS=null;
+function degatsListe(){return DEGATS[langueMission()]||DEGATS.en}
+function renderDegats(){const box=$("degats");box.innerHTML="";
+  for(const d of degatsListe()){const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=d.n+(d.q?" …":"");
+    b.onclick=()=>{if(d.q){DEG_EN_COURS=d;$("degParamLab").textContent=d.q;$("degVal").value="";$("degParam").hidden=false;$("degVal").focus()}else ajouterDegat(d.t)};box.append(b)}}
+function ajouterDegat(phrase){const o=$("fObs"),v=o.value.trimEnd();o.value=(v?v+"\n":"")+"- "+phrase;toast("Ajouté à l'observation : "+phrase,1800)}
+function validerDegat(){const d=DEG_EN_COURS;if(!d) return;const v=$("degVal").value.trim().replace(/\s*mm$/i,"");
+  ajouterDegat(v?d.t.replace("{v}",v):d.c);DEG_EN_COURS=null;$("degParam").hidden=true}
+// les dégâts courants ne servent qu'à l'inspection initiale (activité « 1 » ou nommée initiale / initial / inicial / Erst…)
+function estInitiale(a){return !!a&&(a.code==="1"||a.code==="2"||/initia|inicial|erst|complement|additional|zusatz|erganz/i.test(norm(a.nom)))}
+function majDegats(){const w=document.querySelector(".degats");if(!w) return;const v=estInitiale(curAct());w.hidden=!v;if(!v){$("degParam").hidden=true;DEG_EN_COURS=null}}
+function initDegats(){renderDegats();majDegats();$("degOk").onclick=validerDegat;$("degNo").onclick=()=>{DEG_EN_COURS=null;$("degParam").hidden=true};
+  $("degVal").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();validerDegat()}}}
 /* ---------- galerie ---------- */
 const GAL={items:[],vis:[],cur:-1,attente:null,url:null,drag:null};
 async function chargerGalerie(){const en=(await allEntries()).filter(belongs).sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));const items=[];
@@ -1186,7 +1252,7 @@ const langueMission=()=>(curMission()&&curMission().langue)||"fr";
 async function changerLangue(l){const m=curMission();if(!m) return;
   const avant=m.activites;m.langue=l;m.activites=convertirActivites(m.activites,l);
   if(m.activites!==avant) m.modifieLe=new Date().toISOString();
-  await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();
+  await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();renderDegats();renderAcces();
   toast("Listes passées en "+{fr:"français",en:"anglais",es:"espagnol",de:"allemand"}[l]+". Les constats déjà saisis gardent leurs noms ; les nouvelles photos iront dans des dossiers à ce nom.",6000)}
 /* ---------- mission transportée dans une image ----------
    Quick Share envoie mal un fichier texte seul : la mission part comme une image JPEG (carte lisible),
@@ -1274,7 +1340,7 @@ async function saveCfg(){
       $("renHint").textContent=`${n} constat(s) pas encore envoyé(s) utilisent l'ancien nom. « Mettre à jour » les renomme (photos et dossier de rangement compris). Les photos déjà rangées sur le PC se renomment avec l'outil « Renommer-Equipement » du dossier PC.`;
       $("renCard").hidden=false;$("renCard").scrollIntoView({block:"center"});return}}
   saveCfg.force=false;Object.assign(m,nv);await majMissionConstats(m);if(change) m.modifieLe=new Date().toISOString();
-  await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();
+  await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();renderDegats();renderAcces();
   toast(change?"Mission enregistrée. Pense à l'envoyer à tes autres appareils.":"Aucun changement",3500)}
 async function finirRenommage(majAussi){$("renCard").hidden=true;const r=REN_EN_ATTENTE;REN_EN_ATTENTE=null;
   saveCfg.force=true;await saveCfg();if(majAussi&&r){const n=await majConstats(r.ren);refreshBadge();toast(`Mission enregistrée et ${n} constat(s) mis à jour.`,4000)}}
@@ -1468,7 +1534,7 @@ async function start(){
   try{DB=await openDB()}catch(e){document.querySelector("main").innerHTML=`<div class="card"><strong>Stockage indisponible.</strong><p class="hint">Ouvre l'appli dans Chrome (pas en navigation privée).</p></div>`;return}
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
   await loadCfg();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
-  await chargerPrevus();renderPrevus();
+  await chargerPrevus();renderPrevus();initDegats();renderAcces();
   $("fEq").onchange=()=>{fillSub();updatePath()};$("fSub").onchange=updatePath;$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=updatePath;
   document.querySelectorAll(".plus").forEach(b=>b.onclick=()=>ouvrirAjout(b.dataset.add));
   $("addNom").oninput=proposerCode;$("addCode").oninput=()=>{$("addCode").dataset.touche=$("addCode").value?"1":""};
