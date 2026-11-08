@@ -290,6 +290,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
     <div class="row2">
       <label>Repère (optionnel)<input type="text" id="fRep" placeholder="MH1, section 402…" autocomplete="off"></label>
       <label>Date<input type="date" id="fDate"></label>
+      <button type="button" class="ghost" id="bDatePrise" hidden></button>
     </div>
   </div>
 
@@ -600,7 +601,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.56";
+const APP_VERSION="1.57";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -803,7 +804,7 @@ function renderGrav(){planifierBrouillon(false);const g=$("grav");g.innerHTML=""
   b.setAttribute("aria-pressed",String(form.gravite===v));b.onclick=()=>{form.gravite=form.gravite===v?"":v;renderGrav()};g.append(b)}}
 async function makeThumb(blob){try{const bm=await createImageBitmap(blob);const w=Math.min(480,bm.width),h=Math.round(w*bm.height/bm.width);const c=document.createElement("canvas");c.width=w;c.height=h;
   c.getContext("2d").drawImage(bm,0,0,w,h);return c.toDataURL("image/jpeg",.7)}catch(e){return ""}}
-function renderThumbs(){planifierBrouillon(true);const t=$("thumbs");t.innerHTML="";form.photos.forEach((p,i)=>{const d=document.createElement("div");d.className="thumb"+(p.inc===false?" hors":"");
+function renderThumbs(){planifierBrouillon(true);majPropDate();const t=$("thumbs");t.innerHTML="";form.photos.forEach((p,i)=>{const d=document.createElement("div");d.className="thumb"+(p.inc===false?" hors":"");
   d.innerHTML=`<img alt="Photo ${i+1} : toucher pour annoter">${p.annot?'<i class="an">annotée</i>':""}${p.inc===false?'<i class="hr">hors rapport</i>':""}<span>${pad(i+1)}${p.prise?" · "+p.prise.slice(11,16):""}</span><button type="button" aria-label="Retirer la photo ${i+1}">×</button>`;d.querySelector("img").src=p.thumb;
   d.querySelector("img").onclick=()=>ouvrirEditeur(i,{src:form.photos,rendu:renderThumbs,fin:renderThumbs});
   d.querySelector("button").onclick=()=>{form.photos.splice(i,1);renderThumbs()};t.append(d)});
@@ -819,18 +820,21 @@ async function exifDate(blob){ // DateTimeOriginal (0x9003) ou DateTime (0x0132)
         const mm=found&&found.match(/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);return mm?`${mm[1]}-${mm[2]}-${mm[3]}T${mm[4]}:${mm[5]}:${mm[6]}`:null}
       if(m===0xFFDA) break;o+=2+len}}catch(e){}return null}
 function localIso(ms){const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}
+function majPropDate(){const b=$("bDatePrise");if(!b) return;
+  const jours=[...new Set(form.photos.map(p=>(p.prise||"").slice(0,10)).filter(Boolean))];
+  if(jours.length===1&&jours[0]!==$("fDate").value){b.textContent=`📷 Photos prises le ${frDate(jours[0])} : utiliser cette date`;b.dataset.j=jours[0];b.hidden=false}
+  else if(jours.length>1){b.textContent="📷 Attention : photos prises sur plusieurs jours";b.dataset.j="";b.hidden=false}
+  else b.hidden=true}
 async function addFiles(files){const nouv=[];
   for(const f of files){if(!f.type.startsWith("image/")) continue;
     const prise=(await exifDate(f))||localIso(f.lastModified||Date.now());
     nouv.push({id:null,blob:f,thumb:await makeThumb(f),type:f.type,prise,leg:"",inc:true})}
   nouv.sort((a,b)=>(a.prise||"").localeCompare(b.prise||""));form.photos.push(...nouv); // les nouvelles photos à la suite (l'ordre réglé dans la Galerie est gardé)
-  // date du constat = jour de prise de vue des photos (si elles sont toutes du même jour)
-  const jours=[...new Set(form.photos.map(p=>(p.prise||"").slice(0,10)).filter(Boolean))];
-  if(jours.length===1&&jours[0]!==$("fDate").value){$("fDate").value=jours[0];updatePath();toast(`Date réglée sur la prise de vue : ${frDate(jours[0])}`)}
-  else if(jours.length>1) toast("Attention : les photos ont été prises sur plusieurs jours.");
+  // v1.57 : la date reste celle du jour ; si les photos sont d'un autre jour, la date de prise de vue est seulement PROPOSÉE
+  majPropDate();
   renderThumbs()}
 function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";$("fSurf").value="";$("fMarq").checked=false;if($("fAcces").options.length) $("fAcces").value="";
-  if(!keepContext) $("fDate").value=today();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
+  $("fDate").value=today();/* v1.57 : chaque nouveau constat repart sur la date du jour */majPropDate();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
 async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
   const e=curEq(),a=curAct();if(!e||!a){toast("Choisis un équipement et une activité dans la liste.");return}
@@ -2663,6 +2667,8 @@ const TRAD_UI=[
 ["Je ne reconnais pas ce tableau : il faut au moins une colonne Équipement.", "I don't recognise this table: at least one Equipment column is needed.", "No reconozco esta tabla: se necesita al menos una columna Equipo.", "Diese Tabelle wird nicht erkannt: mindestens eine Spalte Ausrüstung nötig."],
 ["{a} constat(s) pas encore envoyé(s) utilisent l'ancien nom. « Mettre à jour » les renomme (photos et dossier de rangement compris). Les photos déjà rangées sur le PC se renomment avec l'outil « Renommer-Equipement » du dossier PC.", "{a} finding(s) not yet sent use the old name. “Update” renames them (photos and filing folder included). Photos already filed on the PC are renamed with the “Renommer-Equipement” tool in the PC folder.", "{a} hallazgo(s) aún no enviado(s) usan el nombre antiguo. «Actualizar» los renombra (fotos y carpeta de archivo incluidas). Las fotos ya archivadas en el PC se renombran con la herramienta «Renommer-Equipement» de la carpeta PC.", "{a} noch nicht gesendete(r) Befund(e) verwenden den alten Namen. „Aktualisieren“ benennt sie um (Fotos und Ablageordner inbegriffen). Bereits auf dem PC abgelegte Fotos werden mit dem Werkzeug „Renommer-Equipement“ im PC-Ordner umbenannt."],
 ["« {a} » est dans Téléchargements : envoie ce fichier au PC depuis Mes fichiers > Téléchargements > Partager > Quick Share.","“{a}” is in Downloads: send this file to the PC from My Files > Downloads > Share > Quick Share.","«{a}» está en Descargas: envía este archivo al PC desde Mis archivos > Descargas > Compartir > Quick Share.","„{a}“ ist in Downloads: diese Datei über Eigene Dateien > Downloads > Teilen > Quick Share an den PC senden."],
+["📷 Photos prises le {a} : utiliser cette date","📷 Photos taken on {a}: use this date","📷 Fotos tomadas el {a}: usar esta fecha","📷 Fotos vom {a}: dieses Datum verwenden"],
+["📷 Attention : photos prises sur plusieurs jours","📷 Note: photos taken over several days","📷 Atención: fotos tomadas en varios días","📷 Achtung: Fotos von mehreren Tagen"],
 ["PDF annulé.","PDF cancelled.","PDF cancelado.","PDF abgebrochen."],
 ["Confirmer la suppression","Confirm deletion","Confirmar la eliminación","Löschen bestätigen"],
 ["PDF supprimé du téléphone.","PDF deleted from the phone.","PDF eliminado del teléfono.","PDF vom Telefon gelöscht."],
@@ -3019,7 +3025,12 @@ async function start(){
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
   await loadCfg();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
   await chargerPrevus();renderPrevus();initDegats();renderAcces();
-  $("fEq").onchange=()=>{fillSub();updatePath()};$("fSub").onchange=updatePath;$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=updatePath;
+  $("fEq").onchange=()=>{fillSub();updatePath()};$("fSub").onchange=updatePath;$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=()=>{updatePath();majPropDate()};$("bDatePrise").onclick=()=>{const j=$("bDatePrise").dataset.j;if(j){$("fDate").value=j;updatePath()}majPropDate()};
+  // v1.57 : appli restée ouverte d'un jour à l'autre -> un formulaire vide repasse sur la date du jour
+  //  (seulement au changement de jour, et si la date affichée était celle de la veille : une date choisie à la main est gardée)
+  let jour=today();const dateDuJour=()=>{const t=today();if(document.hidden||t===jour) return;
+    if(!form.editId&&!form.photos.length&&$("fDate").value===jour){$("fDate").value=t;updatePath()}jour=t};
+  document.addEventListener("visibilitychange",dateDuJour);setInterval(dateDuJour,60000);
   document.querySelectorAll(".plus").forEach(b=>b.onclick=()=>ouvrirAjout(b.dataset.add));
   $("addNom").oninput=proposerCode;$("addCode").oninput=()=>{$("addCode").dataset.touche=$("addCode").value?"1":""};
   $("bAddOk").onclick=validerAjout;$("bAddCancel").onclick=()=>{$("addCard").hidden=true;AJOUT=null};

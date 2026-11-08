@@ -2,7 +2,7 @@
 // v1.46 : la copie du téléphone s'ouvre tout de suite (même avec un réseau faible en unité).
 // Une nouvelle version déposée sur GitHub est téléchargée en arrière-plan ; l'appli affiche alors
 // « Nouvelle version disponible – Recharger » et ne bascule que sur demande.
-const CACHE = "releve-refractaire-v59";
+const CACHE = "releve-refractaire-v60";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => {
   // cache: "reload" = ignorer le cache HTTP de GitHub (10 min) pour bien prendre la nouvelle version
