@@ -531,7 +531,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 <div id="majBar" role="status" hidden><span>Nouvelle version de l'appli disponible.</span><button type="button" id="majGo">Recharger</button><button type="button" class="ghost" id="majPlusTard">Plus tard</button></div>
 <!-- ============ VISIONNEUSE DE LA GALERIE ============ -->
 <div id="pv" hidden>
-  <div class="edbar"><button type="button" id="pvAnnul">✕ Annuler</button><span class="pvTitre">Aperçu du PDF</span><span class="edsep"></span><button type="button" id="pvZoom" aria-pressed="false">🔍 Zoom</button><button type="button" id="pvOk" class="primary">📄 Créer le PDF</button></div>
+  <div class="edbar"><button type="button" id="pvAnnul">✕ Annuler</button><span class="pvTitre" id="pvTitre">Aperçu du PDF</span><span class="edsep"></span><button type="button" id="pvZoom" aria-pressed="false">🔍 Zoom</button><button type="button" id="pvOk" class="primary">📄 Créer le PDF</button></div>
   <div id="pvInfo"></div>
   <div id="pvPages"></div>
 </div>
@@ -600,7 +600,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.51";
+const APP_VERSION="1.52";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2263,8 +2263,31 @@ async function dessinerPagePdf(mk,pg,cv,k){const ctx=cv.getContext("2d");cv.widt
     else if(o.k==="i"){try{if(!o.im.bm) o.im.bm=await createImageBitmap(new Blob([o.im.octets],{type:"image/jpeg"}));ctx.drawImage(o.im.bm,o.x,o.y,o.w,o.h)}catch(e){ctx.fillStyle="#ddd";ctx.fillRect(o.x,o.y,o.w,o.h)}}
     else if(o.k==="t"){const pol=s=>`${/I/.test(o.f)?"italic ":""}${/B/.test(o.f)?"bold ":""}${s.toFixed(2)}px Helvetica, Arial, sans-serif`;ctx.fillStyle=pdfCol(o.col);let cx=o.x;
       String(o.t).split("²").forEach((seg,i)=>{if(i){const s2=o.s*0.62;ctx.font=pol(s2);ctx.fillText("2",cx,o.y-3.6);cx+=pdfLargeur("2",o.f,s2)}
-        if(!seg) return;const w=pdfLargeur(seg,o.f,o.s);ctx.font=pol(o.s);ctx.fillText(seg,cx,o.y,w*1.02);cx+=w})}}}
-function apercuPdf(mk,nom){return new Promise(async res=>{const pv=$("pv"),box=$("pvPages");box.innerHTML="";pv.classList.remove("zoom");$("pvZoom").setAttribute("aria-pressed","false");
+        if(!seg) return;const w=pdfLargeur(seg,o.f,o.s);ctx.font=pol(o.s);ctx.fillText(seg,cx,o.y-(o.ry||0),w*1.02);cx+=w})}}}
+// relire un PDF rapide déjà créé (même générateur) pour l'afficher dans l'appli, sans téléchargement
+function lirePdfRapide(octets){const s=new TextDecoder("windows-1252").decode(octets);
+  const objet=n=>{const i=s.indexOf(`\n${n} 0 obj\n`);if(i<0) throw new Error("objet "+n);const d=i+`\n${n} 0 obj\n`.length;const st=s.indexOf("\nstream\n",d),fin=s.indexOf("\nendobj",d);
+    if(st>=0&&st<fin){const L=+(/\/Length (\d+)/.exec(s.slice(d,st))[1]);return {dict:s.slice(d,st),flux:octets.subarray(st+8,st+8+L),texte:s.substr(st+8,L)}}return {dict:s.slice(d,fin)}};
+  const kids=[...objet(2).dict.matchAll(/(\d+) 0 R/g)].map(m=>+m[1]);if(!kids.length) throw new Error("pages");
+  const ims={},pages=[];let W=595.28,H=841.89;const F={1:"R",2:"B",3:"I",4:"BI"};
+  const chaine=(t,i)=>{let o="",n=1;i++;for(;i<t.length;i++){const c=t[i];if(c==="\\"){o+=t[++i];continue}if(c==="(") n++;if(c===")"&&!--n) break;o+=c}return [o,i+1]};
+  for(const k of kids){const pg=objet(k).dict;const mb=/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/.exec(pg);if(mb){W=+mb[1];H=+mb[2]}
+    const xo={};for(const m of pg.matchAll(/\/Im(\d+) (\d+) 0 R/g)) xo[m[1]]=+m[2];
+    const d=[];for(const ln of objet(+/\/Contents (\d+) 0 R/.exec(pg)[1]).texte.split("\n")){let m;
+      if(ln.startsWith("BT ")){const t=/^BT \/F(\d) ([\d.]+) Tf ([\d.]+) ([\d.]+) ([\d.]+) rg ([\d.-]+) ([\d.-]+) Td /.exec(ln);if(!t) continue;
+        let f=F[t[1]],sz=+t[2],ry=0,x=+t[6];const y=H-(+t[7]),col=`${t[3]} ${t[4]} ${t[5]}`;let i=t[0].length;
+        while(i<ln.length){if(ln[i]==="("){const [txt,j]=chaine(ln,i);d.push({k:"t",x,y,t:txt,f,s:sz,col,ry});x+=pdfLargeur(txt,f,sz);i=j;continue}
+          const tf=/^\/F(\d) ([\d.]+) Tf/.exec(ln.slice(i));if(tf){f=F[tf[1]];sz=+tf[2];i+=tf[0].length;continue}
+          const ts=/^([\d.-]+) Ts/.exec(ln.slice(i));if(ts){ry=+ts[1];i+=ts[0].length;continue}i++}}
+      else if(m=/^([\d.]+) ([\d.]+) ([\d.]+) rg ([\d.-]+) ([\d.-]+) ([\d.]+) ([\d.]+) re f$/.exec(ln)) d.push({k:"r",x:+m[4],y:H-(+m[5])-(+m[7]),w:+m[6],h:+m[7],col:`${m[1]} ${m[2]} ${m[3]}`});
+      else if(m=/^([\d.]+) ([\d.]+) ([\d.]+) RG ([\d.]+) w ([\d.-]+) ([\d.-]+) m ([\d.-]+) ([\d.-]+) l S$/.exec(ln)) d.push({k:"l",x1:+m[5],y1:H-(+m[6]),x2:+m[7],y2:H-(+m[8]),col:`${m[1]} ${m[2]} ${m[3]}`,lw:+m[4]});
+      else if(m=/^([\d.]+) ([\d.]+) ([\d.]+) RG ([\d.]+) w ([\d.-]+) ([\d.-]+) ([\d.]+) ([\d.]+) re S$/.exec(ln)) d.push({k:"c",x:+m[5],y:H-(+m[6])-(+m[8]),w:+m[7],h:+m[8],col:`${m[1]} ${m[2]} ${m[3]}`,lw:+m[4]});
+      else if(m=/^q ([\d.]+) 0 0 ([\d.]+) ([\d.-]+) ([\d.-]+) cm \/Im(\d+) Do Q$/.exec(ln)){const no=xo[m[5]];if(!ims[no]) ims[no]={octets:objet(no).flux};
+        d.push({k:"i",im:ims[no],x:+m[3],y:H-(+m[4])-(+m[2]),w:+m[1],h:+m[2]})}}
+    pages.push({d})}
+  return {W,H,pages,imgs:Object.values(ims)}}
+function apercuPdf(mk,nom,o={}){$("pvTitre").textContent=o.titre||"Aperçu du PDF";$("pvOk").textContent=o.ok||"📄 Créer le PDF";$("pvAnnul").textContent=o.annul||"✕ Annuler";
+  return new Promise(async res=>{const pv=$("pv"),box=$("pvPages");box.innerHTML="";pv.classList.remove("zoom");$("pvZoom").setAttribute("aria-pressed","false");
   const N=mk.pages.length;$("pvInfo").textContent=`${nom} · ${N} page${N>1?"s":""}`;pv.hidden=false;box.scrollTop=0;
   const k=Math.min(2.2,Math.max(1,(Math.min(innerWidth,820)-24)*(devicePixelRatio||1)/mk.W));let fini=false;
   const fin=v=>{if(fini) return;fini=true;pv.hidden=true;box.innerHTML="";for(const im of mk.imgs) if(im.bm){try{im.bm.close()}catch(e){}im.bm=null}res(v)};
@@ -2289,7 +2312,8 @@ let FICHIERS_PRETS=null;
 // v1.51 : partage vers le client (PDF, photos) : feuille de partage dès qu'elle existe (téléphone, DeX, PC),
 // sans tenir compte du réglage « Envoi vers le PC » ; si elle est refusée, carte flottante visible depuis tous les onglets
 async function proposerFichiers(files,quoi){let ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files}))}catch(e){}
-  if(!ok){montrerPret(files,"Partage direct indisponible sur cet appareil.");return}
+  if(!ok){montrerPret(files,estDeX()?"En DeX, Samsung Internet ne sait pas ouvrir le partage Android. Enregistre le fichier, puis partage-le depuis Mes fichiers (appui long > Partager), ou sors de DeX.":"Partage direct indisponible sur cet appareil.");$("bPretPartager").hidden=true;return}
+  $("bPretPartager").hidden=false;
   try{await navigator.share({files});return}catch(err){if(err&&err.name==="AbortError") return;
     montrerPret(files,`Le partage n'a pas pu s'ouvrir tout seul (${err&&err.name||"erreur"}).`)}}
 function montrerPret(files,pourquoi){FICHIERS_PRETS=files;$("pretTxt").textContent=files.length===1?`Prêt : ${files[0].name}`:`Prêt : ${files.length} fichiers`;
@@ -2335,7 +2359,9 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
       d.title=(p.titres||[]).join("\n");
       const acts=d.querySelector(".acts"),bt=(t,f,cl)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(cl) b.className=cl;b.onclick=()=>f(b);acts.append(b);return b};
       const fichier=()=>p.blob instanceof File?p.blob:new File([p.blob],p.nom,{type:"application/pdf"});
-      bt("Ouvrir",()=>{const u=URL.createObjectURL(fichier());const w=window.open(u,"_blank");if(!w) telechargerFichiers([fichier()]);setTimeout(()=>URL.revokeObjectURL(u),60000)});
+      bt("Ouvrir",async()=>{let mk=null;try{mk=lirePdfRapide(new Uint8Array(await fichier().arrayBuffer()))}catch(err){}
+        if(!mk){toast("Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.",5000);telechargerFichiers([fichier()]);return}
+        if(await apercuPdf(mk,p.nom,{titre:"PDF préliminaire",ok:"📤 Partager",annul:"✕ Fermer"})) proposerFichiers([fichier()],"PDF")});
       bt("Partager",()=>proposerFichiers([fichier()],"PDF"));
       bt("Supprimer",async b=>{if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer la suppression";b.classList.add("danger");return}
         await tx("pdfs","readwrite",s=>s.delete(p.id));toast("PDF supprimé du téléphone.");renderPdfs()},"ghost");
@@ -2376,6 +2402,10 @@ const TRAD_UI=[
 ["Partage direct indisponible sur cet appareil.","Direct sharing not available on this device.","Compartir directamente no está disponible en este dispositivo.","Direktes Teilen auf diesem Gerät nicht verfügbar."],
 ["Le partage n'a pas pu s'ouvrir tout seul ({a}).","Sharing could not open by itself ({a}).","No se pudo abrir el menú de compartir ({a}).","Das Teilen-Menü konnte sich nicht selbst öffnen ({a})."],
 ["Partage refusé ({a}) : fichier enregistré dans Téléchargements à la place.","Sharing refused ({a}): file saved to Downloads instead.","Compartir rechazado ({a}): archivo guardado en Descargas.","Teilen abgelehnt ({a}): Datei stattdessen in Downloads gespeichert."],
+["PDF préliminaire","Preliminary PDF","PDF preliminar","Vorläufiges PDF"],
+["📤 Partager","📤 Share","📤 Compartir","📤 Teilen"],
+["Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.","This PDF cannot be shown in the app: it was saved to Downloads.","Este PDF no se puede mostrar en la app: se ha guardado en Descargas.","Dieses PDF kann nicht in der App angezeigt werden: in Downloads gespeichert."],
+["En DeX, Samsung Internet ne sait pas ouvrir le partage Android. Enregistre le fichier, puis partage-le depuis Mes fichiers (appui long > Partager), ou sors de DeX.","In DeX, Samsung Internet cannot open Android sharing. Save the file, then share it from My Files (long press > Share), or leave DeX.","En DeX, Samsung Internet no puede abrir el menú de compartir de Android. Guarda el archivo y compártelo desde Mis archivos (pulsación larga > Compartir), o sal de DeX.","In DeX kann Samsung Internet das Android-Teilen nicht öffnen. Datei speichern und über Eigene Dateien teilen (lange drücken > Teilen) oder DeX verlassen."],
 ["PDF annulé.","PDF cancelled.","PDF cancelado.","PDF abgebrochen."],
 ["Confirmer la suppression","Confirm deletion","Confirmar la eliminación","Löschen bestätigen"],
 ["PDF supprimé du téléphone.","PDF deleted from the phone.","PDF eliminado del teléfono.","PDF vom Telefon gelöscht."],
