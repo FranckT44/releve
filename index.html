@@ -154,6 +154,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .prevuBanner{display:flex;justify-content:space-between;gap:8px;align-items:center;background:#fff4d6;color:#5a4300;border-radius:8px;padding:6px 10px;font-size:14px}
 .prepItem{border:1px solid var(--line);border-radius:8px;padding:8px;display:grid;gap:6px;margin-bottom:8px}.prepItem.doute{border-color:#e08a00;background:rgba(224,138,0,.08)}
 .prepTete{display:flex;gap:6px;align-items:baseline}.prepTete .hint{flex:1}.prepSel{display:grid;grid-template-columns:1fr 1fr;gap:6px}.prepSel select,.prepSel input{min-height:40px;font-size:15px}
+.surf{display:grid;gap:10px}.surf input[type=text]{max-width:10em}
 .degats{display:grid;gap:6px}.degats[hidden]{display:none!important}#degats .chip{min-height:38px;padding:6px 10px;font-size:13px}
 .degParam{display:flex;flex-wrap:wrap;gap:8px;align-items:end;background:var(--surface-2,rgba(0,0,0,.04));border-radius:8px;padding:8px}.degParam[hidden]{display:none!important}
 .degParam label{flex:1 1 100%;font-size:14px}.degVal{display:flex;gap:6px;align-items:center;margin-top:4px}.degVal input{width:7em;font-size:16px;min-height:42px}
@@ -268,6 +269,8 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
         <button type="button" class="primary" id="degOk">Ajouter</button><button type="button" class="ghost" id="degNo">Annuler</button></div></div>
     <div class="rtewrap"><span class="rtelab" id="lObs">Observation</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de l'observation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="italic" aria-label="Italique"><i>I</i></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fObs" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lObs" data-ph="Ex. : Lining around MH1 manhole is half disappeared"></div></div>
     <div class="rtewrap"><span class="rtelab" id="lReco">Recommandation (pour l'IPR)</span><div class="rtebar" role="toolbar" aria-label="Mise en forme de la recommandation"><button type="button" data-cmd="bold" aria-label="Gras"><b>G</b></button><button type="button" data-cmd="italic" aria-label="Italique"><i>I</i></button><button type="button" data-cmd="underline" aria-label="Souligné"><u>S</u></button><button type="button" data-cmd="insertUnorderedList" aria-label="Liste à puces">• Liste</button><button type="button" data-cmd="insertOrderedList" aria-label="Liste numérotée">1. Liste</button><button type="button" data-cmd="outdent" aria-label="Remonter d'un niveau">⇤</button><button type="button" data-cmd="indent" aria-label="Descendre d'un niveau">⇥</button></div><div class="rte" id="fReco" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lReco" data-ph="Ex. : Lining to be renewed as per green marking"></div></div>
+    <div class="surf"><label>Surface estimée à réparer (m²)<input type="text" id="fSurf" inputmode="decimal" autocomplete="off" placeholder="ex. 4,5"></label>
+      <label class="toggle"><input type="checkbox" id="fMarq"> Zone(s) déjà marquée(s)</label></div>
     <label class="toggle"><input type="checkbox" id="fDec"> Décision client attendue</label>
     <div class="path" id="fPath"></div>
   </div>
@@ -496,7 +499,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.30";
+const APP_VERSION="1.31";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -723,7 +726,7 @@ async function addFiles(files){const nouv=[];
   if(jours.length===1&&jours[0]!==$("fDate").value){$("fDate").value=jours[0];updatePath();toast(`Date réglée sur la prise de vue : ${frDate(jours[0])}`)}
   else if(jours.length>1) toast("Attention : les photos ont été prises sur plusieurs jours.");
   renderThumbs()}
-function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";if($("fAcces").options.length) $("fAcces").value="";
+function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";$("fSurf").value="";$("fMarq").checked=false;if($("fAcces").options.length) $("fAcces").value="";
   if(!keepContext) $("fDate").value=today();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
 async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
@@ -750,7 +753,7 @@ async function saveEntry(){
   const originaux=photoRecs.filter(r=>r.orig).map(r=>r.id.replace(/\.jpg$/i,"_original.jpg"));
   const entry={schema:"releve-refractaire/1",id,hms:old?old.hms:hms,creeLe:old?old.creeLe:now.toISOString(),modifieLe:now.toISOString(),
     mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa?{code:sa.code,nom:sa.nom}:null,
-    repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,acces:$("fAcces").value?{code:$("fAcces").value,nom:$("fAcces").selectedOptions[0].textContent}:null,
+    repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,surface:$("fSurf").value.trim().replace(/\s*m²?$/i,""),zonesMarquees:$("fMarq").checked,acces:$("fAcces").value?{code:$("fAcces").value,nom:$("fAcces").selectedOptions[0].textContent}:null,
     photos:names,photosPrisesLe:prises,legendes:form.photos.map(p=>p.leg||""),rapport:form.photos.map(p=>p.inc!==false),originaux,dossierCible:targetDir(),envoye:false,envoyeLe:null};
   try{
     await tx("photos","readwrite",s=>{if(old) for(const n of old.photos) s.delete(n);for(const r of photoRecs) s.put(r)});
@@ -768,7 +771,7 @@ async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id)
   else{const e=curEq();const sub=e?.enfants.find(x=>x.nom===en.sousEquipement);if(sub) $("fSub").value=sub.code;
     else if(e&&e.enfants.length){absent($("fSub"),en.sousEquipement);toast("Le sous-équipement de ce constat n'existe plus : choisis-le à nouveau avant d'enregistrer.",6000)}}
   if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
-  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fAcces").value=en.acces?en.acces.code:"";
+  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;$("fAcces").value=en.acces?en.acces.code:"";
   form={photos:[],gravite:en.gravite,editId:id};
   for(const [k,n] of en.photos.entries()){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null,leg:(en.legendes||[])[k]||"",inc:(en.rapport||[])[k]!==false})}
   renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
