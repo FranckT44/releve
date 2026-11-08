@@ -277,7 +277,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
       <div class="field"><span class="rtelab">&nbsp;</span><button type="button" id="prepMic">🎤 Dicter</button></div></div>
     <textarea id="prepTxt" rows="4" placeholder="Contrôles prévus…" aria-label="Contrôles prévus"></textarea>
     <p class="hint" id="prepLive" aria-live="polite"></p><p class="hint" id="prepMicHint"></p>
-    <button type="button" id="prepGo">Analyser</button>
+    <div class="btns"><button type="button" id="prepGo">Analyser</button><button type="button" class="ghost" id="prepClear">🗑 Effacer le texte</button></div>
     <div id="prepRes"></div>
     <button type="button" class="primary" id="prepSave" hidden>Créer les constats prévus</button>
     </div>
@@ -631,7 +631,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.64";
+const APP_VERSION="1.65";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1517,7 +1517,13 @@ function proposerSuivant(fini){const c=$("suivCard");if(!c||!fini) return;const 
   c.scrollIntoView({behavior:"smooth",block:"center"})}
 function prepOuvrir(v){const c=$("prepCorps"),b=$("prepClose");if(!c) return;c.hidden=!v;$("prepCard").classList.toggle("replie",!v);
   b.textContent=v?"▾ Replier":"▸ Ouvrir";b.setAttribute("aria-expanded",String(v));if(v) visRemplir();else arreterDictee()}
+// v1.65 : effacer le texte dicté / tapé (deux touches) ; la dictée en cours continue sur un texte vide
+function effacerPrep(){const b=$("prepClear");if(!$("prepTxt").value.trim()&&!PROPS.length){toast("Rien à effacer.");return}
+  if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer : effacer";clearTimeout(effacerPrep.t);effacerPrep.t=setTimeout(()=>{b.dataset.ok="";b.textContent="🗑 Effacer le texte"},4000);return}
+  clearTimeout(effacerPrep.t);b.dataset.ok="";b.textContent="🗑 Effacer le texte";
+  $("prepTxt").value="";if(!REC) $("prepLive").textContent="";PROPS=[];renderPrep();toast("Texte effacé.");if(REC) $("prepTxt").focus()}
 function initPrep(){
+  $("prepClear").onclick=effacerPrep;
   $("visEq").onchange=()=>visListe(true);$("visAct").onchange=visSousAct;$("visSave").onclick=visCreer;
   // v1.64 : la carte reste affichée ; « ▸ Ouvrir / ▾ Replier » (ou toucher le titre) montre ou cache son contenu
   $("bPrep").onclick=()=>{const v=$("prepCorps").hidden;prepOuvrir(v);if(v) $("prepCard").scrollIntoView({behavior:"smooth",block:"start"})};
@@ -1540,7 +1546,7 @@ function suiteDictee(prec,nouv){const a=prec.trim().toLowerCase(),b=nouv.trim();
 function lancerDictee(SR){const r=new SR();REC=r;r.lang=$("prepLang").value;r.continuous=false;r.interimResults=true;r.maxAlternatives=1;
   const t=$("prepTxt");let base=t.value.trim(),dern="";
   r.onresult=ev=>{let fin="",tmp="";for(let i=0;i<ev.results.length;i++){const x=ev.results[i];if(x.isFinal) fin=x[0].transcript;else tmp=x[0].transcript}
-    if(fin){const ajout=suiteDictee(dern,fin);dern=fin;if(ajout){base=(base?base+" ":"")+ajout;t.value=base}tmp=""}$("prepLive").textContent=tmp};
+    if(fin){const ajout=suiteDictee(dern,fin);dern=fin;if(ajout){const cur=t.value.trim();t.value=(cur?cur+" ":"")+ajout}tmp=""}$("prepLive").textContent=tmp};
   r.onerror=ev=>{if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){toast("Micro refusé : autorise le micro pour l'appli, ou utilise le micro du clavier.",5000);arreterDictee()}
     else if(ev.error==="network"){toast("Dictée indisponible sans réseau : utilise le micro du clavier du téléphone.",5000);arreterDictee()}};
   r.onend=()=>{if(REC===r){try{r.start()}catch(e){arreterDictee()}}}; // Android coupe après un silence : on relance
@@ -2942,6 +2948,8 @@ const TRAD_UI=[
 ["Nouvelle version de l'appli disponible.","New version of the app available.","Nueva versión de la app disponible.","Neue App-Version verfügbar."],
 ["Recharger","Reload","Recargar","Neu laden"],
 ["Plus tard","Later","Más tarde","Später"],
+["🗑 Effacer le texte","🗑 Clear the text","🗑 Borrar el texto","🗑 Text löschen"],["Confirmer : effacer","Confirm: clear","Confirmar: borrar","Bestätigen: löschen"],
+["Texte effacé.","Text cleared.","Texto borrado.","Text gelöscht."],["Rien à effacer.","Nothing to clear.","Nada que borrar.","Nichts zu löschen."],
 ["Préparer une visite","Prepare a visit","Preparar una visita","Besuch vorbereiten"],
 ["Choisis l'équipement et l'activité : un constat prévu par sous-équipement coché, dans l'ordre de ton parcours (flèches ↑ ↓).","Choose the equipment and the activity: one planned finding per ticked sub-equipment, in the order of your route (↑ ↓ arrows).","Elige el equipo y la actividad: un hallazgo previsto por subequipo marcado, en el orden de tu recorrido (flechas ↑ ↓).","Ausrüstung und Tätigkeit wählen: ein geplanter Befund je angekreuzter Unterausrüstung, in der Reihenfolge deines Rundgangs (Pfeile ↑ ↓)."],
 ["Monter","Move up","Subir","Nach oben"],["Descendre","Move down","Bajar","Nach unten"],
