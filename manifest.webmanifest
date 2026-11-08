@@ -1,16 +1,26 @@
 {
-  "name": "Relevé sur Site",
-  "short_name": "Relevé sur Site",
-  "description": "Photos et constats d'inspection réfractaire, rangés par équipement et activité",
+  "name": "The 982 Inspector Toolbox",
+  "short_name": "982 Toolbox",
+  "description": "Constats d'inspection réfractaire, photos annotées et préparation des rapports",
   "lang": "fr",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#f0f0f0",
   "theme_color": "#1d2a33",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }

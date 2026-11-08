@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Relevé sur Site</title>
+<title>The 982 Inspector Toolbox</title>
 <meta name="theme-color" content="#1d2a33">
 <meta name="color-scheme" content="light dark" id="metaScheme">
 <script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t;document.getElementById("metaScheme").content=t==="light"?"only light":"only dark"}}catch(e){}</script>
@@ -55,7 +55,9 @@ main{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-
 .card.c-jaune{background:var(--c-jaune);border-left:4px solid var(--c-jaune-b)}
 .card[class*="c-"] :is(select,input[type=text],input[type=date],textarea,.rte){background:var(--surface)}
 .themeBtn{background:transparent;color:var(--tab-on);border:1px solid var(--tab-fg);border-radius:999px;min-height:36px;min-width:40px;padding:2px 8px;font-size:16px}
-#v-accueil{max-width:720px;margin:0 auto}.acc-mission{font:650 18px var(--font)}
+#v-accueil{max-width:720px;margin:0 auto}.acc-titre{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:2px 0 12px;font:700 22px var(--font);letter-spacing:.01em}
+.acc-ver{font:650 13px var(--mono);background:var(--accent);color:var(--accent-fg);border-radius:999px;padding:3px 10px}
+header h1 .tCourt{display:none}@media (max-width:699px){header h1{flex:0 0 auto;font-size:16px}header .mission{flex:1 1 auto;min-width:0}header h1 .tLong{display:none}header h1 .tCourt{display:inline}}.acc-mission{font:650 18px var(--font)}
 .acc-grille{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .acc{display:grid;gap:4px;justify-items:start;text-align:left;min-height:118px;padding:14px;border-radius:var(--radius);border:1px solid var(--line);color:var(--fg)}
 .acc b{font-size:16px}.acc .hint{font-size:13px}.acc-ic{font-size:28px;line-height:1}
@@ -145,7 +147,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 .edbar button.danger{color:#f0716a;border-color:#f0716a;background:transparent}
 .edopts{flex-wrap:wrap;row-gap:4px}
 .edl{display:flex;align-items:center;gap:6px;color:#c9d3d9;font-size:13px;font-weight:500;white-space:nowrap}
-.edl input[type=range]{width:80px}.edsel{width:auto!important;text-align:left}.edn{width:3.6em;min-height:34px;font-size:15px;padding:2px 4px;border-radius:6px;border:1px solid #556;background:#0e1316;color:#e6ecef;text-align:center}
+.edl input[type=range]{width:80px}.edpm{min-width:34px;min-height:34px;padding:0 6px!important;font-size:17px}#edInclW.off{opacity:.45}#edIncl{width:3.6em!important;font-size:15px;background:#0e1316!important;color:#e6ecef}.edsel{width:auto!important;text-align:left}.edn{width:3.6em;min-height:34px;font-size:15px;padding:2px 4px;border-radius:6px;border:1px solid #556;background:#0e1316;color:#e6ecef;text-align:center}
 .sw{display:flex;gap:5px}.sw button{width:28px;height:28px;min-height:28px;padding:0;border-radius:50%;border:2px solid #2e3a41}
 .sw button[aria-pressed=true]{outline:3px solid #fff;outline-offset:1px}
 #edZone{flex:1;min-height:0;position:relative;overflow:hidden;touch-action:none}.edvue span{min-width:2.6em;text-align:center;font-size:13px}.edvue .edsep{flex:1;min-width:0}
@@ -192,7 +194,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 </head>
 <body>
 <header>
-  <h1 id="hTitle">Relevé sur Site</h1>
+  <h1 id="hTitle"><span class="tLong">The 982 Inspector Toolbox</span><span class="tCourt">982 Toolbox</span></h1>
   <button type="button" class="mission" id="hMission" aria-label="Changer de mission"></button>
   <button type="button" class="themeBtn" id="bTheme" aria-label="Thème : automatique">🌓</button>
 </header>
@@ -200,6 +202,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 <main>
 <!-- ============ ACCUEIL ============ -->
 <section id="v-accueil">
+  <div class="acc-titre"><span>The 982 Inspector Toolbox</span><span class="acc-ver" id="accVer"></span></div>
   <div class="card c-bleu acc-tete"><h2>Mission active</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div></div>
   <div class="acc-grille">
     <button type="button" class="acc c-ambre" data-go="saisie"><span class="acc-ic">📷</span><b>Nouveau constat</b><span class="hint">Photos, constat, observation</span></button>
@@ -490,6 +493,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
     <label class="edl">Trait<select id="edDash" class="edn edsel" aria-label="Type de trait"><option value="">━ plein</option><option value="dash">╍ tirets</option><option value="dot">┈ pointillés</option></select></label>
     <label class="edl"><input type="checkbox" id="edFill"> Remplir</label>
     <label class="edl">Opacité<input type="range" id="edOp" min="10" max="100" value="35"><input type="number" id="edOpn" class="edn" min="10" max="100" step="5" value="35" inputmode="numeric" aria-label="Opacité en pourcentage">%</label>
+    <span class="edl" id="edInclW" title="Sélectionner un rectangle, une ellipse, une ligne ou une flèche">Inclinaison<button type="button" id="edInclM" class="edpm" aria-label="Inclinaison moins 1 degré">−</button><input type="text" id="edIncl" class="edn" value="0" inputmode="decimal" enterkeyhint="done" aria-label="Inclinaison en degrés" disabled><button type="button" id="edInclP" class="edpm" aria-label="Inclinaison plus 1 degré">+</button>°</span>
     <button type="button" id="edUndo" aria-label="Annuler la dernière action">↶</button><button type="button" id="edRedo" aria-label="Rétablir">↷</button>
     <button type="button" id="edDel" class="danger" aria-label="Supprimer l'élément sélectionné">Suppr.</button>
     <button type="button" id="edRotG" aria-label="Tourner la photo d'un quart de tour à gauche">⟲ 90°</button><button type="button" id="edRotD" aria-label="Tourner la photo d'un quart de tour à droite">⟳ 90°</button>
@@ -515,7 +519,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.38";
+const APP_VERSION="1.40";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -898,7 +902,7 @@ function boite(o){if(o.t==="pen"){const xs=o.pts.map(q=>q[0]),ys=o.pts.map(q=>q[
   if(o.a&&(o.t==="rect"||o.t==="ell")){const c=centre(o),pts=[[o.x1,o.y1],[o.x2,o.y1],[o.x1,o.y2],[o.x2,o.y2]].map(q=>tourne(q,c,o.a));
     const xs=pts.map(q=>q[0]),ys=pts.map(q=>q[1]);return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]}
   return [Math.min(o.x1,o.x2),Math.min(o.y1,o.y2),Math.max(o.x1,o.x2),Math.max(o.y1,o.y2)]}
-function edDessiner(){const cv=$("edCv"),g=cv.getContext("2d");if(!ED.v) return;const dpr=window.devicePixelRatio||1,v=ED.v,k=dpr*v.sc,px=1/v.sc;
+function edDessiner(){const cv=$("edCv"),g=cv.getContext("2d");if(!ED.v) return;majIncl();const dpr=window.devicePixelRatio||1,v=ED.v,k=dpr*v.sc,px=1/v.sc;
   g.setTransform(1,0,0,1,0,0);g.fillStyle="#0e1316";g.fillRect(0,0,cv.width,cv.height);
   g.setTransform(k,0,0,k,-v.x0*k,-v.y0*k);g.imageSmoothingQuality="high";g.drawImage(ED.img,0,0);
   for(const o of ED.obj) dessinerObjet(g,o,1);if(ED.cur) dessinerObjet(g,ED.cur,1);
@@ -927,6 +931,13 @@ function styleCourant(){return {col:ED.col,w:+$("edW").value*unite(),fill:$("edF
 function poignees(o){if(o.t==="rect"||o.t==="ell"){const c=centre(o);return [[o.x1,o.y1],[o.x2,o.y1],[o.x1,o.y2],[o.x2,o.y2]].map(q=>o.a?tourne(q,c,o.a):q)}
   if(o.t==="line"||o.t==="arrow") return [[o.x1,o.y1],[o.x2,o.y2]];return []}
 // poignée de rotation : au-dessus du milieu du bord haut (dans le repère du tracé)
+// inclinaison en degrés (sens horaire), -180..180 : rect/ellipse = rotation o.a ; ligne/flèche = angle du segment
+function inclinable(o){return o&&["rect","ell","line","arrow"].includes(o.t)}
+function lireIncl(o){let a=(o.t==="line"||o.t==="arrow")?Math.atan2(o.y2-o.y1,o.x2-o.x1):(o.a||0);let d=a*180/Math.PI;d=Math.round(d*10)/10;if(d<=-180) d+=360;if(d>180) d-=360;return d===0?0:d}
+function ecrireIncl(o,d){const a=d*Math.PI/180;if(o.t==="line"||o.t==="arrow"){const cx=(o.x1+o.x2)/2,cy=(o.y1+o.y2)/2,L=Math.hypot(o.x2-o.x1,o.y2-o.y1)/2;
+    o.x1=cx-L*Math.cos(a);o.y1=cy-L*Math.sin(a);o.x2=cx+L*Math.cos(a);o.y2=cy+L*Math.sin(a)}else o.a=Math.abs(d)<1e-9?0:a}
+function majIncl(){const f=$("edIncl");if(!f) return;const o=ED.sel>=0?ED.obj[ED.sel]:null,ok=inclinable(o);f.disabled=!ok;$("edInclM").disabled=!ok;$("edInclP").disabled=!ok;
+  $("edInclW").classList.toggle("off",!ok);if(document.activeElement!==f) f.value=ok?lireIncl(o):""}
 function poigneeRot(o){if(o.t!=="rect"&&o.t!=="ell") return null;const c=centre(o),yh=Math.min(o.y1,o.y2)-34/ED.v.sc;return tourne([c[0],yh],c,o.a||0)}
 function toucherPoignee(pt){if(ED.sel<0||!ED.obj[ED.sel]) return -1;const r=22/ED.v.sc;const o0=ED.obj[ED.sel];const pr=poigneeRot(o0);
   if(pr&&Math.hypot(pt[0]-pr[0],pt[1]-pr[1])<=r) return "rot";const h=poignees(o0);
@@ -992,6 +1003,12 @@ function initEditeur2(){
     $(r).addEventListener("input",()=>{$(n).value=$(r).value});
     $(n).onchange=()=>{const R=$(r);let v=Math.round(+$(n).value);if(!isFinite(v)) v=+R.value;v=Math.min(+R.max,Math.max(+R.min,v));$(n).value=v;R.value=v;if(ED.sel>=0) edPousser();majSel()};
     $(n).onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$(n).blur()}}}$("edFill").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};$("edDash").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};$("edOp").onchange=()=>{if(ED.sel>=0) edPousser();majSel()};
+  const fixerIncl=d=>{const o=ED.obj[ED.sel];if(!inclinable(o)||!isFinite(d)) return majIncl();d=((d+180)%360+360)%360-180;if(d===-180) d=180;edPousser();ecrireIncl(o,d);$("edIncl").value=Math.round(d*10)/10;edDessiner()};
+  $("edIncl").onchange=()=>fixerIncl(parseFloat(String($("edIncl").value).replace(",",".")));
+  $("edIncl").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("edIncl").blur()}};
+  $("edIncl").onblur=()=>majIncl();
+  $("edInclM").onclick=()=>{const o=ED.obj[ED.sel];if(inclinable(o)) fixerIncl(lireIncl(o)-1)};
+  $("edInclP").onclick=()=>{const o=ED.obj[ED.sel];if(inclinable(o)) fixerIncl(lireIncl(o)+1)};
   $("edUndo").onclick=()=>{if(!ED.hist.length) return;ED.redo.push(edEtat());edRestaurer(ED.hist.pop())};
   $("edRedo").onclick=()=>{if(!ED.redo.length) return;ED.hist.push(edEtat());edRestaurer(ED.redo.pop())};
   $("edDel").onclick=()=>{if(ED.sel<0) return;edPousser();ED.obj.splice(ED.sel,1);ED.sel=-1;edDessiner()};
@@ -1409,7 +1426,7 @@ async function fichierMission(obj){
   g.fillText(`${eq.length} équipement(s), ${eq.reduce((n,e)=>n+e.enfants.length,0)} sous-équipement(s)`,50,230);
   g.fillText(`${ac.length} activité(s) · langue ${(obj.langue||"fr").toUpperCase()}`,50,272);
   g.fillText("Version du "+fmtDT(obj.modifieLe),50,314);
-  g.font="22px sans-serif";g.fillText("Relevé sur Site : Missions › Charger une mission",50,420);
+  g.font="22px sans-serif";g.fillText("The 982 Inspector Toolbox : Missions › Charger une mission",50,420);
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.9));const b=new Uint8Array(await blob.arrayBuffer());
   const data=b64(JSON.stringify(obj));const morceaux=[];for(let i=0;i<data.length;i+=60000) morceaux.push(data.slice(i,i+60000));
   const segs=morceaux.map(m=>{const t=new TextEncoder().encode("RELEVE-MISSION:"+m);const L=t.length+2;const s=new Uint8Array(L+2);s.set([0xFF,0xFE,L>>8,L&255]);s.set(t,4);return s});
@@ -1669,7 +1686,7 @@ function showView(v){for(const s of ["accueil","saisie","journal","galerie","reg
   if(v==="journal") renderJournal();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();window.scrollTo(0,0)}
 /* ---------- accueil ---------- */
 async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`${m.no} · ${m.client||""}`;
-  $("accInfo").textContent=`${m.inspecteur||""}${m.inspecteur?" · ":""}appli ${APP_VERSION}`;
+  $("accInfo").textContent=m.inspecteur||"";$("accVer").textContent="version "+APP_VERSION;
   const np=PREVUS.filter(p=>p.mission===m.id).length;$("accPrevus").textContent=np?`${np} à faire`:"Aucun";
   const en=(await allEntries()).filter(belongs);const n=en.filter(e=>!e.envoye).length;
   $("accJournal").textContent=n?`${n} constat${n>1?"s":""} à envoyer`:(en.length?`${en.length} constat${en.length>1?"s":""}, tout est envoyé`:"Aucun constat");
