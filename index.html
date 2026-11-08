@@ -47,13 +47,14 @@ header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.01em;flex:1;mi
 header .mission{font:650 14px var(--mono);color:var(--tab-on);background:transparent;border:1px solid var(--tab-fg);border-radius:999px;min-height:36px;padding:4px 12px;max-width:55vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 main{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-width:1240px;margin:0 auto}
 #v-saisie,#v-journal{max-width:720px;margin:0 auto}
-@media (min-width:700px){header .mission{font-size:17px;max-width:min(70vw,720px);min-height:42px;padding:6px 18px}header h1{font-size:19px;flex:0 1 auto}header .themeBtn{margin-left:auto}}
+@media (min-width:700px){header .mission{font-size:17px;max-width:min(70vw,720px);min-height:42px;padding:6px 18px}header h1{font-size:19px;flex:0 1 auto}header .langSel{margin-left:auto}}
 [hidden]{display:none!important}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:12px;margin-bottom:14px}
 .card.c-bleu{background:var(--c-bleu);border-left:4px solid var(--c-bleu-b)}.card.c-vert{background:var(--c-vert);border-left:4px solid var(--c-vert-b)}
 .card.c-ambre{background:var(--c-ambre);border-left:4px solid var(--c-ambre-b)}.card.c-violet{background:var(--c-violet);border-left:4px solid var(--c-violet-b)}
 .card.c-jaune{background:var(--c-jaune);border-left:4px solid var(--c-jaune-b)}
 .card[class*="c-"] :is(select,input[type=text],input[type=date],textarea,.rte){background:var(--surface)}
+header .langSel{width:auto;flex:none;min-height:36px;padding:2px 8px;font:650 14px var(--font);color:var(--tab-on);background:var(--tab);border:1px solid var(--tab-fg);border-radius:999px}
 .themeBtn{background:transparent;color:var(--tab-on);border:1px solid var(--tab-fg);border-radius:999px;min-height:36px;min-width:40px;padding:2px 8px;font-size:16px}
 #v-accueil{max-width:720px;margin:0 auto}.acc-lang{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:500 15px var(--font)}.acc-lang select{min-height:40px;padding:4px 8px;font-size:15px;width:auto}.acc-titre{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:2px 0 12px;font:700 22px var(--font);letter-spacing:.01em}
 .acc-ver{font:650 13px var(--mono);background:var(--accent);color:var(--accent-fg);border-radius:999px;padding:3px 10px}
@@ -122,6 +123,8 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 #majBar{position:fixed;left:0;right:0;top:0;z-index:30;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;background:var(--accent);color:var(--accent-fg);font:600 15px var(--font);box-shadow:0 2px 8px rgba(0,0,0,.25)}
 #majBar[hidden]{display:none}#majBar span{flex:1 1 180px}#majBar button{min-height:44px;background:var(--accent-fg);color:var(--accent);border:0;font-weight:700}#majBar button.ghost{background:transparent;color:var(--accent-fg);border:1px solid var(--accent-fg)}
 [id$="ActSoc"][hidden]{display:none!important}
+.pdfit{display:grid;grid-template-columns:40px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:start}.pdfit:first-of-type{border-top:0}
+.pdfit .ic{font-size:30px;line-height:1}.pdfit .t{font-weight:650;font-size:15px;overflow-wrap:anywhere}.pdfit .m{font-size:13px;color:var(--muted)}.pdfit .acts{grid-column:2;display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.pdfit .acts button{min-height:40px;padding:4px 12px;font-size:14px}
 .acc-alerte{margin-top:8px;padding:8px 10px;border-radius:8px;border:2px solid var(--repair);background:var(--accent-soft);font-weight:600}.acc-alerte[hidden]{display:none}
 .entry{display:grid;grid-template-columns:30px 64px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
 .entry .sel,.dayhead .sel{display:flex;align-items:center;justify-content:center;min-height:44px;min-width:30px}.entry .sel input,.dayhead .sel input{width:24px;height:24px;accent-color:var(--accent);margin:0}
@@ -198,6 +201,11 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .gt.hors .lg{right:auto;max-width:55%}.gt.drag{outline:3px solid var(--accent);transform:scale(1.05);z-index:2}.gt.cible{outline:3px dashed var(--accent)}
 .ghead{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}.ghead h3{margin:0;font-size:15px}
 #gv{position:fixed;inset:0;z-index:35;background:#0e1316;color:#e6ecef;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+#pv{position:fixed;inset:0;z-index:36;background:#0e1316;color:#e6ecef;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+#pv[hidden]{display:none!important}#pv .edsep{flex:1}.pvTitre{font-weight:650;font-size:14px;padding:0 4px}@media (max-width:479px){.pvTitre{display:none}}#pvInfo{font-size:12.5px;color:#aab6bd;padding:0 10px 6px;overflow-wrap:anywhere}
+#pvPages{flex:1;overflow:auto;padding:10px 12px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;-webkit-overflow-scrolling:touch}
+#pvPages canvas{width:min(100%,820px);height:auto;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.5);flex:none}
+#pv.zoom #pvPages{align-items:flex-start}#pv.zoom #pvPages canvas{width:max(200%,1100px);max-width:none}
 #gv[hidden]{display:none!important}#gv .edsep{flex:1}#gvNum{min-width:3.4em;text-align:center;font-size:13px}
 #gvInfo{padding:0 10px 4px;font-size:13px;color:#c9d3d9}#gvZone{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;touch-action:pan-y}
 #gvImg{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
@@ -223,13 +231,14 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 <header>
   <h1 id="hTitle"><span class="tLong">The 982 Inspector Toolbox</span><span class="tCourt">982 Toolbox</span></h1>
   <button type="button" class="mission" id="hMission" aria-label="Changer de mission"></button>
+  <select id="uiLang" class="langSel" data-noi18n title="Langue de l'appli / App language" aria-label="Langue de l'appli / App language"><option value="fr" title="Français">FR</option><option value="en" title="English">EN</option><option value="es" title="Español">ES</option><option value="de" title="Deutsch">DE</option></select>
   <button type="button" class="themeBtn" id="bTheme" aria-label="Thème : automatique">🌓</button>
 </header>
 
 <main>
 <!-- ============ ACCUEIL ============ -->
 <section id="v-accueil">
-  <div class="acc-titre"><span>The 982 Inspector Toolbox</span><span class="acc-ver" id="accVer"></span><label class="acc-lang" data-noi18n title="Langue de l'appli"><span aria-hidden="true">🌐</span><select id="uiLang" aria-label="Langue de l'appli / App language"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label></div>
+  <div class="acc-titre"><span>The 982 Inspector Toolbox</span><span class="acc-ver" id="accVer"></span></div>
   <div class="card c-bleu acc-tete"><h2>Mission active</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div><div class="acc-alerte" id="accAlerte" hidden></div></div>
   <div class="card confirm brCard" id="brCardA" hidden><strong class="brTxt"></strong><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
   <div class="acc-grille">
@@ -238,6 +247,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
     <button type="button" class="acc c-jaune" data-go="prevus"><span class="acc-ic">📋</span><b>Constats prévus</b><span class="hint" id="accPrevus">Aucun</span></button>
     <button type="button" class="acc c-bleu" data-go="journal"><span class="acc-ic">📤</span><b>Journal / Envoi</b><span class="hint" id="accJournal">Rien à envoyer</span></button>
     <button type="button" class="acc c-violet" data-go="galerie"><span class="acc-ic">🖼️</span><b>Galerie</b><span class="hint">Légendes, ordre, annotations</span></button>
+    <button type="button" class="acc c-ambre" data-go="pdfs"><span class="acc-ic">📄</span><b>PDF préliminaires</b><span class="hint" id="accPdfs">Aucun</span></button>
     <button type="button" class="acc c-vert" data-go="reglages"><span class="acc-ic">📁</span><b>Missions</b><span class="hint">Listes, partage, réglages</span></button>
     <button type="button" class="acc c-bleu" data-go="trad" id="accTrad" hidden><span class="acc-ic">🌐</span><b>Traduction</b><span class="hint">Observations du CSV (PC)</span></button>
   </div>
@@ -393,6 +403,16 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 <input type="file" id="iCsv" accept=".csv,text/csv" hidden>
 
 <!-- ============ MISSIONS ============ -->
+<!-- ============ PDF PRÉLIMINAIRES ============ -->
+<section id="v-pdfs" hidden>
+  <div class="card c-ambre">
+    <h2>PDF préliminaires</h2>
+    <p class="hint">Les PDF rapides créés depuis le Journal sont gardés ici, sur le téléphone. Touche un PDF pour l'ouvrir, le partager à nouveau ou le supprimer.</p>
+    <label class="toggle"><input type="checkbox" id="pdfToutes"> Afficher toutes les missions</label>
+    <p class="hint" id="pdfInfo"></p>
+  </div>
+  <div id="pdfListe"></div>
+</section>
 <section id="v-reglages" hidden>
   <div class="duo">
   <div class="card c-bleu">
@@ -509,6 +529,11 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 <div class="toast" id="toast" hidden></div>
 <div id="majBar" role="status" hidden><span>Nouvelle version de l'appli disponible.</span><button type="button" id="majGo">Recharger</button><button type="button" class="ghost" id="majPlusTard">Plus tard</button></div>
 <!-- ============ VISIONNEUSE DE LA GALERIE ============ -->
+<div id="pv" hidden>
+  <div class="edbar"><button type="button" id="pvAnnul">✕ Annuler</button><span class="pvTitre">Aperçu du PDF</span><span class="edsep"></span><button type="button" id="pvZoom" aria-pressed="false">🔍 Zoom</button><button type="button" id="pvOk" class="primary">📄 Créer le PDF</button></div>
+  <div id="pvInfo"></div>
+  <div id="pvPages"></div>
+</div>
 <div id="gv" hidden>
   <div class="edbar"><button type="button" id="gvClose">✕ Fermer</button><span class="edsep"></span><button type="button" id="gvFirst" aria-label="Première photo">⏮</button><button type="button" id="gvPrev" aria-label="Photo précédente">‹</button><span id="gvNum"></span><button type="button" id="gvNext" aria-label="Photo suivante">›</button></div>
   <div id="gvInfo"></div>
@@ -574,7 +599,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.50";
+const APP_VERSION="1.51";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -731,8 +756,10 @@ function majBarre(){const a=document.activeElement;if(!a||!a.classList||!a.class
 document.addEventListener("selectionchange",majBarre);
 /* ---------- stockage (IndexedDB) ---------- */
 let DB=null;
-function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open("releve-refractaire",1);
-  r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore("kv");d.createObjectStore("entries",{keyPath:"id"});d.createObjectStore("photos",{keyPath:"id"})};
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open("releve-refractaire",2);
+  // v2 (appli 1.51) : PDF rapides gardés dans l'appli
+  r.onupgradeneeded=()=>{const d=r.result,a=n=>d.objectStoreNames.contains(n);if(!a("kv")) d.createObjectStore("kv");if(!a("entries")) d.createObjectStore("entries",{keyPath:"id"});
+    if(!a("photos")) d.createObjectStore("photos",{keyPath:"id"});if(!a("pdfs")) d.createObjectStore("pdfs",{keyPath:"id"})};
   r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 function tx(store,mode,fn){return new Promise((res,rej)=>{const t=DB.transaction(store,mode);const s=t.objectStore(store);let out;const r=fn(s);
   if(r&&"onsuccess" in r) r.onsuccess=()=>{out=r.result};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})}
@@ -2007,9 +2034,9 @@ async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobil
   $("bTAll").onclick=()=>traduireLignes(T.rows.map((_,i)=>i),false);$("bTSave").onclick=enregistrerCsv;
   window.addEventListener("beforeunload",e=>{if(T.modif){e.preventDefault();e.returnValue=""}})}
 /* ---------- navigation ---------- */
-function showView(v){if(v!=="journal") PREP=null;for(const s of ["accueil","saisie","journal","galerie","reglages","trad"]) $("v-"+s).hidden=s!==v;
+function showView(v){if(v!=="journal") PREP=null;for(const s of ["accueil","saisie","journal","galerie","reglages","trad","pdfs"]) $("v-"+s).hidden=s!==v;
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v?"page":"false"));
-  if(v==="journal") renderJournal();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();window.scrollTo(0,0)}
+  if(v==="journal") renderJournal();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();if(v==="pdfs") renderPdfs();window.scrollTo(0,0)}
 /* ---------- accueil ---------- */
 async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`${m.no} · ${m.client||""}`;
   $("accInfo").textContent=[m.inspecteur,libelleSociete(m)].filter(Boolean).join(" · ");$("accVer").textContent="version "+APP_VERSION;
@@ -2024,8 +2051,9 @@ async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`
     al.textContent=`⚠ ${n} constat${n>1?"s":""} non envoyé${n>1?"s":""} au PC (le plus ancien : ${quand} à ${pad(vieux.getHours())}:${pad(vieux.getMinutes())}). Tant qu'il${n>1?"s ne sont pas envoyés, ils n'existent":" n'est pas envoyé, il n'existe"} que sur ce téléphone.`;
     al.onclick=()=>showView("journal");al.style.cursor="pointer"}
   afficherBrouillon();
+  try{const np=(await tousPdfs()).filter(p=>p.mission&&p.mission.id===m.id).length;$("accPdfs").textContent=np?`${np} PDF`:"Aucun"}catch(e){}
   $("accTrad").hidden=$("navTrad").hidden}
-function initAccueil(){document.querySelectorAll("#v-accueil .acc").forEach(b=>b.onclick=()=>{const g=b.dataset.go;
+function initAccueil(){$("pdfToutes").onchange=renderPdfs;document.querySelectorAll("#v-accueil .acc").forEach(b=>b.onclick=()=>{const g=b.dataset.go;
   if(g==="prep"){showView("saisie");$("prepCard").hidden=false;$("prepTxt").focus();return}
   if(g==="prevus"){showView("saisie");if(!$("prevusCard").hidden) $("prevusCard").scrollIntoView({block:"start"});return}
   showView(g)});
@@ -2131,17 +2159,18 @@ async function logoPdf(soc){try{if(soc==="FTA"){const r=await fetch("icon-512.pn
 class PdfRapide{
   constructor(l,soc,mission){this.l=l;this.soc=soc;this.m=mission;this.W=595.28;this.H=841.89;this.M=40;this.pages=[];this.imgs=[];this.page=null;this.y=0}
   get bas(){return this.H-this.M-26}
-  nouvellePage(){this.page={ops:[],ims:new Set()};this.pages.push(this.page);this.y=this.M+66}
+  nouvellePage(){this.page={ops:[],d:[],ims:new Set()};this.pages.push(this.page);this.y=this.M+66}
   place(h){if(this.y+h>this.bas){this.nouvellePage();return true}return false}
   txt(x,y,t,f,s,col){const F=`/F${{R:1,B:2,I:3,BI:4}[f]}`;
     // « ² » : certaines visionneuses n'ont pas ce glyphe -> petit « 2 » surélevé
     const seg=String(t).split("²").map((x,i)=>i?`${F} ${(s*0.62).toFixed(2)} Tf 3.6 Ts (2) Tj ${F} ${s} Tf 0 Ts ${pdfChaine(x)} Tj`:`${pdfChaine(x)} Tj`).join(" ");
+    this.page.d.push({k:"t",x,y,t,f,s,col});
     this.page.ops.push(`BT ${F} ${s} Tf ${col||"0.13 0.13 0.13"} rg ${x.toFixed(2)} ${(this.H-y).toFixed(2)} Td ${seg} ET`)}
-  rect(x,y,w,h,col){this.page.ops.push(`${col} rg ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`)}
-  trait(x1,y1,x2,y2,col,lw){this.page.ops.push(`${col} RG ${lw} w ${x1.toFixed(2)} ${(this.H-y1).toFixed(2)} m ${x2.toFixed(2)} ${(this.H-y2).toFixed(2)} l S`)}
-  cadre(x,y,w,h,col,lw){this.page.ops.push(`${col} RG ${lw} w ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`)}
+  rect(x,y,w,h,col){this.page.d.push({k:"r",x,y,w,h,col});this.page.ops.push(`${col} rg ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`)}
+  trait(x1,y1,x2,y2,col,lw){this.page.d.push({k:"l",x1,y1,x2,y2,col,lw});this.page.ops.push(`${col} RG ${lw} w ${x1.toFixed(2)} ${(this.H-y1).toFixed(2)} m ${x2.toFixed(2)} ${(this.H-y2).toFixed(2)} l S`)}
+  cadre(x,y,w,h,col,lw){this.page.d.push({k:"c",x,y,w,h,col,lw});this.page.ops.push(`${col} RG ${lw} w ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`)}
   ajouterImage(im){im.n=this.imgs.length+1;this.imgs.push(im);return im}
-  image(im,x,y,w,h,page){(page||this.page).ims.add(im);(page||this.page).ops.push(`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} cm /Im${im.n} Do Q`)}
+  image(im,x,y,w,h,page){(page||this.page).ims.add(im);(page||this.page).d.push({k:"i",im,x,y,w,h});(page||this.page).ops.push(`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} cm /Im${im.n} Do Q`)}
   // texte enrichi avec retour à la ligne
   lignes(runs,w,s){const mots=[];for(const r of runs) for(const m of r.t.split(/(\s+)/)) if(m) mots.push({...r,t:m});
     const out=[];let l=[],lw=0;
@@ -2184,10 +2213,11 @@ class PdfRapide{
         lot.forEach((p,j)=>{const x=M+j*(cw+gap)+(cw-p.w)/2;this.image(p.im,x,this.y,p.w,p.h);this.cadre(x,this.y,p.w,p.h,"0.75 0.75 0.75",0.5);
           let yy=this.y+p.h+5;for(const ln of p.ll){let cx=M+j*(cw+gap);for(const m of ln){if(m.t!==" ") this.txt(cx,yy+7.5,m.t,m.f,8,"0.30 0.30 0.30");cx+=m.w}yy+=10.6}});
         this.y+=rowH}}}
-  async octets(){const l=this.l,M=this.M,W=this.W,N=this.pages.length,logo=await logoPdf(this.soc);if(logo) this.ajouterImage(logo);
+  // en-têtes et pieds de page (une seule fois : servent à l'aperçu puis au fichier)
+  async miseEnPage(){if(this.mep) return;this.mep=true;const l=this.l,M=this.M,W=this.W,N=this.pages.length,logo=await logoPdf(this.soc);if(logo) this.ajouterImage(logo);
     const nomSoc=this.soc==="FTA"?(this.m.inspecteur||"Franck TALLEUX"):"QUARTIS LIMITED",actSoc=this.soc==="FTA"?(this.m.activiteSociete||"API 936 Consultancy"):"REFRACTORY INSPECTION";
     const quand=new Date(),gen=pdfL("gen",l).replace("{a}",`${frDate(today())} ${pad(quand.getHours())}:${pad(quand.getMinutes())}`);
-    this.pages.forEach((pg,i)=>{const ops=pg.ops;pg.ops=[];this.page=pg;
+    this.pages.forEach((pg,i)=>{const ops=pg.ops,dd=pg.d;pg.ops=[];pg.d=[];this.page=pg;
       // en-tête : logo, société, titre ; pied : inspecteur, date, page
       let x=M;if(logo){const h=38,w=h*logo.w/logo.h;this.image(logo,M,M,w,h);x=M+w+10}
       this.txt(x,M+15,nomSoc,"B",11);this.txt(x,M+29,actSoc,"R",8.5,"0.40 0.40 0.40");
@@ -2197,7 +2227,8 @@ class PdfRapide{
       this.trait(M,M+48,W-M,M+48,"0.42 0.16 0.08",1);
       const pied=[this.m.inspecteur?`${pdfL("insp",l)} : ${this.m.inspecteur}`:"",gen].filter(Boolean).join(" · ");
       this.trait(M,this.H-M-14,W-M,this.H-M-14,"0.85 0.85 0.85",0.5);this.txt(M,this.H-M-3,pied,"R",7.5,"0.45 0.45 0.45");
-      const np=`${pdfL("page",l)} ${i+1} / ${N}`;this.txt(W-M-pdfLargeur(np,"R",7.5),this.H-M-3,np,"R",7.5,"0.45 0.45 0.45");pg.ops.push(...ops)});
+      const np=`${pdfL("page",l)} ${i+1} / ${N}`;this.txt(W-M-pdfLargeur(np,"R",7.5),this.H-M-3,np,"R",7.5,"0.45 0.45 0.45");pg.ops.push(...ops);pg.d.push(...dd)})}
+  async octets(){await this.miseEnPage();const l=this.l,W=this.W,N=this.pages.length;
     // assemblage du fichier PDF
     const enc=s=>Uint8Array.from(s,c=>c.charCodeAt(0)&255);const morceauxPdf=[];let pos=0;const off=[];
     const ecrire=b=>{morceauxPdf.push(b);pos+=b.length};const obj=(n,corps,flux)=>{off[n]=pos;ecrire(enc(`${n} 0 obj\n`));ecrire(enc(corps));
@@ -2221,15 +2252,37 @@ async function photosPdf(e,mk){const out=[];let n=0;
   for(const [k,id] of e.photos.entries()){if((e.rapport||[])[k]===false) continue;const p=await getPhoto(id);if(!p||!p.blob) continue;n++;
     try{const im=mk.ajouterImage(await jpegPdf(p.blob,1600));out.push({im,n,leg:(e.legendes||[])[k]||""})}catch(err){}}
   return out}
+// aperçu : les mêmes opérations que le PDF, dessinées à l'écran
+const pdfCol=c=>c?`rgb(${c.split(" ").map(v=>Math.round(v*255)).join(",")})`:"rgb(33,33,33)";
+async function dessinerPagePdf(mk,pg,cv,k){const ctx=cv.getContext("2d");cv.width=Math.round(mk.W*k);cv.height=Math.round(mk.H*k);ctx.scale(k,k);ctx.fillStyle="#fff";ctx.fillRect(0,0,mk.W,mk.H);
+  for(const o of pg.d){
+    if(o.k==="r"){ctx.fillStyle=pdfCol(o.col);ctx.fillRect(o.x,o.y,o.w,o.h)}
+    else if(o.k==="l"){ctx.strokeStyle=pdfCol(o.col);ctx.lineWidth=o.lw;ctx.beginPath();ctx.moveTo(o.x1,o.y1);ctx.lineTo(o.x2,o.y2);ctx.stroke()}
+    else if(o.k==="c"){ctx.strokeStyle=pdfCol(o.col);ctx.lineWidth=o.lw;ctx.strokeRect(o.x,o.y,o.w,o.h)}
+    else if(o.k==="i"){try{if(!o.im.bm) o.im.bm=await createImageBitmap(new Blob([o.im.octets],{type:"image/jpeg"}));ctx.drawImage(o.im.bm,o.x,o.y,o.w,o.h)}catch(e){ctx.fillStyle="#ddd";ctx.fillRect(o.x,o.y,o.w,o.h)}}
+    else if(o.k==="t"){const pol=s=>`${/I/.test(o.f)?"italic ":""}${/B/.test(o.f)?"bold ":""}${s.toFixed(2)}px Helvetica, Arial, sans-serif`;ctx.fillStyle=pdfCol(o.col);let cx=o.x;
+      String(o.t).split("²").forEach((seg,i)=>{if(i){const s2=o.s*0.62;ctx.font=pol(s2);ctx.fillText("2",cx,o.y-3.6);cx+=pdfLargeur("2",o.f,s2)}
+        if(!seg) return;const w=pdfLargeur(seg,o.f,o.s);ctx.font=pol(o.s);ctx.fillText(seg,cx,o.y,w*1.02);cx+=w})}}}
+function apercuPdf(mk,nom){return new Promise(async res=>{const pv=$("pv"),box=$("pvPages");box.innerHTML="";pv.classList.remove("zoom");$("pvZoom").setAttribute("aria-pressed","false");
+  const N=mk.pages.length;$("pvInfo").textContent=`${nom} · ${N} page${N>1?"s":""}`;pv.hidden=false;box.scrollTop=0;
+  const k=Math.min(2.2,Math.max(1,(Math.min(innerWidth,820)-24)*(devicePixelRatio||1)/mk.W));let fini=false;
+  const fin=v=>{if(fini) return;fini=true;pv.hidden=true;box.innerHTML="";for(const im of mk.imgs) if(im.bm){try{im.bm.close()}catch(e){}im.bm=null}res(v)};
+  $("pvAnnul").onclick=()=>fin(false);$("pvOk").onclick=()=>fin(true);
+  $("pvZoom").onclick=()=>{const z=pv.classList.toggle("zoom");$("pvZoom").setAttribute("aria-pressed",String(z))};
+  for(const pg of mk.pages){if(fini) return;const cv=document.createElement("canvas");box.append(cv);await dessinerPagePdf(mk,pg,cv,k)}})}
 let PDF_EN_COURS=false;
 async function pdfRapide(liste){if(!liste.length){toast("Aucun constat sélectionné.");return}if(PDF_EN_COURS) return;PDF_EN_COURS=true;
   try{toast("Création du PDF…",60000);const m=MISSIONS.find(x=>liste[0].mission&&x.id===liste[0].mission.id)||curMission()||CFG.mission;
     const so=socMission(m),l=m.langue||langueMission();const mk=new PdfRapide(l,so.societe,{...m,...so});
     const tri=[...liste].sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));
     for(const e of tri) await mk.constat(e,await photosPdf(e,mk));
-    const octets=await mk.octets();
     const nom=tri.length===1?nomExplicite(tri[0])+".pdf":nomSur(`${m.no} - ${pdfL("rapide",l)} - ${today()} - ${tri.length} ${pdfL("constats",l)}`)+".pdf";
-    const f=new File([octets],nom,{type:"application/pdf"});$("toast").hidden=true;await proposerFichiers([f],"PDF")}
+    await mk.miseEnPage();$("toast").hidden=true;if(!await apercuPdf(mk,nom)){toast("PDF annulé.");return}
+    toast("Création du PDF…",60000);const octets=await mk.octets();
+    const f=new File([octets],nom,{type:"application/pdf"});$("toast").hidden=true;
+    try{await tx("pdfs","readwrite",s=>s.put({id:newId(),nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:so.societe,
+      constats:tri.map(e=>e.id),titres:tri.map(e=>libelleConstat(e)),taille:octets.length,blob:f}))}catch(err){toast("PDF créé mais pas gardé dans l'appli (mémoire pleine ?).",5000)}
+    await proposerFichiers([f],"PDF")}
   catch(err){toast("PDF impossible : "+(err&&err.message||err),6000)}finally{PDF_EN_COURS=false}}
 // partage Android (Quick Share, mail, WhatsApp, Teams…) ; si le délai d'Android est dépassé, une carte propose de partager
 let FICHIERS_PRETS=null;
@@ -2259,6 +2312,31 @@ async function partagerPhotos(e){const files=[];const base=nomExplicite(e);
     let blob=p.blob;if((blob.type||p.type||"").toLowerCase()!=="image/jpeg"){const j=await versJpeg(blob);if(j) blob=j}
     blob=await etiqueterJpeg(blob,metaPhoto(e,k));files.push(new File([blob],`${base} - Photo ${k+1}.jpg`,{type:"image/jpeg"}))}
   if(!files.length){toast("Aucune photo à partager.");return}await proposerFichiers(files,"photos")}
+/* ---------- PDF préliminaires gardés dans l'appli (v1.51) ---------- */
+const tousPdfs=()=>tx("pdfs","readonly",s=>s.getAll());
+const fmtTaille=n=>n>=1048576?`${(n/1048576).toFixed(1)} Mo`:`${Math.max(1,Math.round(n/1024))} ko`;
+async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
+  const toutes=$("pdfToutes").checked;const vis=liste.filter(p=>toutes||(p.mission&&p.mission.id===CFG.mission.id)).sort((a,b)=>b.cree.localeCompare(a.cree));
+  const tot=vis.reduce((s,p)=>s+(p.taille||0),0);
+  $("pdfInfo").textContent=vis.length?`${vis.length} PDF · ${fmtTaille(tot)}`:"";
+  const box=$("pdfListe");box.innerHTML="";
+  if(!vis.length){box.innerHTML=`<div class="card"><p class="hint">Aucun PDF préliminaire pour l'instant. Crée-en un depuis le Journal (bouton « 📄 PDF » d'un constat, ou « PDF rapide de la sélection »).</p></div>`;return}
+  const parJour={};for(const p of vis)(parJour[p.cree.slice(0,10)]??=[]).push(p);
+  for(const [jour,lot] of Object.entries(parJour)){const c=document.createElement("div");c.className="card";
+    c.innerHTML=`<div class="dayhead"><h3>${frDate(jour)}</h3><span class="stat">${lot.length} PDF</span></div>`;
+    for(const p of lot){const d=document.createElement("div");d.className="pdfit";const h=new Date(p.cree);
+      d.innerHTML=`<span class="ic" aria-hidden="true">📄</span><div><div class="t"></div><div class="m"></div><div class="acts"></div></div>`;
+      d.querySelector(".t").textContent=p.nom;
+      const n=(p.constats||[]).length;d.querySelector(".m").textContent=[h.toTimeString().slice(0,5),toutes&&p.mission?`Mission ${p.mission.no}`:"",`${n} constat${n>1?"s":""}`,fmtTaille(p.taille||0)].filter(Boolean).join(" · ");
+      d.title=(p.titres||[]).join("\n");
+      const acts=d.querySelector(".acts"),bt=(t,f,cl)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(cl) b.className=cl;b.onclick=()=>f(b);acts.append(b);return b};
+      const fichier=()=>p.blob instanceof File?p.blob:new File([p.blob],p.nom,{type:"application/pdf"});
+      bt("Ouvrir",()=>{const u=URL.createObjectURL(fichier());const w=window.open(u,"_blank");if(!w) telechargerFichiers([fichier()]);setTimeout(()=>URL.revokeObjectURL(u),60000)});
+      bt("Partager",()=>proposerFichiers([fichier()],"PDF"));
+      bt("Supprimer",async b=>{if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer la suppression";b.classList.add("danger");return}
+        await tx("pdfs","readwrite",s=>s.delete(p.id));toast("PDF supprimé du téléphone.");renderPdfs()},"ghost");
+      c.append(d)}
+    box.append(c)}}
 /* ---------- langue de l'interface (v1.49) ---------- */
 /* ---------- langue de l'interface (v1.49) : [français, anglais, espagnol, allemand] ----------
    Les listes de la mission (équipements, activités, accès, dégâts courants) gardent la langue de la mission.
@@ -2278,6 +2356,23 @@ const TRAD_UI=[
 ["Galerie","Gallery","Galería","Galerie"],
 ["Légendes, ordre, annotations","Captions, order, annotations","Leyendas, orden, anotaciones","Bildtexte, Reihenfolge, Anmerkungen"],
 ["Missions","Jobs","Misiones","Aufträge"],
+["PDF préliminaires","Preliminary PDFs","PDF preliminares","Vorläufige PDFs"],
+["{a} PDF","{a} PDF","{a} PDF","{a} PDF"],
+["Les PDF rapides créés depuis le Journal sont gardés ici, sur le téléphone. Touche un PDF pour l'ouvrir, le partager à nouveau ou le supprimer.","Quick PDFs created from the Log are kept here, on the phone. Open, share again or delete them.","Los PDF rápidos creados desde el Registro se guardan aquí, en el teléfono. Ábrelos, compártelos de nuevo o elimínalos.","Die im Protokoll erstellten Kurz-PDFs werden hier auf dem Telefon aufbewahrt. Öffnen, erneut teilen oder löschen."],
+["Afficher toutes les missions","Show all jobs","Mostrar todas las misiones","Alle Aufträge anzeigen"],
+["{a} PDF · {b}","{a} PDF · {b}","{a} PDF · {b}","{a} PDF · {b}"],
+["Aucun PDF préliminaire pour l'instant. Crée-en un depuis le Journal (bouton « 📄 PDF » d'un constat, ou « PDF rapide de la sélection »).","No preliminary PDF yet. Create one from the Log (“📄 PDF” button of a finding, or “Quick PDF of the selection”).","Aún no hay PDF preliminares. Crea uno desde el Registro (botón «📄 PDF» de un hallazgo o «PDF rápido de la selección»).","Noch keine vorläufigen PDFs. Im Protokoll erstellen („📄 PDF“ bei einem Befund oder „Kurz-PDF der Auswahl“)."],
+["Ouvrir","Open","Abrir","Öffnen"],
+["Aperçu du PDF","PDF preview","Vista previa del PDF","PDF-Vorschau"],
+["✕ Annuler","✕ Cancel","✕ Cancelar","✕ Abbrechen"],
+["🔍 Zoom","🔍 Zoom","🔍 Zoom","🔍 Zoom"],
+["📄 Créer le PDF","📄 Create PDF","📄 Crear el PDF","📄 PDF erstellen"],
+["{a} page","{a} page","{a} página","{a} Seite"],
+["{a} pages","{a} pages","{a} páginas","{a} Seiten"],
+["PDF annulé.","PDF cancelled.","PDF cancelado.","PDF abgebrochen."],
+["Confirmer la suppression","Confirm deletion","Confirmar la eliminación","Löschen bestätigen"],
+["PDF supprimé du téléphone.","PDF deleted from the phone.","PDF eliminado del teléfono.","PDF vom Telefon gelöscht."],
+["PDF créé mais pas gardé dans l'appli (mémoire pleine ?).","PDF created but not kept in the app (storage full?).","PDF creado pero no guardado en la app (¿memoria llena?).","PDF erstellt, aber nicht in der App gespeichert (Speicher voll?)."],
 ["Listes, partage, réglages","Lists, sharing, settings","Listas, compartir, ajustes","Listen, Teilen, Einstellungen"],
 ["Traduction","Translation","Traducción","Übersetzung"],
 ["Observations du CSV (PC)","CSV observations (PC)","Observaciones del CSV (PC)","Beobachtungen aus der CSV (PC)"],
