@@ -600,7 +600,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.52";
+const APP_VERSION="1.53";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2311,7 +2311,12 @@ async function pdfRapide(liste){if(!liste.length){toast("Aucun constat sélectio
 let FICHIERS_PRETS=null;
 // v1.51 : partage vers le client (PDF, photos) : feuille de partage dès qu'elle existe (téléphone, DeX, PC),
 // sans tenir compte du réglage « Envoi vers le PC » ; si elle est refusée, carte flottante visible depuis tous les onglets
-async function proposerFichiers(files,quoi){let ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files}))}catch(e){}
+// Samsung Internet ne transmet pas les PDF au partage Android (images et vidéos : oui) – problème connu, non corrigé par Samsung
+const samsungPdf=files=>/SamsungBrowser/i.test(navigator.userAgent)&&files.some(f=>/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name));
+async function proposerFichiers(files,quoi){
+  if(samsungPdf(files)){await telechargerFichiers(files);montrerPret(files,`Enregistré dans Téléchargements. Samsung Internet ne sait pas envoyer un PDF au partage Android : partage-le depuis Mes fichiers (appui long > Partager).`);
+    $("bPretPartager").hidden=false;$("bPretPartager").textContent="Essayer le partage quand même";$("bPretDl").hidden=true;return}
+  $("bPretPartager").textContent="Partager";$("bPretDl").hidden=false;let ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files}))}catch(e){}
   if(!ok){montrerPret(files,estDeX()?"En DeX, Samsung Internet ne sait pas ouvrir le partage Android. Enregistre le fichier, puis partage-le depuis Mes fichiers (appui long > Partager), ou sors de DeX.":"Partage direct indisponible sur cet appareil.");$("bPretPartager").hidden=true;return}
   $("bPretPartager").hidden=false;
   try{await navigator.share({files});return}catch(err){if(err&&err.name==="AbortError") return;
@@ -2406,6 +2411,8 @@ const TRAD_UI=[
 ["📤 Partager","📤 Share","📤 Compartir","📤 Teilen"],
 ["Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.","This PDF cannot be shown in the app: it was saved to Downloads.","Este PDF no se puede mostrar en la app: se ha guardado en Descargas.","Dieses PDF kann nicht in der App angezeigt werden: in Downloads gespeichert."],
 ["En DeX, Samsung Internet ne sait pas ouvrir le partage Android. Enregistre le fichier, puis partage-le depuis Mes fichiers (appui long > Partager), ou sors de DeX.","In DeX, Samsung Internet cannot open Android sharing. Save the file, then share it from My Files (long press > Share), or leave DeX.","En DeX, Samsung Internet no puede abrir el menú de compartir de Android. Guarda el archivo y compártelo desde Mis archivos (pulsación larga > Compartir), o sal de DeX.","In DeX kann Samsung Internet das Android-Teilen nicht öffnen. Datei speichern und über Eigene Dateien teilen (lange drücken > Teilen) oder DeX verlassen."],
+["Enregistré dans Téléchargements. Samsung Internet ne sait pas envoyer un PDF au partage Android : partage-le depuis Mes fichiers (appui long > Partager).","Saved to Downloads. Samsung Internet cannot pass a PDF to Android sharing: share it from My Files (long press > Share).","Guardado en Descargas. Samsung Internet no puede enviar un PDF al menú de compartir de Android: compártelo desde Mis archivos (pulsación larga > Compartir).","In Downloads gespeichert. Samsung Internet kann kein PDF an Android-Teilen übergeben: über Eigene Dateien teilen (lange drücken > Teilen)."],
+["Essayer le partage quand même","Try sharing anyway","Intentar compartir de todos modos","Trotzdem teilen versuchen"],
 ["PDF annulé.","PDF cancelled.","PDF cancelado.","PDF abgebrochen."],
 ["Confirmer la suppression","Confirm deletion","Confirmar la eliminación","Löschen bestätigen"],
 ["PDF supprimé du téléphone.","PDF deleted from the phone.","PDF eliminado del teléfono.","PDF vom Telefon gelöscht."],
