@@ -123,7 +123,9 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 #majBar[hidden]{display:none}#majBar span{flex:1 1 180px}#majBar button{min-height:44px;background:var(--accent-fg);color:var(--accent);border:0;font-weight:700}#majBar button.ghost{background:transparent;color:var(--accent-fg);border:1px solid var(--accent-fg)}
 [id$="ActSoc"][hidden]{display:none!important}
 .acc-alerte{margin-top:8px;padding:8px 10px;border-radius:8px;border:2px solid var(--repair);background:var(--accent-soft);font-weight:600}.acc-alerte[hidden]{display:none}
-.entry{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.entry{display:grid;grid-template-columns:30px 64px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
+.entry .sel,.dayhead .sel{display:flex;align-items:center;justify-content:center;min-height:44px;min-width:30px}.entry .sel input,.dayhead .sel input{width:24px;height:24px;accent-color:var(--accent);margin:0}
+.dayhead .sel{margin-left:-2px}.entry.coche{background:linear-gradient(90deg,var(--accent-soft),transparent 60%)}.apercu .btns{margin-top:4px}
 .entry:first-of-type{border-top:0}
 .entry img{width:64px;height:48px;object-fit:cover;border-radius:6px;background:var(--bg)}
 .entry .t{font-weight:650;font-size:15px}
@@ -136,7 +138,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .apercu figure .hr{position:absolute;top:4px;left:4px;font:600 11px var(--font);background:rgba(0,0,0,.65);color:#fff;padding:1px 6px;border-radius:999px}
 .apercu dl{margin:0;display:grid;gap:6px}.apercu dt{font:600 12px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.03em}.apercu dd{margin:0;font-size:14px}
 .apercu dd ul,.apercu dd ol{margin:2px 0;padding-left:22px}.dayhead .tout{min-height:36px;padding:4px 10px;font-size:13px}
-.entry .acts{grid-column:2;display:flex;gap:8px;flex-wrap:wrap}
+.entry .acts{grid-column:2/-1;display:flex;gap:8px;flex-wrap:wrap}
 .entry .acts button{min-height:38px;padding:4px 12px;font-size:14px}
 .pill{display:inline-block;font:600 11px var(--font);padding:2px 7px;border-radius:999px;color:#fff;margin-right:4px;vertical-align:1px}
 .dayhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -318,8 +320,12 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
   <div class="card c-bleu">
     <h2>Envoi vers le PC</h2>
     <p class="hint" id="sendInfo"></p>
+    <p class="hint" id="selInfo"></p>
     <button class="primary big" id="bSend" type="button">Envoyer au PC (Quick Share)</button>
     <button class="big" id="bDl" type="button">Enregistrer dans Téléchargements (secours)</button>
+    <button class="big" id="bPdfSel" type="button">📄 PDF rapide de la sélection</button>
+    <div id="pretCard" class="card confirm" hidden><strong id="pretTxt"></strong>
+      <div class="btns"><button class="primary" id="bPretPartager" type="button">Partager</button><button id="bPretDl" type="button">Enregistrer dans Téléchargements</button><button class="ghost" id="bPretNon" type="button">Fermer</button></div></div>
     <div id="sentConfirm" class="card confirm" hidden>
       <strong>Le PC a-t-il bien reçu les fichiers ?</strong>
       <div class="btns"><button class="primary" id="bSentYes" type="button">Oui, marquer envoyé</button><button id="bSentNo" type="button">Non</button></div>
@@ -568,7 +574,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.49";
+const APP_VERSION="1.50";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1581,25 +1587,32 @@ async function remplirApercu(ap,e){
   ajouter("Décision client",e.decisionClient?"<b>attendue</b>":"");
   ajouter("Dossier sur le PC",e.dossierCible?`<span class="hint">${esc(e.dossierCible)}</span>`:"");
   if(!dl.children.length&&!e.photos.length) dl.innerHTML='<dd class="hint">Rien d\'autre à afficher.</dd>';
-  ap.append(dl)}
+  ap.append(dl);
+  const nr=e.photos.filter((x,k)=>(e.rapport||[])[k]!==false).length;
+  if(nr){const b=document.createElement("div");b.className="btns";const bs=document.createElement("button");bs.type="button";bs.textContent=`Partager les photos (${nr})`;bs.onclick=()=>partagerPhotos(e);b.append(bs);ap.append(b)}}
 async function renderJournal(){
   const tous=await allEntries();const en=tous.filter(belongs).sort((a,b)=>(b.date+b.hms).localeCompare(a.date+a.hms));
   const pend=en.filter(e=>!e.envoye);const np=pend.reduce((s,e)=>s+e.photos.length,0);
   const autres=[...new Set(tous.filter(e=>!e.envoye&&!belongs(e)).map(e=>e.mission.no))];
   $("sendInfo").textContent=(pend.length?`Mission ${CFG.mission.no} : ${pend.length} constat(s) et ${np} photo(s) pas encore envoyés au PC.`:`Mission ${CFG.mission.no} : tout a été envoyé au PC.`)
     +(autres.length?` Il reste aussi des constats à envoyer pour la mission ${autres.join(", ")}.`:"");
-  $("bSend").disabled=!pend.length;$("bDl").disabled=!pend.length;
-  if(estDeX()){$("bSend").textContent="Enregistrer pour le PC (DeX : Téléchargements)";$("bDl").hidden=true}
-  else{$("bSend").textContent="Envoyer au PC (Quick Share)";$("bDl").hidden=false}PREP=null;if(pend.length) prepareSend();
+  // sélection : les constats non envoyés sont cochés d'office la première fois qu'ils apparaissent
+  for(const e of en) if(!JVU.has(e.id)){JVU.add(e.id);if(!e.envoye) JSEL.add(e.id)}
+  for(const id of [...JSEL]) if(!en.some(e=>e.id===id)) JSEL.delete(id);
+  if(estDeX()){$("bSend").textContent="Enregistrer la sélection pour le PC (DeX : Téléchargements)";$("bDl").hidden=true}
+  else{$("bSend").textContent="Envoyer la sélection au PC (Quick Share)";$("bDl").hidden=false}
+  majSelection(en,true);
   const j=$("journal");j.innerHTML="";
   const byDay={};for(const e of en)(byDay[e.date]??=[]).push(e);
   for(const [day,list] of Object.entries(byDay)){
     const c=document.createElement("div");c.className="card";
-    c.innerHTML=`<div class="dayhead"><h3>${frDate(day)}</h3><span class="stat">${list.length} constat${list.length>1?"s":""}</span><button type="button" class="ghost tout">Tout dérouler</button></div>`;
-    const lignes=[];
+    c.innerHTML=`<div class="dayhead"><label class="sel"><input type="checkbox" class="selJour" aria-label="Sélectionner tous les constats du jour"></label><h3>${frDate(day)}</h3><span class="stat">${list.length} constat${list.length>1?"s":""}</span><button type="button" class="ghost tout">Tout dérouler</button></div>`;
+    const lignes=[],cases=[];
     for(const e of list){const r=document.createElement("div");r.className="entry";
       const g=e.gravite?`<span class="pill" style="background:${GCOL[e.gravite]}">${esc(e.gravite)}</span>`:"";
-      r.innerHTML=`<img alt=""><div><div class="t"></div><div class="m"></div></div><div class="acts"></div><div class="apercu" hidden></div>`;
+      r.innerHTML=`<label class="sel"><input type="checkbox" aria-label="Sélectionner ce constat (envoi au PC, PDF)"></label><img alt=""><div><div class="t"></div><div class="m"></div></div><div class="acts"></div><div class="apercu" hidden></div>`;
+      const cb=r.querySelector(".sel input");cb.checked=JSEL.has(e.id);r.classList.toggle("coche",cb.checked);cases.push([e,cb,r]);
+      cb.onchange=()=>{cb.checked?JSEL.add(e.id):JSEL.delete(e.id);r.classList.toggle("coche",cb.checked);majJour();majSelection(en)};
       r.querySelector(".t").innerHTML=g;r.querySelector(".t").append(libelleConstat(e));
       const h=e.hms?` · ${e.hms.slice(0,2)}:${e.hms.slice(2,4)}`:"";
       const env=e.envoye?`envoyé ✓${e.envoyeLe?" le "+fmtCourt(e.envoyeLe):""}`:"à envoyer";
@@ -1612,17 +1625,28 @@ async function renderJournal(){
       bO.onclick=()=>{basculer(ap.hidden);majTout()};basculer(JOURNAL_OUVERTS.has(e.id));lignes.push(basculer);acts.append(bO);
       r.querySelector("img").onclick=()=>bO.click();
       const bE=document.createElement("button");bE.type="button";bE.textContent="Modifier";bE.onclick=()=>editEntry(e.id);acts.append(bE);
+      const bP=document.createElement("button");bP.type="button";bP.textContent="📄 PDF";bP.setAttribute("aria-label","PDF rapide de ce constat");bP.onclick=()=>pdfRapide([e]);acts.append(bP);
       if(e.envoye){const bR=document.createElement("button");bR.type="button";bR.textContent="Renvoyer";bR.onclick=()=>sendEntries([e]);acts.append(bR)}
       c.append(r)}
     // bouton « Tout dérouler / Tout replier » de la journée
     const bT=c.querySelector(".tout"),majTout=()=>{const tous=list.every(e=>JOURNAL_OUVERTS.has(e.id));bT.textContent=tous?"Tout replier":"Tout dérouler";bT.dataset.ouvrir=tous?"":"1"};
     bT.onclick=()=>{const o=!!bT.dataset.ouvrir;lignes.forEach(f=>f(o));majTout()};majTout();
+    // case de la journée : tout cocher / tout décocher
+    const cj=c.querySelector(".selJour"),majJour=()=>{const n=cases.filter(x=>x[1].checked).length;cj.checked=n===cases.length;cj.indeterminate=n>0&&n<cases.length};
+    cj.onchange=()=>{for(const [e,cb,r] of cases){cb.checked=cj.checked;cj.checked?JSEL.add(e.id):JSEL.delete(e.id);r.classList.toggle("coche",cb.checked)}majJour();majSelection(en)};majJour();
     j.append(c)}
   if(!en.length) j.innerHTML=`<div class="card"><p class="hint">Aucun constat pour l'instant. Les constats enregistrés depuis l'onglet Saisie apparaissent ici, classés par jour.</p></div>`;
   try{const est=await navigator.storage.estimate();const per=navigator.storage.persisted?await navigator.storage.persisted():false;
     $("storeInfo").textContent=`${en.length} constat(s) · ${(est.usage/1048576).toFixed(1)} Mo utilisés sur ${(est.quota/1073741824).toFixed(1)} Go · stockage ${per?"protégé":"non protégé"}`}catch(e){$("storeInfo").textContent=`${en.length} constat(s)`}
 }
 let pendingSent=[];
+const JSEL=new Set(),JVU=new Set(); // constats cochés dans le Journal ; constats déjà affichés
+let MAJSEL=null;
+function majSelection(en,tout){const sel=en.filter(e=>JSEL.has(e.id)),np=sel.reduce((s,e)=>s+e.photos.length,0);
+  $("selInfo").textContent=sel.length?`Sélection : ${sel.length} constat(s), ${np} photo(s).`:"Aucun constat sélectionné.";
+  $("bSend").disabled=$("bDl").disabled=$("bPdfSel").disabled=!sel.length;
+  clearTimeout(MAJSEL);PREP=null;if(sel.length) MAJSEL=setTimeout(()=>prepareSend(),tout?0:400)}
+async function selectionEnvoi(){return (await allEntries()).filter(e=>belongs(e)&&JSEL.has(e.id))}
 // le dossier PC et les infos de mission sont pris dans la mission telle qu'elle est aujourd'hui (corrigée depuis, peut-être)
 function entryJSON(e){const {hms,envoye,envoyeLe,...rest}=e;const m=MISSIONS.find(x=>e.mission&&x.id===e.mission.id);
   if(m) rest.mission={id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m)};
@@ -1636,18 +1660,19 @@ async function marquerJpeg(blob,nom){try{const b=new Uint8Array(await blob.array
   let pos=2;while(pos+4<b.length&&b[pos]===0xFF&&b[pos+1]>=0xE0&&b[pos+1]<=0xEF) pos+=2+(b[pos+2]<<8|b[pos+3]); // après les segments APP (EXIF)
   const t=new TextEncoder().encode("RELEVE-FICHIER:"+nom);const L=t.length+2;
   return new Blob([b.subarray(0,pos),new Uint8Array([0xFF,0xFE,L>>8,L&255]),t,b.subarray(pos)],{type:"image/jpeg"})}catch(e){return blob}}
-async function photoFile(n,original){const p=await getPhoto(n);if(!p) return null;if(original&&!p.orig) return null;
+async function photoFile(n,original,e,k){const p=await getPhoto(n);if(!p) return null;if(original&&!p.orig) return null;
   if(original) n=n.replace(/\.jpg$/i,"_original.jpg");
   let blob=original?p.orig:p.blob,type=(blob.type||p.type||"").toLowerCase();
   if(type!=="image/jpeg"){const j=await versJpeg(blob);if(j){blob=j;type="image/jpeg"}} // tout passe en JPEG pour porter le nom
-  blob=await marquerJpeg(blob,n);
+  blob=await marquerJpeg(blob,n);if(e) blob=await etiqueterJpeg(blob,metaPhoto(e,k));
   return new File([blob],n,{type:"image/jpeg"})}
 async function buildFiles(list){const files=[];
-  for(const e of list){for(const n of e.photos){const f=await photoFile(n);if(f) files.push(f);const o=await photoFile(n,true);if(o) files.push(o)}
+  for(const e of list){for(const [k,n] of e.photos.entries()){const f=await photoFile(n,false,e,k);if(f) files.push(f);const o=await photoFile(n,true,e,k);if(o) files.push(o)}
     files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))} // .txt : Chrome Android refuse de partager du .json
   return files}
 let PREP=null; // fichiers de l'envoi préparés à l'affichage du Journal
-async function prepareSend(){const list=(await allEntries()).filter(e=>!e.envoye&&belongs(e));PREP={list,files:list.length?await buildFiles(list):[]}}
+async function prepareSend(){const list=await selectionEnvoi();const p={list,files:list.length?await buildFiles(list):[]};
+  if(list.map(e=>e.id).join()===(await selectionEnvoi()).map(e=>e.id).join()) PREP=p}
 async function sendEntries(list,prepared){return shareFiles(list,prepared||await buildFiles(list))}
 async function downloadFiles(list,files){pendingSent=list.map(e=>e.id);
   for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,300))}
@@ -1669,7 +1694,7 @@ async function shareFiles(list,files){
       else if(Date.now()-t0<900){toast("La fenêtre de partage s'est fermée toute seule (fréquent en DeX) : utilise « Enregistrer dans Téléchargements », puis Mes fichiers > Téléchargements > Partager > Quick Share.",9000)}}
   }else{await downloadFiles(list,files)}
 }
-async function markSent(){const now=new Date().toISOString();await tx("entries","readwrite",s=>{for(const id of pendingSent){const r=s.get(id);r.onsuccess=()=>{const e=r.result;if(e){e.envoye=true;e.envoyeLe=now;s.put(e)}}}});
+async function markSent(){const now=new Date().toISOString();for(const id of pendingSent) JSEL.delete(id);await tx("entries","readwrite",s=>{for(const id of pendingSent){const r=s.get(id);r.onsuccess=()=>{const e=r.result;if(e){e.envoye=true;e.envoyeLe=now;s.put(e)}}}});
   $("sentConfirm").hidden=true;pendingSent=[];toast("Marqué comme envoyé");renderJournal();refreshBadge()}
 async function purge(){const en=(await allEntries()).filter(e=>e.envoye&&belongs(e));
   await tx("photos","readwrite",s=>{for(const e of en) for(const n of e.photos) s.delete(n)});
@@ -2061,6 +2086,179 @@ function initBrouillon(){document.querySelectorAll(".brGo").forEach(b=>b.onclick
   const vite=()=>{if(document.visibilityState==="hidden"&&BR.minuterie) sauverBrouillon().catch(()=>{})};
   document.addEventListener("visibilitychange",vite);addEventListener("pagehide",()=>{if(BR.minuterie) sauverBrouillon().catch(()=>{})});
   BR.charge=true;afficherBrouillon()}
+/* ---------- PDF rapide, partage de photos, étiquettes des photos (v1.50) ----------
+   Le PDF est fabriqué sur le téléphone (aucune bibliothèque, fonctionne hors réseau) :
+   polices standard Helvetica (WinAnsi), photos en JPEG, intitulés dans la langue de la mission. */
+const LOGO_QUARTIS="data:image/png;base64,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";
+const PDF_W={R:[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,0,556,0,222,556,333,1000,556,556,333,1000,667,333,1000,0,611,0,0,222,222,333,333,350,556,1000,333,1000,500,333,944,0,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,552,400,549,333,333,333,576,537,333,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,549,611,556,556,556,556,500,556,500],B:[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,0,556,0,278,556,500,1000,556,556,333,1000,667,333,1000,0,611,0,0,278,278,500,500,350,556,1000,333,1000,556,333,944,0,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,552,400,549,333,333,333,576,556,333,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,549,611,611,611,611,611,556,611,556]};
+const CP1252={0x20AC:128,0x201A:130,0x0192:131,0x201E:132,0x2026:133,0x2020:134,0x2021:135,0x02C6:136,0x2030:137,0x0160:138,0x2039:139,0x0152:140,0x017D:142,
+  0x2018:145,0x2019:146,0x201C:147,0x201D:148,0x2022:149,0x2013:150,0x2014:151,0x02DC:152,0x2122:153,0x0161:154,0x203A:155,0x0153:156,0x017E:158,0x0178:159,0x2212:45,0x2192:62,0x2190:60};
+function pdfOctet(c){const o=c.codePointAt(0);if(o===0x202F||o===0x2009||o===0x00A0) return 32;if((o>=32&&o<127)||(o>=0xA0&&o<=0xFF)) return o;return CP1252[o]||(o<32?32:63)}
+function pdfLargeur(t,f,s){let w=0;const tab=PDF_W[f==="B"||f==="BI"?"B":"R"];for(const c of t){const b=pdfOctet(c);w+=b>=32?tab[b-32]||500:0}return w*s/1000}
+function pdfInfo(t){let h="<FEFF";for(const c of String(t)){const o=c.codePointAt(0);if(o>0xFFFF){const v=o-0x10000;h+=(0xD800+(v>>10)).toString(16).padStart(4,"0")+(0xDC00+(v&1023)).toString(16).padStart(4,"0")}else h+=o.toString(16).padStart(4,"0")}return h+">"}
+function pdfChaine(t){let o="(";for(const c of t){const b=pdfOctet(c);o+=b===40||b===41||b===92?"\\"+String.fromCharCode(b):String.fromCharCode(b)}return o+")"}
+// intitulés du PDF dans la langue de la mission
+const PDFL={titre:["RAPPORT RAPIDE D'INSPECTION","QUICK INSPECTION REPORT","INFORME RÁPIDO DE INSPECCIÓN","KURZER INSPEKTIONSBERICHT"],
+  prelim:["Préliminaire – pas un rapport officiel","Preliminary – not a formal report","Preliminar – no es un informe oficial","Vorläufig – kein offizieller Bericht"],
+  mission:["Mission","Job","Misión","Auftrag"],client:["Client / site","Client / site","Cliente / sitio","Kunde / Standort"],
+  date:["Date d'inspection","Inspection date","Fecha de inspección","Inspektionsdatum"],rep:["Repère","Tag","Referencia","Markierung"],
+  grav:["Gravité","Severity","Gravedad","Schweregrad"],acces:["Accès au revêtement","Access to the lining","Acceso al revestimiento","Zugang zur Auskleidung"],
+  surf:["Surface estimée à réparer","Estimated area to be repaired","Superficie estimada a reparar","Geschätzte Reparaturfläche"],
+  marq:["zone(s) déjà marquée(s)","area(s) already marked","zona(s) ya marcada(s)","Bereich(e) bereits markiert"],
+  dec:["Décision client","Client decision","Decisión del cliente","Kundenentscheidung"],decv:["attendue","required","pendiente","erforderlich"],
+  obs:["Observation","Observation","Observación","Beobachtung"],reco:["Recommandation","Recommendation","Recomendación","Empfehlung"],
+  photos:["Photos","Pictures","Fotos","Fotos"],photo:["Photo","Picture","Foto","Foto"],insp:["Inspecteur","Inspector","Inspector","Inspektor"],
+  gen:["Généré le {a}","Generated on {a}","Generado el {a}","Erstellt am {a}"],page:["Page","Page","Página","Seite"],
+  rapide:["Rapport rapide","Quick report","Informe rápido","Kurzbericht"],constats:["constats","findings","hallazgos","Befunde"]};
+const iLangue=l=>Math.max(0,["fr","en","es","de"].indexOf(l));
+const pdfL=(k,l)=>PDFL[k][iLangue(l)];
+function gravLangue(g,l){if(!g||l==="fr") return g;const t=LANGUI.exact.get(normUI(g));return t?t[iLangue(l)-1]:g}
+const nomSur=t=>String(t).replace(/[\\/:*?"<>|]+/g,"-").replace(/\s+/g," ").trim().slice(0,150);
+function nomExplicite(e){return nomSur([e.mission&&e.mission.no,e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom,e.date].filter(Boolean).join(" - "))}
+const sansBalises=t=>String(t||"").replace(/\*\*|__|\*/g,"").replace(/^\s*(?:[-•]|(?:\d+\.)*\d+[.)])\s+/gm,"").replace(/\s+/g," ").trim();
+// **gras**, *italique*, __souligné__ -> morceaux de texte (même règle que l'affichage)
+function morceaux(t){const parts=String(t).split(/(\*\*|__|\*)/);const nb={};parts.forEach((x,j)=>{if(j%2) nb[x]=(nb[x]||0)+1});
+  const reste={};for(const k in nb) reste[k]=nb[k]%2?nb[k]-1:nb[k];const on={"**":false,"*":false,"__":false};const out=[];
+  parts.forEach((x,j)=>{if(j%2){if(reste[x]>0){reste[x]--;on[x]=!on[x]}else out.push({t:x,b:on["**"],i:on["*"],u:on["__"]});return}
+    if(x) out.push({t:x,b:on["**"],i:on["*"],u:on["__"]})});return out}
+// image -> JPEG (taille maximale en pixels) pour le PDF
+async function jpegPdf(src,max,recadre){const bm=await createImageBitmap(src);const r=recadre||{x:0,y:0,w:bm.width,h:bm.height};
+  const k=Math.min(1,max/Math.max(r.w,r.h)),w=Math.max(1,Math.round(r.w*k)),h=Math.max(1,Math.round(r.h*k));
+  const c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,w,h);g.drawImage(bm,r.x,r.y,r.w,r.h,0,0,w,h);
+  const b=await new Promise(res=>c.toBlob(res,"image/jpeg",0.82));return {octets:new Uint8Array(await b.arrayBuffer()),w,h}}
+async function logoPdf(soc){try{if(soc==="FTA"){const r=await fetch("icon-512.png");return await jpegPdf(await r.blob(),400,{x:60,y:80,w:395,h:358})}
+  return await jpegPdf(await (await fetch(LOGO_QUARTIS)).blob(),600)}catch(e){return null}}
+class PdfRapide{
+  constructor(l,soc,mission){this.l=l;this.soc=soc;this.m=mission;this.W=595.28;this.H=841.89;this.M=40;this.pages=[];this.imgs=[];this.page=null;this.y=0}
+  get bas(){return this.H-this.M-26}
+  nouvellePage(){this.page={ops:[],ims:new Set()};this.pages.push(this.page);this.y=this.M+66}
+  place(h){if(this.y+h>this.bas){this.nouvellePage();return true}return false}
+  txt(x,y,t,f,s,col){const F=`/F${{R:1,B:2,I:3,BI:4}[f]}`;
+    // « ² » : certaines visionneuses n'ont pas ce glyphe -> petit « 2 » surélevé
+    const seg=String(t).split("²").map((x,i)=>i?`${F} ${(s*0.62).toFixed(2)} Tf 3.6 Ts (2) Tj ${F} ${s} Tf 0 Ts ${pdfChaine(x)} Tj`:`${pdfChaine(x)} Tj`).join(" ");
+    this.page.ops.push(`BT ${F} ${s} Tf ${col||"0.13 0.13 0.13"} rg ${x.toFixed(2)} ${(this.H-y).toFixed(2)} Td ${seg} ET`)}
+  rect(x,y,w,h,col){this.page.ops.push(`${col} rg ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`)}
+  trait(x1,y1,x2,y2,col,lw){this.page.ops.push(`${col} RG ${lw} w ${x1.toFixed(2)} ${(this.H-y1).toFixed(2)} m ${x2.toFixed(2)} ${(this.H-y2).toFixed(2)} l S`)}
+  cadre(x,y,w,h,col,lw){this.page.ops.push(`${col} RG ${lw} w ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`)}
+  ajouterImage(im){im.n=this.imgs.length+1;this.imgs.push(im);return im}
+  image(im,x,y,w,h,page){(page||this.page).ims.add(im);(page||this.page).ops.push(`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} cm /Im${im.n} Do Q`)}
+  // texte enrichi avec retour à la ligne
+  lignes(runs,w,s){const mots=[];for(const r of runs) for(const m of r.t.split(/(\s+)/)) if(m) mots.push({...r,t:m});
+    const out=[];let l=[],lw=0;
+    for(const m of mots){const f=m.b?(m.i?"BI":"B"):(m.i?"I":"R");const mw=pdfLargeur(m.t,f,s);const esp=/^\s+$/.test(m.t);
+      if(esp){if(l.length){l.push({...m,t:" ",f,w:pdfLargeur(" ",f,s)});lw+=pdfLargeur(" ",f,s)}continue}
+      if(lw+mw>w&&l.length){while(l.length&&l[l.length-1].t===" ") lw-=l.pop().w;out.push(l);l=[];lw=0}
+      l.push({...m,f,w:mw});lw+=mw}
+    while(l.length&&l[l.length-1].t===" ") l.pop();if(l.length) out.push(l);return out}
+  paragraphe(runs,x,w,s,col){const lh=s*1.32;for(const l of this.lignes(runs,w,s)){this.place(lh);let cx=x;const base=this.y+s*0.95;
+      for(const m of l){if(m.t!==" ") this.txt(cx,base,m.t,m.f,s,col);if(m.u&&m.t!==" ") this.trait(cx,base+1.4,cx+m.w,base+1.4,"0.2 0.2 0.2",0.5);cx+=m.w}this.y+=lh}}
+  // observation / recommandation saisies (listes à puces et numérotées, gras, italique, souligné)
+  texteBalise(t,x,w,s){for(const brut of String(t||"").split("\n")){const m=brut.match(/^(\s*)(?:([-•])|((?:\d+\.)*\d+)[.)])\s+(.*)$/);
+      if(!brut.trim()){this.y+=s*0.6;continue}
+      if(m){const d=Math.floor(m[1].replace(/\t/g,"  ").length/2),mk=m[2]?"•":m[3]+".",ind=x+d*14,mw=Math.max(12,pdfLargeur(mk,"R",s)+5);
+        this.place(s*1.32);this.txt(ind,this.y+s*0.95,mk,"R",s);this.paragraphe(morceaux(m[4]),ind+mw,w-(ind+mw-x),s)}
+      else this.paragraphe(morceaux(brut),x,w,s)}}
+  titreSection(t){this.place(30);this.y+=8;this.txt(this.M,this.y+10,t.toUpperCase(),"B",9.5,"0.42 0.16 0.08");this.trait(this.M,this.y+14,this.W-this.M,this.y+14,"0.85 0.85 0.85",0.6);this.y+=20}
+  async constat(e,photos){const l=this.l,M=this.M,L=this.W-2*M;this.nouvellePage();
+    // titre
+    const titre=[e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom].filter(Boolean).join(" – ");
+    this.paragraphe([{t:titre,b:true}],M,L,13);this.y+=4;
+    // informations
+    const lignes=[[pdfL("mission",l),[e.mission&&e.mission.no,e.mission&&e.mission.client].filter(Boolean).join(" – ")],[pdfL("date",l),frDate(e.date)]];
+    if(e.repere) lignes.push([pdfL("rep",l),e.repere]);
+    if(e.gravite) lignes.push([pdfL("grav",l),gravLangue(e.gravite,l),GCOL_PDF[e.gravite]]);
+    if(e.acces&&e.acces.nom) lignes.push([pdfL("acces",l),e.acces.nom]);
+    const surf=[e.surface?e.surface+" m²":"",e.zonesMarquees?pdfL("marq",l):""].filter(Boolean).join(" · ");if(surf) lignes.push([pdfL("surf",l),surf]);
+    if(e.decisionClient) lignes.push([pdfL("dec",l),pdfL("decv",l),"0.70 0.15 0.12"]);
+    const y0=this.y;this.rect(M,y0,L,4+lignes.length*15.5,"0.96 0.96 0.95");this.y+=4;
+    for(const [k,v,col] of lignes){this.txt(M+8,this.y+10.5,k,"B",8.5,"0.40 0.40 0.40");
+      if(col&&k===pdfL("grav",l)){const w=pdfLargeur(v,"B",8.5)+12;this.rect(M+160,this.y+1.5,w,12,col);this.txt(M+166,this.y+10.5,v,"B",8.5,"1 1 1")}
+      else this.txt(M+160,this.y+10.5,v,col?"B":"R",9.5,col||undefined);this.y+=15.5}
+    this.y+=6;
+    if(e.observation){this.titreSection(pdfL("obs",l));this.texteBalise(e.observation,M,L,10)}
+    if(e.recommandation){this.titreSection(pdfL("reco",l));this.texteBalise(e.recommandation,M,L,10)}
+    if(photos.length){this.titreSection(pdfL("photos",l));const gap=12,cw=(L-gap)/2,maxH=230;
+      for(let i=0;i<photos.length;i+=2){const lot=photos.slice(i,i+2).map(p=>{let w=cw,h=cw*p.im.h/p.im.w;if(h>maxH){h=maxH;w=maxH*p.im.w/p.im.h}
+          const leg=`${pdfL("photo",l)} ${p.n}${p.leg?" – "+p.leg:""}`;const ll=this.lignes([{t:leg}],cw,8);return {...p,w,h,ll}});
+        const rowH=Math.max(...lot.map(p=>p.h+6+p.ll.length*10.6))+10;this.place(rowH);
+        lot.forEach((p,j)=>{const x=M+j*(cw+gap)+(cw-p.w)/2;this.image(p.im,x,this.y,p.w,p.h);this.cadre(x,this.y,p.w,p.h,"0.75 0.75 0.75",0.5);
+          let yy=this.y+p.h+5;for(const ln of p.ll){let cx=M+j*(cw+gap);for(const m of ln){if(m.t!==" ") this.txt(cx,yy+7.5,m.t,m.f,8,"0.30 0.30 0.30");cx+=m.w}yy+=10.6}});
+        this.y+=rowH}}}
+  async octets(){const l=this.l,M=this.M,W=this.W,N=this.pages.length,logo=await logoPdf(this.soc);if(logo) this.ajouterImage(logo);
+    const nomSoc=this.soc==="FTA"?(this.m.inspecteur||"Franck TALLEUX"):"QUARTIS LIMITED",actSoc=this.soc==="FTA"?(this.m.activiteSociete||"API 936 Consultancy"):"REFRACTORY INSPECTION";
+    const quand=new Date(),gen=pdfL("gen",l).replace("{a}",`${frDate(today())} ${pad(quand.getHours())}:${pad(quand.getMinutes())}`);
+    this.pages.forEach((pg,i)=>{const ops=pg.ops;pg.ops=[];this.page=pg;
+      // en-tête : logo, société, titre ; pied : inspecteur, date, page
+      let x=M;if(logo){const h=38,w=h*logo.w/logo.h;this.image(logo,M,M,w,h);x=M+w+10}
+      this.txt(x,M+15,nomSoc,"B",11);this.txt(x,M+29,actSoc,"R",8.5,"0.40 0.40 0.40");
+      const t1=pdfL("titre",l);this.txt(W-M-pdfLargeur(t1,"B",10),M+13,t1,"B",10,"0.42 0.16 0.08");
+      const t2=`${pdfL("mission",l)} ${this.m.no||""}`;this.txt(W-M-pdfLargeur(t2,"R",8.5),M+26,t2,"R",8.5,"0.40 0.40 0.40");
+      if(this.soc!=="FTA"){const t3=pdfL("prelim",l);this.txt(W-M-pdfLargeur(t3,"I",8),M+38,t3,"I",8,"0.70 0.15 0.12")}
+      this.trait(M,M+48,W-M,M+48,"0.42 0.16 0.08",1);
+      const pied=[this.m.inspecteur?`${pdfL("insp",l)} : ${this.m.inspecteur}`:"",gen].filter(Boolean).join(" · ");
+      this.trait(M,this.H-M-14,W-M,this.H-M-14,"0.85 0.85 0.85",0.5);this.txt(M,this.H-M-3,pied,"R",7.5,"0.45 0.45 0.45");
+      const np=`${pdfL("page",l)} ${i+1} / ${N}`;this.txt(W-M-pdfLargeur(np,"R",7.5),this.H-M-3,np,"R",7.5,"0.45 0.45 0.45");pg.ops.push(...ops)});
+    // assemblage du fichier PDF
+    const enc=s=>Uint8Array.from(s,c=>c.charCodeAt(0)&255);const morceauxPdf=[];let pos=0;const off=[];
+    const ecrire=b=>{morceauxPdf.push(b);pos+=b.length};const obj=(n,corps,flux)=>{off[n]=pos;ecrire(enc(`${n} 0 obj\n`));ecrire(enc(corps));
+      if(flux){ecrire(enc("\nstream\n"));ecrire(flux);ecrire(enc("\nendstream"))}ecrire(enc("\nendobj\n"))};
+    ecrire(enc("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n"));
+    const nF=3,nIm=7,nPg=nIm+this.imgs.length;
+    obj(1,"<< /Type /Catalog /Pages 2 0 R >>");
+    obj(2,`<< /Type /Pages /Count ${N} /Kids [${this.pages.map((p,i)=>`${nPg+2*i} 0 R`).join(" ")}] >>`);
+    ["Helvetica","Helvetica-Bold","Helvetica-Oblique","Helvetica-BoldOblique"].forEach((f,i)=>obj(nF+i,`<< /Type /Font /Subtype /Type1 /BaseFont /${f} /Encoding /WinAnsiEncoding >>`));
+    this.imgs.forEach((im,i)=>obj(nIm+i,`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.octets.length} >>`,im.octets));
+    this.pages.forEach((p,i)=>{const c=enc(p.ops.join("\n"));const nP=nPg+2*i;
+      obj(nP,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${this.H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R >> /XObject << ${[...p.ims].map(im=>`/Im${im.n} ${nIm+im.n-1} 0 R`).join(" ")} >> >> /Contents ${nP+1} 0 R >>`);
+      obj(nP+1,`<< /Length ${c.length} >>`,c)});
+    const nInfo=nPg+2*N;obj(nInfo,`<< /Title ${pdfInfo(pdfL("rapide",l)+" – "+(this.m.no||""))} /Producer (The 982 Inspector Toolbox ${APP_VERSION}) /Creator (The 982 Inspector Toolbox) >>`);
+    const xref=pos;let x=`xref\n0 ${nInfo+1}\n0000000000 65535 f \n`;for(let n=1;n<=nInfo;n++) x+=String(off[n]||0).padStart(10,"0")+" 00000 n \n";
+    ecrire(enc(x+`trailer\n<< /Size ${nInfo+1} /Root 1 0 R /Info ${nInfo} 0 R >>\nstartxref\n${xref}\n%%EOF\n`));
+    const out=new Uint8Array(pos);let o=0;for(const b of morceauxPdf){out.set(b,o);o+=b.length}return out}}
+const GCOL_PDF={"OK":"0.18 0.49 0.31","Mineur":"0.70 0.53 0","À réparer":"0.76 0.34 0.11","Critique":"0.70 0.15 0.12","Non inspecté":"0.42 0.46 0.49","Info":"0.42 0.46 0.49"};
+// photos « Dans le rapport » d'un constat, prêtes pour le PDF
+async function photosPdf(e,mk){const out=[];let n=0;
+  for(const [k,id] of e.photos.entries()){if((e.rapport||[])[k]===false) continue;const p=await getPhoto(id);if(!p||!p.blob) continue;n++;
+    try{const im=mk.ajouterImage(await jpegPdf(p.blob,1600));out.push({im,n,leg:(e.legendes||[])[k]||""})}catch(err){}}
+  return out}
+let PDF_EN_COURS=false;
+async function pdfRapide(liste){if(!liste.length){toast("Aucun constat sélectionné.");return}if(PDF_EN_COURS) return;PDF_EN_COURS=true;
+  try{toast("Création du PDF…",60000);const m=MISSIONS.find(x=>liste[0].mission&&x.id===liste[0].mission.id)||curMission()||CFG.mission;
+    const so=socMission(m),l=m.langue||langueMission();const mk=new PdfRapide(l,so.societe,{...m,...so});
+    const tri=[...liste].sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));
+    for(const e of tri) await mk.constat(e,await photosPdf(e,mk));
+    const octets=await mk.octets();
+    const nom=tri.length===1?nomExplicite(tri[0])+".pdf":nomSur(`${m.no} - ${pdfL("rapide",l)} - ${today()} - ${tri.length} ${pdfL("constats",l)}`)+".pdf";
+    const f=new File([octets],nom,{type:"application/pdf"});$("toast").hidden=true;await proposerFichiers([f],"PDF")}
+  catch(err){toast("PDF impossible : "+(err&&err.message||err),6000)}finally{PDF_EN_COURS=false}}
+// partage Android (Quick Share, mail, WhatsApp, Teams…) ; si le délai d'Android est dépassé, une carte propose de partager
+let FICHIERS_PRETS=null;
+async function proposerFichiers(files,quoi){const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)&&!estDeX();
+  if(mobile&&navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files});return}catch(err){if(err.name==="AbortError") return}
+    FICHIERS_PRETS=files;$("pretTxt").textContent=files.length===1?`Prêt : ${files[0].name}`:`Prêt : ${files.length} fichiers`;$("pretCard").hidden=false;$("pretCard").scrollIntoView({block:"center"});return}
+  await telechargerFichiers(files)}
+async function telechargerFichiers(files){for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,300))}
+  toast(files.length===1?"Fichier enregistré dans Téléchargements.":`${files.length} fichiers enregistrés dans Téléchargements.`,4000)}
+// étiquettes lisibles par Windows (Propriétés > Détails : titre, mots clés) : bloc XMP ajouté au JPEG, image inchangée
+const xmlEsc=t=>String(t??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+function metaPhoto(e,k){const leg=(e.legendes||[])[k]||"";const parts=[e.mission&&e.mission.no,e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom,frDate(e.date),e.repere].filter(Boolean);
+  return {titre:`${parts.join(" – ")} – Photo ${k+1}`,desc:[leg,e.gravite,sansBalises(e.observation).slice(0,300)].filter(Boolean).join(" | "),
+    mots:[e.mission&&e.mission.no,e.mission&&e.mission.client,e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom,e.repere,e.gravite,e.date].filter(Boolean)}}
+async function etiqueterJpeg(blob,meta){try{const b=new Uint8Array(await blob.arrayBuffer());if(b[0]!==0xFF||b[1]!==0xD8) return blob;
+  const xmp=`<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xmp="http://ns.adobe.com/xap/1.0/">`
+    +`<dc:title><rdf:Alt><rdf:li xml:lang="x-default">${xmlEsc(meta.titre)}</rdf:li></rdf:Alt></dc:title><dc:description><rdf:Alt><rdf:li xml:lang="x-default">${xmlEsc(meta.desc)}</rdf:li></rdf:Alt></dc:description>`
+    +`<dc:subject><rdf:Bag>${meta.mots.map(m=>`<rdf:li>${xmlEsc(m)}</rdf:li>`).join("")}</rdf:Bag></dc:subject><xmp:CreatorTool>The 982 Inspector Toolbox ${APP_VERSION}</xmp:CreatorTool></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="w"?>`;
+  const corps=new TextEncoder().encode("http://ns.adobe.com/xap/1.0/\0"+xmp);if(corps.length>65000) return blob;
+  const ns="http://ns.adobe.com/xap/1.0/";let pos=2;const garde=[];
+  while(pos+4<=b.length&&b[pos]===0xFF&&b[pos+1]>=0xE0&&b[pos+1]<=0xEF){const L=b[pos+2]<<8|b[pos+3];const seg=b.subarray(pos,pos+2+L);
+    const estXmp=b[pos+1]===0xE1&&String.fromCharCode(...seg.subarray(4,4+ns.length))===ns;if(!estXmp) garde.push(seg);pos+=2+L}
+  const L=corps.length+2;return new Blob([b.subarray(0,2),...garde,new Uint8Array([0xFF,0xE1,L>>8,L&255]),corps,b.subarray(pos)],{type:"image/jpeg"})}catch(err){return blob}}
+// partager les photos du rapport d'un constat, avec des noms lisibles
+async function partagerPhotos(e){const files=[];const base=nomExplicite(e);
+  for(const [k,id] of e.photos.entries()){if((e.rapport||[])[k]===false) continue;const p=await getPhoto(id);if(!p) continue;
+    let blob=p.blob;if((blob.type||p.type||"").toLowerCase()!=="image/jpeg"){const j=await versJpeg(blob);if(j) blob=j}
+    blob=await etiqueterJpeg(blob,metaPhoto(e,k));files.push(new File([blob],`${base} - Photo ${k+1}.jpg`,{type:"image/jpeg"}))}
+  if(!files.length){toast("Aucune photo à partager.");return}await proposerFichiers(files,"photos")}
 /* ---------- langue de l'interface (v1.49) ---------- */
 /* ---------- langue de l'interface (v1.49) : [français, anglais, espagnol, allemand] ----------
    Les listes de la mission (équipements, activités, accès, dégâts courants) gardent la langue de la mission.
@@ -2228,6 +2426,24 @@ const TRAD_UI=[
 ["▸ Aperçu","▸ Preview","▸ Vista previa","▸ Vorschau"],
 ["▾ Replier","▾ Collapse","▾ Plegar","▾ Zuklappen"],
 ["Modifier","Edit","Modificar","Bearbeiten"],
+["Envoyer la sélection au PC (Quick Share)","Send selection to PC (Quick Share)","Enviar la selección al PC (Quick Share)","Auswahl an PC senden (Quick Share)"],
+["Enregistrer la sélection pour le PC (DeX : Téléchargements)","Save selection for the PC (DeX: Downloads)","Guardar la selección para el PC (DeX: Descargas)","Auswahl für den PC speichern (DeX: Downloads)"],
+["📄 PDF rapide de la sélection","📄 Quick PDF of the selection","📄 PDF rápido de la selección","📄 Kurz-PDF der Auswahl"],
+["PDF rapide de ce constat","Quick PDF of this finding","PDF rápido de este hallazgo","Kurz-PDF dieses Befunds"],
+["Sélection : {a} constat(s), {b} photo(s).","Selection: {a} finding(s), {b} photo(s).","Selección: {a} hallazgo(s), {b} foto(s).","Auswahl: {a} Befund(e), {b} Foto(s)."],
+["Aucun constat sélectionné.","No finding selected.","Ningún hallazgo seleccionado.","Kein Befund ausgewählt."],
+["Sélectionner tous les constats du jour","Select all findings of the day","Seleccionar todos los hallazgos del día","Alle Befunde des Tages auswählen"],
+["Sélectionner ce constat (envoi au PC, PDF)","Select this finding (send to PC, PDF)","Seleccionar este hallazgo (envío al PC, PDF)","Diesen Befund auswählen (an PC senden, PDF)"],
+["Partager les photos ({a})","Share the photos ({a})","Compartir las fotos ({a})","Fotos teilen ({a})"],
+["Aucune photo à partager.","No photos to share.","No hay fotos para compartir.","Keine Fotos zum Teilen."],
+["Création du PDF…","Creating the PDF…","Creando el PDF…","PDF wird erstellt…"],
+["PDF impossible : {a}","PDF failed: {a}","No se pudo crear el PDF: {a}","PDF nicht möglich: {a}"],
+["Prêt : {a}","Ready: {a}","Listo: {a}","Bereit: {a}"],
+["Prêt : {a} fichiers","Ready: {a} files","Listo: {a} archivos","Bereit: {a} Dateien"],
+["Partager","Share","Compartir","Teilen"],
+["Enregistrer dans Téléchargements","Save to Downloads","Guardar en Descargas","In Downloads speichern"],
+["Fichier enregistré dans Téléchargements.","File saved to Downloads.","Archivo guardado en Descargas.","Datei in Downloads gespeichert."],
+["{a} fichiers enregistrés dans Téléchargements.","{a} files saved to Downloads.","{a} archivos guardados en Descargas.","{a} Dateien in Downloads gespeichert."],
 ["Renvoyer","Resend","Reenviar","Erneut senden"],
 ["Repère {a}","Tag {a}","Referencia {a}","Markierung {a}"],
 ["à envoyer","to send","por enviar","zu senden"],
@@ -2426,9 +2642,12 @@ async function start(){
   $("cPicker").onchange=e=>{appliquerPicker(e.target.value);kvSet("picker",e.target.value).catch(()=>{});toast("Sélecteur de photos : variante "+e.target.value+". Essaie « Choisir dans la galerie ».")};
   $("iCam").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};$("iGal").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};
   $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>{resetForm(true);effacerBrouillon()};
-  $("bSend").onclick=async()=>{if(PREP&&PREP.files.length) sendEntries(PREP.list,PREP.files);else sendEntries((await allEntries()).filter(e=>!e.envoye&&belongs(e)))};
+  $("bSend").onclick=async()=>{if(PREP&&PREP.files.length) sendEntries(PREP.list,PREP.files);else{const l=await selectionEnvoi();if(l.length) sendEntries(l)}};
+  $("bPdfSel").onclick=async()=>pdfRapide(await selectionEnvoi());
+  $("bPretPartager").onclick=async()=>{const f=FICHIERS_PRETS;$("pretCard").hidden=true;if(!f) return;try{await navigator.share({files:f})}catch(err){if(err.name!=="AbortError") telechargerFichiers(f)}};
+  $("bPretDl").onclick=()=>{const f=FICHIERS_PRETS;$("pretCard").hidden=true;if(f) telechargerFichiers(f)};$("bPretNon").onclick=()=>{$("pretCard").hidden=true;FICHIERS_PRETS=null};
   $("bSentYes").onclick=markSent;
-  $("bDl").onclick=async()=>{const list=(PREP&&PREP.list.length)?PREP.list:(await allEntries()).filter(e=>!e.envoye&&belongs(e));if(!list.length) return;downloadFiles(list,(PREP&&PREP.files.length)?PREP.files:await buildFiles(list))};$("bSentNo").onclick=()=>{$("sentConfirm").hidden=true;pendingSent=[]};
+  $("bDl").onclick=async()=>{const list=(PREP&&PREP.list.length)?PREP.list:await selectionEnvoi();if(!list.length) return;downloadFiles(list,(PREP&&PREP.files.length)?PREP.files:await buildFiles(list))};$("bSentNo").onclick=()=>{$("sentConfirm").hidden=true;pendingSent=[]};
   $("bPurge").onclick=async()=>{const n=(await allEntries()).filter(e=>e.envoye&&belongs(e)).length;if(!n){toast("Aucun constat envoyé à supprimer.");return}
     $("purgeTxt").textContent=`Supprimer du téléphone ${n} constat(s) de la mission ${CFG.mission.no} déjà envoyé(s) au PC ? Vérifie d'abord qu'ils sont bien rangés sur le PC.`;$("purgeConfirm").hidden=false};
   $("bPurgeYes").onclick=purge;$("bPurgeNo").onclick=()=>$("purgeConfirm").hidden=true;
