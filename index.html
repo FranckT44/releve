@@ -600,7 +600,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.53";
+const APP_VERSION="1.55";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1394,7 +1394,7 @@ function libellePrevu(p){const e=EQ.find(x=>x.code===p.eq),a=ACT.find(x=>x.code=
 function renderPrevus(){const l=PREVUS.filter(p=>p.mission===CFG.mission.id),c=$("prevusCard");c.hidden=!l.length;if(!l.length) return;
   $("prevusN").textContent=l.length;const ul=$("prevusList");ul.innerHTML="";
   for(const p of l){const li=document.createElement("li");li.className="prevu"+(form.prevuId===p.id?" actif":"");
-    li.innerHTML=`<div><b></b><span class="hint"></span></div><button type="button" class="primary">Commencer</button><button type="button" class="ghost" aria-label="Supprimer ce constat prévu">✕</button>`;
+    li.innerHTML=`<div data-noi18n><b></b><span class="hint"></span></div><button type="button" class="primary">Commencer</button><button type="button" class="ghost" aria-label="Supprimer ce constat prévu">✕</button>`;
     li.querySelector("b").textContent=libellePrevu(p);li.querySelector(".hint").textContent=p.note;
     const [bGo,bDel]=li.querySelectorAll("button");bGo.onclick=()=>commencerPrevu(p.id);
     bDel.onclick=async()=>{PREVUS=PREVUS.filter(x=>x.id!==p.id);if(form.prevuId===p.id){form.prevuId=null;$("prevuBanner").hidden=true}await sauverPrevus()};
@@ -1409,10 +1409,10 @@ async function prevuTermine(){if(!form.prevuId) return;const id=form.prevuId;PRE
 // panneau de préparation
 let PROPS=[],REC=null;
 function selectPrep(items,val,vide){const s=document.createElement("select");if(vide){const o=document.createElement("option");o.value="";o.textContent=vide;s.append(o)}
-  for(const it of items){const o=document.createElement("option");o.value=it.code;o.textContent=it.nom;s.append(o)}s.value=items.some(i=>i.code===val)?val:(vide?"":items[0]?.code||"");return s}
+  for(const it of items){const o=document.createElement("option");o.value=it.code;o.textContent=it.nom;o.dataset.noi18n="";s.append(o)}s.value=items.some(i=>i.code===val)?val:(vide?"":items[0]?.code||"");return s}
 function renderPrep(){const box=$("prepRes");box.innerHTML="";$("prepSave").hidden=!PROPS.length;$("prepSave").textContent=`Créer ${PROPS.length} constat${PROPS.length>1?"s":""} prévu${PROPS.length>1?"s":""}`;
   PROPS.forEach((p,i)=>{const d=document.createElement("div");d.className="prepItem"+(p.sur?"":" doute");
-    d.innerHTML=`<div class="prepTete"><b>${i+1}.</b> <span class="hint"></span><button type="button" class="ghost" aria-label="Retirer">✕</button></div><div class="prepSel"></div>`;
+    d.innerHTML=`<div class="prepTete"><b>${i+1}.</b> <span class="hint" data-noi18n></span><button type="button" class="ghost" aria-label="Retirer">✕</button></div><div class="prepSel"></div>`;
     d.querySelector(".hint").textContent=p.note;d.querySelector("button").onclick=()=>{PROPS.splice(i,1);renderPrep()};
     const zone=d.querySelector(".prepSel");
     const sEq=selectPrep(EQ,p.eq,"Équipement ?");const e=EQ.find(x=>x.code===p.eq);
@@ -1696,8 +1696,23 @@ async function photoFile(n,original,e,k){const p=await getPhoto(n);if(!p) return
   return new File([blob],n,{type:"image/jpeg"})}
 async function buildFiles(list){const files=[];
   for(const e of list){for(const [k,n] of e.photos.entries()){const f=await photoFile(n,false,e,k);if(f) files.push(f);const o=await photoFile(n,true,e,k);if(o) files.push(o)}
-    files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))} // .txt : Chrome Android refuse de partager du .json
+    files.push(await ficheConstat(e))}
   return files}
+// v1.55 : le constat voyage DANS une image JPEG (« fiche constat ») : Samsung Internet ne partage que les images,
+// un fichier .txt était perdu en route. Le JSON est écrit dans des commentaires JPEG « RELEVE-CONSTAT: », relus par Ranger-Releves.ps1.
+async function ficheConstat(e){const nom=`${e.id}.releve.jpg`;const c=document.createElement("canvas");c.width=900;c.height=420;const g=c.getContext("2d");
+  g.fillStyle="#ffffff";g.fillRect(0,0,900,420);g.fillStyle="#6b2914";g.fillRect(0,0,900,10);
+  g.fillStyle="#6b2914";g.font="bold 30px sans-serif";g.fillText("Fiche constat – transfert vers le PC",40,70);
+  g.fillStyle="#222";g.font="bold 26px sans-serif";const lib=libelleConstat(e);g.fillText(lib.length>60?lib.slice(0,58)+"…":lib,40,140);
+  g.font="24px sans-serif";g.fillStyle="#444";g.fillText(`Mission ${e.mission&&e.mission.no||""} · ${frDate(e.date)}${e.repere?" · "+e.repere:""} · ${e.photos.length} photo${e.photos.length>1?"s":""}`,40,190);
+  g.font="20px sans-serif";g.fillStyle="#777";g.fillText("Fichier lu et rangé automatiquement sur le PC (Ranger les relevés).",40,330);g.fillText("Ne pas ouvrir ni renommer.",40,365);
+  const jpg=new Uint8Array(await (await new Promise(r=>c.toBlob(r,"image/jpeg",0.8))).arrayBuffer());
+  let pos=2;while(pos+4<jpg.length&&jpg[pos]===0xFF&&jpg[pos+1]>=0xE0&&jpg[pos+1]<=0xEF) pos+=2+(jpg[pos+2]<<8|jpg[pos+3]);
+  const enc=new TextEncoder(),segs=[],seg=t=>{const L=t.length+2;segs.push(new Uint8Array([0xFF,0xFE,L>>8,L&255]),t)};
+  seg(enc.encode("RELEVE-FICHIER:"+nom));
+  const json=enc.encode(entryJSON(e)),pre=enc.encode("RELEVE-CONSTAT:"),T=60000;
+  for(let i=0;i<json.length;i+=T){const t=new Uint8Array(pre.length+Math.min(T,json.length-i));t.set(pre);t.set(json.subarray(i,i+T),pre.length);seg(t)}
+  return new File([jpg.subarray(0,pos),...segs,jpg.subarray(pos)],nom,{type:"image/jpeg"})}
 let PREP=null; // fichiers de l'envoi préparés à l'affichage du Journal
 async function prepareSend(){const list=await selectionEnvoi();const p={list,files:list.length?await buildFiles(list):[]};
   if(list.map(e=>e.id).join()===(await selectionEnvoi()).map(e=>e.id).join()) PREP=p}
@@ -1988,7 +2003,7 @@ function rendreTrad(){const L=$("tList");L.innerHTML="";
   const co=colObs(T.lang),cr=colReco(T.lang);let nb=0;
   T.rows.forEach((r,i)=>{const fait=(r[co]||"")!==""||(r[cr]||"")!=="";if(fait) nb++;
     const d=document.createElement("div");d.className="tligne";
-    d.innerHTML=`<div><strong></strong><span class="tetat${fait?" ok":""}">${fait?"traduit":"à traduire"}</span><div class="m"></div></div>
+    d.innerHTML=`<div><strong data-noi18n></strong><span class="tetat${fait?" ok":""}">${fait?"traduit":"à traduire"}</span><div class="m" data-noi18n></div></div>
       <div class="tcols"><label>Observation (${T.src.toUpperCase()})<textarea class="src" readonly></textarea></label><label>${co}<textarea data-c="${co}"></textarea></label>
       <label>Recommandation (${T.src.toUpperCase()})<textarea class="src" readonly></textarea></label><label>${cr}<textarea data-c="${cr}"></textarea></label></div>
       <div><button type="button">Traduire cette ligne</button></div>`;
@@ -2413,6 +2428,221 @@ const TRAD_UI=[
 ["En DeX, Samsung Internet ne sait pas ouvrir le partage Android. Enregistre le fichier, puis partage-le depuis Mes fichiers (appui long > Partager), ou sors de DeX.","In DeX, Samsung Internet cannot open Android sharing. Save the file, then share it from My Files (long press > Share), or leave DeX.","En DeX, Samsung Internet no puede abrir el menú de compartir de Android. Guarda el archivo y compártelo desde Mis archivos (pulsación larga > Compartir), o sal de DeX.","In DeX kann Samsung Internet das Android-Teilen nicht öffnen. Datei speichern und über Eigene Dateien teilen (lange drücken > Teilen) oder DeX verlassen."],
 ["Enregistré dans Téléchargements. Samsung Internet ne sait pas envoyer un PDF au partage Android : partage-le depuis Mes fichiers (appui long > Partager).","Saved to Downloads. Samsung Internet cannot pass a PDF to Android sharing: share it from My Files (long press > Share).","Guardado en Descargas. Samsung Internet no puede enviar un PDF al menú de compartir de Android: compártelo desde Mis archivos (pulsación larga > Compartir).","In Downloads gespeichert. Samsung Internet kann kein PDF an Android-Teilen übergeben: über Eigene Dateien teilen (lange drücken > Teilen)."],
 ["Essayer le partage quand même","Try sharing anyway","Intentar compartir de todos modos","Trotzdem teilen versuchen"],
+// étape 2 (v1.54) : éditeur photo, Préparer, onglet Traduction, messages rares
+["Avant d'aller en unité : dicte ou tape les contrôles prévus, séparés par « puis » ou « ensuite » (ou un retour à la ligne). Ex. : « je vais dans le régénérateur pour contrôler le soudage de l'hexmetal dans les cyclones primaires, puis les cyclones secondaires, ensuite la démolition du riser au MH2 ».", "Before going into the unit: dictate or type the planned checks, separated by “then” or “next” (or a line break). E.g.: “I'm going into the regenerator to check the hexmetal welding in the primary cyclones, then the secondary cyclones, next the riser demolition at MH2”.", "Antes de entrar en la unidad: dicta o escribe los controles previstos, separados por «luego» o «después» (o un salto de línea). Ej.: «voy al regenerador a controlar la soldadura del hexmetal en los ciclones primarios, luego los ciclones secundarios, después la demolición del riser en el MH2».", "Vor dem Gang in die Anlage: geplante Kontrollen diktieren oder eintippen, getrennt durch „dann“ oder „danach“ (oder einen Zeilenumbruch). Bsp.: „Ich gehe in den Regenerator, um die Hexmetal-Schweißung in den Primärzyklonen zu prüfen, dann die Sekundärzyklone, danach den Riser-Abbruch an MH2“."],
+["Repère", "Tag", "Referencia", "Markierung"],
+["Équipement ?", "Equipment?", "¿Equipo?", "Ausrüstung?"],
+["Activité ?", "Activity?", "¿Actividad?", "Tätigkeit?"],
+["Retirer", "Remove", "Quitar", "Entfernen"],
+["Créer {a} constat prévu", "Create {a} planned finding", "Crear {a} hallazgo previsto", "{a} geplanten Befund anlegen"],
+["Créer {a} constats prévus", "Create {a} planned findings", "Crear {a} hallazgos previstos", "{a} geplante Befunde anlegen"],
+["Rien à analyser : dicte ou tape les constats à préparer.", "Nothing to analyse: dictate or type the findings to prepare.", "Nada que analizar: dicta o escribe los hallazgos que preparar.", "Nichts zu analysieren: vorzubereitende Befunde diktieren oder eintippen."],
+["Choisis l'équipement et l'activité des lignes où ils manquent.", "Choose the equipment and activity on the lines where they are missing.", "Elige el equipo y la actividad en las líneas donde faltan.", "Ausrüstung und Tätigkeit in den Zeilen wählen, wo sie fehlen."],
+["{a} constat prévu : touche « Commencer » sur place.", "{a} planned finding: tap “Start” on site.", "{a} hallazgo previsto: toca «Empezar» en el sitio.", "{a} geplanter Befund: vor Ort auf „Beginnen“ tippen."],
+["{a} constats prévus : touche « Commencer » sur place.", "{a} planned findings: tap “Start” on site.", "{a} hallazgos previstos: toca «Empezar» en el sitio.", "{a} geplante Befunde: vor Ort auf „Beginnen“ tippen."],
+["Dictée : utilise le micro du clavier du téléphone dans la zone de texte.", "Dictation: use the phone keyboard's microphone in the text box.", "Dictado: usa el micrófono del teclado del teléfono en el cuadro de texto.", "Diktat: das Mikrofon der Telefontastatur im Textfeld verwenden."],
+["Micro refusé : autorise le micro pour l'appli, ou utilise le micro du clavier.", "Microphone refused: allow the microphone for the app, or use the keyboard microphone.", "Micrófono denegado: permite el micrófono para la app o usa el micrófono del teclado.", "Mikrofon verweigert: Mikrofon für die App erlauben oder das Tastaturmikrofon verwenden."],
+["Dictée indisponible sans réseau : utilise le micro du clavier du téléphone.", "Dictation unavailable without network: use the phone keyboard's microphone.", "Dictado no disponible sin red: usa el micrófono del teclado del teléfono.", "Diktat ohne Netz nicht verfügbar: Mikrofon der Telefontastatur verwenden."],
+["■ Arrêter", "■ Stop", "■ Detener", "■ Stoppen"],
+["Supprimer ce constat prévu", "Delete this planned finding", "Eliminar este hallazgo previsto", "Diesen geplanten Befund löschen"],
+["Ouvre le fichier « Observations_releve.csv » du dossier de la mission. Les traductions sont ajoutées dans des colonnes à part : le texte d'origine n'est jamais modifié. La traduction se fait sur ce PC, sans envoyer le texte sur internet.", "Open the “Observations_releve.csv” file in the job folder. Translations are added in separate columns: the original text is never changed. Translation runs on this PC, without sending the text over the internet.", "Abre el archivo «Observations_releve.csv» de la carpeta de la misión. Las traducciones se añaden en columnas aparte: el texto original nunca se modifica. La traducción se hace en este PC, sin enviar el texto por internet.", "Die Datei „Observations_releve.csv“ im Auftragsordner öffnen. Übersetzungen kommen in eigene Spalten: der Originaltext wird nie geändert. Die Übersetzung läuft auf diesem PC, ohne den Text ins Internet zu senden."],
+["Langue du texte saisi", "Language of the entered text", "Idioma del texto escrito", "Sprache des eingegebenen Textes"],
+["Français (FR)", "French (FR)", "Francés (FR)", "Französisch (FR)"],
+["Anglais (EN)", "English (EN)", "Inglés (EN)", "Englisch (EN)"],
+["Espagnol (ES)", "Spanish (ES)", "Español (ES)", "Spanisch (ES)"],
+["Portugais (PT)", "Portuguese (PT)", "Portugués (PT)", "Portugiesisch (PT)"],
+["Italien (IT)", "Italian (IT)", "Italiano (IT)", "Italienisch (IT)"],
+["Allemand (DE)", "German (DE)", "Alemán (DE)", "Deutsch (DE)"],
+["Néerlandais (NL)", "Dutch (NL)", "Neerlandés (NL)", "Niederländisch (NL)"],
+["Traduire en", "Translate into", "Traducir a", "Übersetzen in"],
+["Ouvrir un fichier CSV", "Open a CSV file", "Abrir un archivo CSV", "CSV-Datei öffnen"],
+["Rouvrir le dernier fichier", "Reopen the last file", "Reabrir el último archivo", "Letzte Datei wieder öffnen"],
+["Aucun fichier ouvert.", "No file open.", "Ningún archivo abierto.", "Keine Datei geöffnet."],
+["Fichier : {a}", "File: {a}", "Archivo: {a}", "Datei: {a}"],
+["Traduire les lignes non traduites", "Translate untranslated rows", "Traducir las líneas sin traducir", "Nicht übersetzte Zeilen übersetzen"],
+["Enregistrer dans le fichier", "Save to the file", "Guardar en el archivo", "In der Datei speichern"],
+["Sens {a} → {b}. Une ligne par terme : « terme d'origine = traduction ». Ces termes sont remplacés avant la traduction automatique, pour garder le vocabulaire du métier.", "Direction {a} → {b}. One line per term: “original term = translation”. These terms are replaced before machine translation, to keep the trade vocabulary.", "Sentido {a} → {b}. Una línea por término: «término original = traducción». Estos términos se sustituyen antes de la traducción automática, para conservar el vocabulario del oficio.", "Richtung {a} → {b}. Eine Zeile pro Begriff: „Originalbegriff = Übersetzung“. Diese Begriffe werden vor der maschinellen Übersetzung ersetzt, um das Fachvokabular zu erhalten."],
+["Enregistrer le glossaire", "Save the glossary", "Guardar el glosario", "Glossar speichern"],
+["Glossaire enregistré", "Glossary saved", "Glosario guardado", "Glossar gespeichert"],
+["Les lignes du fichier apparaîtront ici.", "The file's rows will appear here.", "Las líneas del archivo aparecerán aquí.", "Die Zeilen der Datei erscheinen hier."],
+["traduit", "translated", "traducido", "übersetzt"],
+["à traduire", "to translate", "por traducir", "zu übersetzen"],
+["Traduire cette ligne", "Translate this row", "Traducir esta línea", "Diese Zeile übersetzen"],
+["Observation ({a})", "Observation ({a})", "Observación ({a})", "Beobachtung ({a})"],
+["Recommandation ({a})", "Recommendation ({a})", "Recomendación ({a})", "Empfehlung ({a})"],
+["Le traducteur de Chrome n'est pas disponible sur cet appareil.", "Chrome's translator is not available on this device.", "El traductor de Chrome no está disponible en este dispositivo.", "Der Chrome-Übersetzer ist auf diesem Gerät nicht verfügbar."],
+["Choisis deux langues différentes.", "Choose two different languages.", "Elige dos idiomas diferentes.", "Zwei verschiedene Sprachen wählen."],
+["Cette langue n'est pas proposée par le traducteur de Chrome.", "This language is not offered by Chrome's translator.", "El traductor de Chrome no ofrece este idioma.", "Diese Sprache wird vom Chrome-Übersetzer nicht angeboten."],
+["Préparation du traducteur…", "Preparing the translator…", "Preparando el traductor…", "Übersetzer wird vorbereitet…"],
+["Téléchargement de la langue sur ce PC (une seule fois)…", "Downloading the language to this PC (only once)…", "Descargando el idioma en este PC (una sola vez)…", "Sprache wird auf diesen PC geladen (nur einmal)…"],
+["Téléchargement de la langue : {a} %", "Downloading the language: {a} %", "Descargando el idioma: {a} %", "Sprache wird geladen: {a} %"],
+["{a} ligne(s), {b} traduite(s) en {c}.", "{a} row(s), {b} translated into {c}.", "{a} línea(s), {b} traducida(s) al {c}.", "{a} Zeile(n), {b} ins {c} übersetzt."],
+["{a} ligne(s), {b} traduite(s) en {c}. Modifications non enregistrées.", "{a} row(s), {b} translated into {c}. Unsaved changes.", "{a} línea(s), {b} traducida(s) al {c}. Cambios sin guardar.", "{a} Zeile(n), {b} ins {c} übersetzt. Ungespeicherte Änderungen."],
+["Traduction {a}…", "Translating {a}…", "Traduciendo {a}…", "Übersetzung {a}…"],
+["{a} ligne(s) traduite(s). Vérifie puis « Enregistrer dans le fichier ».", "{a} row(s) translated. Check, then “Save to the file”.", "{a} línea(s) traducida(s). Revisa y luego «Guardar en el archivo».", "{a} Zeile(n) übersetzt. Prüfen, dann „In der Datei speichern“."],
+["Ce fichier n'est pas un fichier d'observations de l'appli.", "This file is not an observations file from the app.", "Este archivo no es un archivo de observaciones de la app.", "Diese Datei ist keine Beobachtungsdatei der App."],
+["Impossible de rouvrir le fichier : ouvre-le à nouveau.", "Cannot reopen the file: open it again.", "No se puede reabrir el archivo: ábrelo de nuevo.", "Datei kann nicht wieder geöffnet werden: erneut öffnen."],
+["Fichier enregistré.", "File saved.", "Archivo guardado.", "Datei gespeichert."],
+["Écriture impossible ({a}). Le fichier est-il ouvert dans Excel ?", "Cannot write ({a}). Is the file open in Excel?", "No se puede escribir ({a}). ¿Está el archivo abierto en Excel?", "Schreiben nicht möglich ({a}). Ist die Datei in Excel geöffnet?"],
+["Fichier enregistré dans Téléchargements : remplace l'ancien dans le dossier de la mission.", "File saved to Downloads: replace the old one in the job folder.", "Archivo guardado en Descargas: sustituye el antiguo en la carpeta de la misión.", "Datei in Downloads gespeichert: die alte im Auftragsordner ersetzen."],
+["Sélection", "Select", "Selección", "Auswahl"],
+["Crayon", "Pencil", "Lápiz", "Stift"],
+["Ligne", "Line", "Línea", "Linie"],
+["Flèche", "Arrow", "Flecha", "Pfeil"],
+["Rectangle", "Rectangle", "Rectángulo", "Rechteck"],
+["Ellipse", "Ellipse", "Elipse", "Ellipse"],
+["Texte", "Text", "Texto", "Text"],
+["Recadrer", "Crop", "Recortar", "Zuschneiden"],
+["Sél. directe", "Direct sel.", "Sel. directa", "Direktwahl"],
+["Annotations pro", "Pro annotations", "Anotaciones pro", "Profi-Anmerkungen"],
+["Zone", "Area", "Zona", "Fläche"],
+["Cote", "Dimension", "Cota", "Maß"],
+["Bulle", "Callout", "Bocadillo", "Sprechblase"],
+["Flou", "Blur", "Desenfoque", "Unschärfe"],
+["Pipette", "Eyedropper", "Cuentagotas", "Pipette"],
+["Étalon", "Scale", "Patrón", "Maßstab"],
+["Épaisseur", "Width", "Grosor", "Stärke"],
+["Trait", "Stroke", "Trazo", "Strich"],
+["━ plein", "━ solid", "━ continuo", "━ durchgezogen"],
+["╍ tirets", "╍ dashed", "╍ discontinuo", "╍ gestrichelt"],
+["┈ pointillés", "┈ dotted", "┈ punteado", "┈ gepunktet"],
+["Remplir", "Fill", "Rellenar", "Füllen"],
+["Opacité", "Opacity", "Opacidad", "Deckkraft"],
+["Inclinaison", "Tilt", "Inclinación", "Neigung"],
+["Suppr.", "Del.", "Supr.", "Entf."],
+["Hachures", "Hatching", "Rayado", "Schraffur"],
+["⧉ Dupliquer", "⧉ Duplicate", "⧉ Duplicar", "⧉ Duplizieren"],
+["⬆ 1er plan", "⬆ Front", "⬆ Primer plano", "⬆ Vordergrund"],
+["⬇ Arrière", "⬇ Back", "⬇ Fondo", "⬇ Hintergrund"],
+["✎ Libellé", "✎ Label", "✎ Etiqueta", "✎ Beschriftung"],
+["✓ Fermer la zone", "✓ Close the area", "✓ Cerrar la zona", "✓ Fläche schließen"],
+["★ Modèles…", "★ Presets…", "★ Modelos…", "★ Vorlagen…"],
+["★ {a}", "★ {a}", "★ {a}", "★ {a}"],
+["Zone à réparer", "Area to repair", "Zona a reparar", "Zu reparierende Fläche"],
+["Fissure", "Crack", "Fisura", "Riss"],
+["Repère n°", "Marker no.", "Marca n.º", "Markierung Nr."],
+["＋ Enregistrer le réglage actuel…", "＋ Save the current settings…", "＋ Guardar el ajuste actual…", "＋ Aktuelle Einstellung speichern…"],
+["🗑 Supprimer un modèle…", "🗑 Delete a preset…", "🗑 Eliminar un modelo…", "🗑 Vorlage löschen…"],
+["Échelle : —", "Scale: —", "Escala: —", "Maßstab: —"],
+["Échelle : 100 px = {a} mm", "Scale: 100 px = {a} mm", "Escala: 100 px = {a} mm", "Maßstab: 100 px = {a} mm"],
+["Échelle : non étalonnée", "Scale: not calibrated", "Escala: sin calibrar", "Maßstab: nicht kalibriert"],
+["Redresser", "Straighten", "Enderezar", "Ausrichten"],
+["Cartouche", "Title block", "Cajetín", "Schriftfeld"],
+["Tout", "All", "Todo", "Alles"],
+["Cadrer vue", "Fit to view", "Encuadrar vista", "Ansicht zuschneiden"],
+["Taille", "Size", "Tamaño", "Größe"],
+["Fond", "Background", "Fondo", "Hintergrund"],
+["aucun", "none", "ninguno", "keiner"],
+["blanc", "white", "blanco", "weiß"],
+["noir", "black", "negro", "schwarz"],
+["Photo d'origine", "Original photo", "Foto original", "Originalfoto"],
+["Enregistrer", "Save", "Guardar", "Speichern"],
+["Enregistrer les modifications de cette photo ?", "Save the changes to this photo?", "¿Guardar los cambios de esta foto?", "Änderungen an diesem Foto speichern?"],
+["Les annotations ou le recadrage faits depuis l'ouverture seront perdus si tu fermes sans enregistrer.", "Annotations or cropping made since opening will be lost if you close without saving.", "Las anotaciones o el recorte hechos desde la apertura se perderán si cierras sin guardar.", "Seit dem Öffnen erstellte Anmerkungen oder Zuschnitte gehen verloren, wenn ohne Speichern geschlossen wird."],
+["Fermer sans enregistrer", "Close without saving", "Cerrar sin guardar", "Schließen ohne Speichern"],
+["Continuer l'édition", "Keep editing", "Seguir editando", "Weiter bearbeiten"],
+["Outils", "Tools", "Herramientas", "Werkzeuge"],
+["Activé : toucher un tracé existant le sélectionne, quel que soit l'outil (sauf Recadrer). Désactivé : on dessine même par-dessus un tracé.", "On: tapping an existing shape selects it, whatever the tool (except Crop). Off: you draw even over a shape.", "Activado: tocar un trazo existente lo selecciona, sea cual sea la herramienta (salvo Recortar). Desactivado: se dibuja incluso encima de un trazo.", "Ein: Tippen auf eine vorhandene Form wählt sie aus, unabhängig vom Werkzeug (außer Zuschneiden). Aus: es wird auch über Formen gezeichnet."],
+["Affiche les outils avancés : zone hachurée, repères numérotés, cotes, bulles, flou, pipette, étalonnage, modèles, redressement, cartouche", "Shows advanced tools: hatched area, numbered markers, dimensions, callouts, blur, eyedropper, calibration, presets, straightening, title block", "Muestra las herramientas avanzadas: zona rayada, marcas numeradas, cotas, bocadillos, desenfoque, cuentagotas, calibración, modelos, enderezado, cajetín", "Zeigt erweiterte Werkzeuge: schraffierte Fläche, nummerierte Markierungen, Maße, Sprechblasen, Unschärfe, Pipette, Kalibrierung, Vorlagen, Ausrichten, Schriftfeld"],
+["Zone libre : toucher point par point puis toucher le 1er point (ou ✓ / double-clic / Entrée) ; ou tracer d'un seul geste", "Free area: tap point by point, then tap the 1st point (or ✓ / double-click / Enter); or draw in one stroke", "Zona libre: toca punto por punto y luego el 1.er punto (o ✓ / doble clic / Intro); o traza de un solo gesto", "Freie Fläche: Punkt für Punkt tippen, dann den 1. Punkt (oder ✓ / Doppelklick / Eingabe); oder in einem Zug zeichnen"],
+["Cote : flèche à chaque bout et valeur au milieu (mesurée si l'échelle est étalonnée)", "Dimension: arrow at each end and value in the middle (measured if the scale is calibrated)", "Cota: flecha en cada extremo y valor en el centro (medido si la escala está calibrada)", "Maß: Pfeil an jedem Ende und Wert in der Mitte (gemessen, wenn der Maßstab kalibriert ist)"],
+["Bulle : tirer de l'endroit visé vers l'emplacement du texte ; toucher une bulle pour modifier son texte, sa taille, G / I / S et son fond", "Callout: drag from the target point to where the text goes; tap a callout to edit its text, size, B / I / U and background", "Bocadillo: arrastra del punto señalado al lugar del texto; toca un bocadillo para cambiar su texto, tamaño, N / K / S y fondo", "Sprechblase: vom Zielpunkt zur Textposition ziehen; auf eine Sprechblase tippen, um Text, Größe, F / K / U und Hintergrund zu ändern"],
+["Flouter une zone (visage, plaque, écran)", "Blur an area (face, plate, screen)", "Desenfocar una zona (cara, matrícula, pantalla)", "Bereich unkenntlich machen (Gesicht, Kennzeichen, Bildschirm)"],
+["Pipette : toucher la photo pour prendre sa couleur", "Eyedropper: tap the photo to pick its colour", "Cuentagotas: toca la foto para tomar su color", "Pipette: auf das Foto tippen, um die Farbe aufzunehmen"],
+["Étalonner : tracer un trait sur un objet de longueur connue (marteau, mètre…)", "Calibrate: draw a line along an object of known length (hammer, tape…)", "Calibrar: traza una línea sobre un objeto de longitud conocida (martillo, metro…)", "Kalibrieren: Linie über ein Objekt bekannter Länge ziehen (Hammer, Meterstab…)"],
+["Couleur {a}", "Colour {a}", "Color {a}", "Farbe {a}"],
+["Autre couleur", "Other colour", "Otro color", "Andere Farbe"],
+["Autre couleur (nuancier)", "Other colour (colour picker)", "Otro color (paleta)", "Andere Farbe (Farbwähler)"],
+["Choisir une autre couleur", "Choose another colour", "Elegir otro color", "Andere Farbe wählen"],
+["Épaisseur du trait", "Stroke width", "Grosor del trazo", "Strichstärke"],
+["Type de trait", "Stroke type", "Tipo de trazo", "Strichart"],
+["Opacité en pourcentage", "Opacity in percent", "Opacidad en porcentaje", "Deckkraft in Prozent"],
+["Sélectionner un rectangle, une ellipse, une ligne ou une flèche", "Select a rectangle, ellipse, line or arrow", "Selecciona un rectángulo, una elipse, una línea o una flecha", "Rechteck, Ellipse, Linie oder Pfeil auswählen"],
+["Inclinaison moins 1 degré", "Tilt minus 1 degree", "Inclinación menos 1 grado", "Neigung minus 1 Grad"],
+["Inclinaison en degrés", "Tilt in degrees", "Inclinación en grados", "Neigung in Grad"],
+["Inclinaison plus 1 degré", "Tilt plus 1 degree", "Inclinación más 1 grado", "Neigung plus 1 Grad"],
+["Annuler la dernière action", "Undo the last action", "Deshacer la última acción", "Letzte Aktion rückgängig machen"],
+["Rétablir", "Redo", "Rehacer", "Wiederholen"],
+["Supprimer l'élément sélectionné", "Delete the selected item", "Eliminar el elemento seleccionado", "Ausgewähltes Element löschen"],
+["Tourner la photo d'un quart de tour à gauche", "Rotate the photo a quarter turn left", "Girar la foto un cuarto de vuelta a la izquierda", "Foto um eine Vierteldrehung nach links drehen"],
+["Tourner la photo d'un quart de tour à droite", "Rotate the photo a quarter turn right", "Girar la foto un cuarto de vuelta a la derecha", "Foto um eine Vierteldrehung nach rechts drehen"],
+["Dupliquer l'élément sélectionné (Ctrl+D)", "Duplicate the selected item (Ctrl+D)", "Duplicar el elemento seleccionado (Ctrl+D)", "Ausgewähltes Element duplizieren (Strg+D)"],
+["Mettre au premier plan", "Bring to front", "Traer al primer plano", "In den Vordergrund"],
+["Mettre à l'arrière-plan", "Send to back", "Enviar al fondo", "In den Hintergrund"],
+["Modifier la valeur d'une cote, le texte d'une bulle ou le numéro d'un repère", "Edit a dimension's value, a callout's text or a marker's number", "Modificar el valor de una cota, el texto de un bocadillo o el número de una marca", "Wert eines Maßes, Text einer Sprechblase oder Nummer einer Markierung ändern"],
+["Fermer la zone en cours (Entrée)", "Close the current area (Enter)", "Cerrar la zona en curso (Intro)", "Aktuelle Fläche schließen (Eingabe)"],
+["Modèles de réglages", "Settings presets", "Modelos de ajustes", "Einstellungsvorlagen"],
+["Effacer l'échelle", "Clear the scale", "Borrar la escala", "Maßstab löschen"],
+["Redresser de −0,5°", "Straighten by −0.5°", "Enderezar −0,5°", "Um −0,5° ausrichten"],
+["Redressement de la photo en degrés", "Photo straightening in degrees", "Enderezado de la foto en grados", "Ausrichtung des Fotos in Grad"],
+["Redresser de +0,5°", "Straighten by +0.5°", "Enderezar +0,5°", "Um +0,5° ausrichten"],
+["Ajouter un cartouche : date, équipement, activité, repère", "Add a title block: date, equipment, activity, location", "Añadir un cajetín: fecha, equipo, actividad, referencia", "Schriftfeld hinzufügen: Datum, Ausrüstung, Tätigkeit, Position"],
+["Afficher / masquer les réglages (couleur, épaisseur…)", "Show / hide settings (colour, width…)", "Mostrar / ocultar los ajustes (color, grosor…)", "Einstellungen ein- / ausblenden (Farbe, Stärke…)"],
+["Voir la photo entière", "Show the whole photo", "Ver la foto entera", "Ganzes Foto anzeigen"],
+["Recadrer sur la vue affichée", "Crop to the displayed view", "Recortar a la vista mostrada", "Auf die angezeigte Ansicht zuschneiden"],
+["Texte à placer (il passe à la ligne tout seul au bord de la photo)", "Text to place (wraps automatically at the photo edge)", "Texto a colocar (pasa a la línea solo en el borde de la foto)", "Zu platzierender Text (bricht am Fotorand automatisch um)"],
+["Texte de la bulle", "Callout text", "Texto del bocadillo", "Text der Sprechblase"],
+["Réduire la taille du texte", "Decrease text size", "Reducir el tamaño del texto", "Textgröße verkleinern"],
+["Taille du texte", "Text size", "Tamaño del texto", "Textgröße"],
+["Agrandir la taille du texte", "Increase text size", "Aumentar el tamaño del texto", "Textgröße vergrößern"],
+["Fond du texte", "Text background", "Fondo del texto", "Texthintergrund"],
+["Gras", "Bold", "Negrita", "Fett"],
+["Italique", "Italic", "Cursiva", "Kursiv"],
+["Souligné", "Underline", "Subrayado", "Unterstrichen"],
+["Impossible d'ouvrir cette photo.", "Cannot open this photo.", "No se puede abrir esta foto.", "Dieses Foto kann nicht geöffnet werden."],
+["Photo {a} enregistrée.", "Photo {a} saved.", "Foto {a} guardada.", "Foto {a} gespeichert."],
+["Zone de recadrage définie. Touche à nouveau « Recadrer » pour l'annuler.", "Crop area set. Tap “Crop” again to cancel it.", "Zona de recorte definida. Toca de nuevo «Recortar» para anularla.", "Zuschnittbereich festgelegt. Erneut auf „Zuschneiden“ tippen, um ihn aufzuheben."],
+["Photo annotée. Pense à « Enregistrer les modifications ».", "Photo annotated. Remember to “Save changes”.", "Foto anotada. Recuerda «Guardar los cambios».", "Foto beschriftet. An „Änderungen speichern“ denken."],
+["Photo annotée.", "Photo annotated.", "Foto anotada.", "Foto beschriftet."],
+["Photo d'origine rétablie.", "Original photo restored.", "Foto original restaurada.", "Originalfoto wiederhergestellt."],
+["Zone trop petite : abandonnée.", "Area too small: discarded.", "Zona demasiado pequeña: descartada.", "Fläche zu klein: verworfen."],
+["Zone abandonnée : il faut au moins 3 points.", "Area discarded: at least 3 points are needed.", "Zona descartada: se necesitan al menos 3 puntos.", "Fläche verworfen: mindestens 3 Punkte nötig."],
+["Valeur de la cote (ex. 120 mm, gap 8 mm) — étalonne l'échelle pour une mesure automatique :", "Dimension value (e.g. 120 mm, gap 8 mm) — calibrate the scale for automatic measurement:", "Valor de la cota (ej. 120 mm, gap 8 mm) — calibra la escala para una medida automática:", "Maßwert (z. B. 120 mm, Spalt 8 mm) — Maßstab kalibrieren für automatische Messung:"],
+["Longueur réelle de ce trait, en mm (ex. 300 pour un marteau, 1000 pour 1 m) :", "Real length of this line, in mm (e.g. 300 for a hammer, 1000 for 1 m):", "Longitud real de este trazo, en mm (ej. 300 para un martillo, 1000 para 1 m):", "Tatsächliche Länge dieser Linie in mm (z. B. 300 für einen Hammer, 1000 für 1 m):"],
+["Longueur non comprise : indique un nombre de millimètres.", "Length not understood: enter a number of millimetres.", "Longitud no entendida: indica un número de milímetros.", "Länge nicht verstanden: Anzahl Millimeter angeben."],
+["Échelle définie : {a} pour ce trait. Les cotes et les zones affichent maintenant leurs mesures.", "Scale set: {a} for this line. Dimensions and areas now show their measurements.", "Escala definida: {a} para este trazo. Las cotas y zonas muestran ahora sus medidas.", "Maßstab festgelegt: {a} für diese Linie. Maße und Flächen zeigen jetzt ihre Werte."],
+["Touche un point de la photo.", "Tap a point on the photo.", "Toca un punto de la foto.", "Auf einen Punkt des Fotos tippen."],
+["Couleur prélevée : {a}", "Colour picked: {a}", "Color tomado: {a}", "Farbe aufgenommen: {a}"],
+["Modèle « {a} »", "Preset “{a}”", "Modelo «{a}»", "Vorlage „{a}“"],
+["Nom du modèle (outil : {a}, couleur et réglages actuels) :", "Preset name (tool: {a}, current colour and settings):", "Nombre del modelo (herramienta: {a}, color y ajustes actuales):", "Name der Vorlage (Werkzeug: {a}, aktuelle Farbe und Einstellungen):"],
+["Modèle « {a} » enregistré.", "Preset “{a}” saved.", "Modelo «{a}» guardado.", "Vorlage „{a}“ gespeichert."],
+["Nom du modèle à supprimer :", "Name of the preset to delete:", "Nombre del modelo a eliminar:", "Name der zu löschenden Vorlage:"],
+["Aucun modèle de ce nom.", "No preset with that name.", "Ningún modelo con ese nombre.", "Keine Vorlage mit diesem Namen."],
+["Modèle « {a} » supprimé.", "Preset “{a}” deleted.", "Modelo «{a}» eliminado.", "Vorlage „{a}“ gelöscht."],
+["Numéro (ou lettre) du repère :", "Marker number (or letter):", "Número (o letra) de la marca:", "Nummer (oder Buchstabe) der Markierung:"],
+["Valeur de la cote (laisser vide = mesure automatique) :", "Dimension value (leave empty = automatic measurement):", "Valor de la cota (vacío = medida automática):", "Maßwert (leer lassen = automatische Messung):"],
+["Valeur de la cote :", "Dimension value:", "Valor de la cota:", "Maßwert:"],
+["Échelle effacée.", "Scale cleared.", "Escala borrada.", "Maßstab gelöscht."],
+["Surface à réparer du constat : {a} m² ({b} zone).", "Finding's area to repair: {a} m² ({b} area).", "Superficie a reparar del hallazgo: {a} m² ({b} zona).", "Zu reparierende Fläche des Befunds: {a} m² ({b} Fläche)."],
+["Surface à réparer du constat : {a} m² ({b} zones).", "Finding's area to repair: {a} m² ({b} areas).", "Superficie a reparar del hallazgo: {a} m² ({b} zonas).", "Zu reparierende Fläche des Befunds: {a} m² ({b} Flächen)."],
+["Informations du constat introuvables.", "Finding information not found.", "No se encuentra la información del hallazgo.", "Befundinformationen nicht gefunden."],
+["Zoome d'abord sur la zone à garder.", "First zoom in on the area to keep.", "Primero amplía la zona que quieres conservar.", "Zuerst auf den zu behaltenden Bereich zoomen."],
+["Recadrage = la vue affichée. « Tout » pour revoir la photo entière.", "Crop = the displayed view. “All” to see the whole photo again.", "Recorte = la vista mostrada. «Todo» para volver a ver la foto entera.", "Zuschnitt = angezeigte Ansicht. „Alles“, um das ganze Foto wieder zu sehen."],
+["Thème : {a}", "Theme: {a}", "Tema: {a}", "Design: {a}"],
+["Thème {a}", "Theme {a}", "Tema {a}", "Design {a}"],
+["automatique (réglage du téléphone)", "automatic (phone setting)", "automático (ajuste del teléfono)", "automatisch (Telefoneinstellung)"],
+["clair", "light", "claro", "hell"],
+["sombre", "dark", "oscuro", "dunkel"],
+["Listes passées en {a}. Les constats déjà saisis gardent leurs noms ; les nouvelles photos iront dans des dossiers à ce nom.", "Lists switched to {a}. Findings already entered keep their names; new photos will go into folders with these names.", "Listas cambiadas a {a}. Los hallazgos ya escritos conservan sus nombres; las fotos nuevas irán a carpetas con estos nombres.", "Listen auf {a} umgestellt. Bereits erfasste Befunde behalten ihre Namen; neue Fotos kommen in Ordner mit diesen Namen."],
+["français", "French", "francés", "Französisch"],
+["anglais", "English", "inglés", "Englisch"],
+["espagnol", "Spanish", "español", "Spanisch"],
+["allemand", "German", "alemán", "Deutsch"],
+["mémoire du navigateur pleine. Envoie puis libère la place dans le Journal.", "browser storage full. Send, then free up space in the Log.", "memoria del navegador llena. Envía y luego libera espacio en el Registro.", "Browserspeicher voll. Senden, dann im Protokoll Platz freigeben."],
+["⚠ {a} (n'existe plus dans la liste)", "⚠ {a} (no longer in the list)", "⚠ {a} (ya no está en la lista)", "⚠ {a} (nicht mehr in der Liste)"],
+["Photo {a} : toucher pour annoter", "Photo {a}: tap to annotate", "Foto {a}: toca para anotar", "Foto {a}: zum Beschriften tippen"],
+["Retirer la photo {a}", "Remove photo {a}", "Quitar la foto {a}", "Foto {a} entfernen"],
+["Stockage indisponible.", "Storage unavailable.", "Almacenamiento no disponible.", "Speicher nicht verfügbar."],
+["Ouvre l'appli dans Chrome (pas en navigation privée).", "Open the app in the browser (not in private browsing).", "Abre la app en el navegador (no en navegación privada).", "App im Browser öffnen (nicht im privaten Modus)."],
+["Rien d'autre à afficher.", "Nothing else to show.", "Nada más que mostrar.", "Sonst nichts anzuzeigen."],
+["Archiver la mission {a} ?", "Archive job {a}?", "¿Archivar la misión {a}?", "Auftrag {a} archivieren?"],
+["Archiver la mission {a} ? Attention : {b} constat(s) pas encore envoyé(s) au PC.", "Archive job {a}? Warning: {b} finding(s) not yet sent to the PC.", "¿Archivar la misión {a}? Atención: {b} hallazgo(s) aún no enviado(s) al PC.", "Auftrag {a} archivieren? Achtung: {b} Befund(e) noch nicht an den PC gesendet."],
+["Archiver la mission {a} ? Ses constats restent sur le téléphone tant que tu ne libères pas la place.", "Archive job {a}? Its findings stay on the phone until you free up space.", "¿Archivar la misión {a}? Sus hallazgos se quedan en el teléfono mientras no liberes espacio.", "Auftrag {a} archivieren? Seine Befunde bleiben auf dem Telefon, bis Platz freigegeben wird."],
+["« {a} » est dans Téléchargements : glisse-le dans la fenêtre Quick Share, ou clic droit > Envoyer avec Quick Share. Sur le téléphone : Missions > Charger une mission.", "“{a}” is in Downloads: drag it into the Quick Share window, or right-click > Send with Quick Share. On the phone: Jobs > Load a job.", "«{a}» está en Descargas: arrástralo a la ventana de Quick Share, o clic derecho > Enviar con Quick Share. En el teléfono: Misiones > Cargar una misión.", "„{a}“ ist in Downloads: in das Quick-Share-Fenster ziehen oder Rechtsklick > Mit Quick Share senden. Auf dem Telefon: Aufträge > Auftrag laden."],
+["La mission {a} a été modifiée sur cet appareil le {b}, après la version du fichier ({c}). La remplacer quand même ?", "Job {a} was changed on this device on {b}, after the file's version ({c}). Replace it anyway?", "La misión {a} se modificó en este dispositivo el {b}, después de la versión del archivo ({c}). ¿Reemplazarla de todos modos?", "Auftrag {a} wurde auf diesem Gerät am {b} geändert, nach der Dateiversion ({c}). Trotzdem ersetzen?"],
+["{a} équipement(s), {b} sous-équipement(s) : {c}", "{a} equipment item(s), {b} sub-equipment item(s): {c}", "{a} equipo(s), {b} subequipo(s): {c}", "{a} Ausrüstung(en), {b} Unterausrüstung(en): {c}"],
+["Je ne reconnais pas ce tableau : il faut au moins une colonne Équipement.", "I don't recognise this table: at least one Equipment column is needed.", "No reconozco esta tabla: se necesita al menos una columna Equipo.", "Diese Tabelle wird nicht erkannt: mindestens eine Spalte Ausrüstung nötig."],
+["{a} constat(s) pas encore envoyé(s) utilisent l'ancien nom. « Mettre à jour » les renomme (photos et dossier de rangement compris). Les photos déjà rangées sur le PC se renomment avec l'outil « Renommer-Equipement » du dossier PC.", "{a} finding(s) not yet sent use the old name. “Update” renames them (photos and filing folder included). Photos already filed on the PC are renamed with the “Renommer-Equipement” tool in the PC folder.", "{a} hallazgo(s) aún no enviado(s) usan el nombre antiguo. «Actualizar» los renombra (fotos y carpeta de archivo incluidas). Las fotos ya archivadas en el PC se renombran con la herramienta «Renommer-Equipement» de la carpeta PC.", "{a} noch nicht gesendete(r) Befund(e) verwenden den alten Namen. „Aktualisieren“ benennt sie um (Fotos und Ablageordner inbegriffen). Bereits auf dem PC abgelegte Fotos werden mit dem Werkzeug „Renommer-Equipement“ im PC-Ordner umbenannt."],
 ["PDF annulé.","PDF cancelled.","PDF cancelado.","PDF abgebrochen."],
 ["Confirmer la suppression","Confirm deletion","Confirmar la eliminación","Löschen bestätigen"],
 ["PDF supprimé du téléphone.","PDF deleted from the phone.","PDF eliminado del teléfono.","PDF vom Telefon gelöscht."],
@@ -2742,7 +2972,7 @@ function tradUI(fr,interne){const k=normUI(fr);if(!k) return null;const i=LANGUI
     const v={};p.noms.forEach((n,j)=>{const x=m[j+1];v[n]=tradUI(x,true)??x});return p.tr[i].replace(/\{([a-z])\}/g,(q,n)=>v[n]??q)}
   return null}
 // zones à ne jamais traduire : textes saisis, noms des listes de la mission, données
-const UI_EXCLU='[data-noi18n],.rte,[contenteditable],textarea,input,script,style,#fEq,#fSub,#fAct,#fSubAct,#fAcces,#mSel,#degats,#degParam,.apercu dd,figcaption,#accMission,#hMission,#tList,#prepRes,#prevusList,#gvInfo,#gvLeg,.gt .lg,#renTxt,#pastePreview,#fPath,#uaInfo';
+const UI_EXCLU='[data-noi18n],.rte,[contenteditable],textarea,input,script,style,#fEq,#fSub,#fAct,#fSubAct,#fAcces,#mSel,#degats,#degParam,.apercu dd,figcaption,#accMission,#hMission,#prepLive,#gvInfo,#gvLeg,.gt .lg,#renTxt,#pastePreview,#fPath,#uaInfo';
 function traduireNoeudUI(n){
   if(n.nodeType===3){const el=n.parentElement;if(!el||el.closest(UI_EXCLU)) return;
     const fr=n.__fr??n.data;if(LANGUI.lang==="fr"){if(n.__fr!=null){n.data=n.__fr;n.__fr=null}return}
