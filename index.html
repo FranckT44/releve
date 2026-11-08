@@ -601,7 +601,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.57";
+const APP_VERSION="1.58";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1659,6 +1659,9 @@ async function renderJournal(){
       const bE=document.createElement("button");bE.type="button";bE.textContent="Modifier";bE.onclick=()=>editEntry(e.id);acts.append(bE);
       const bP=document.createElement("button");bP.type="button";bP.textContent="📄 PDF";bP.setAttribute("aria-label","PDF rapide de ce constat");bP.onclick=()=>pdfRapide([e]);acts.append(bP);
       if(e.envoye){const bR=document.createElement("button");bR.type="button";bR.textContent="Renvoyer";bR.onclick=()=>sendEntries([e]);acts.append(bR)}
+      // v1.58 : supprimer un constat (deux touches ; avertit s'il n'est pas encore au PC)
+      const bS=document.createElement("button");bS.type="button";bS.className="ghost";bS.textContent="🗑 Supprimer";bS.setAttribute("aria-label","Supprimer ce constat");
+      bS.onclick=()=>supprimerConstat(e,bS);acts.append(bS);
       c.append(r)}
     // bouton « Tout dérouler / Tout replier » de la journée
     const bT=c.querySelector(".tout"),majTout=()=>{const tous=list.every(e=>JOURNAL_OUVERTS.has(e.id));bT.textContent=tous?"Tout replier":"Tout dérouler";bT.dataset.ouvrir=tous?"":"1"};
@@ -1762,6 +1765,13 @@ async function shareFiles(list,files){
 }
 async function markSent(){const now=new Date().toISOString();for(const id of pendingSent) JSEL.delete(id);await tx("entries","readwrite",s=>{for(const id of pendingSent){const r=s.get(id);r.onsuccess=()=>{const e=r.result;if(e){e.envoye=true;e.envoyeLe=now;s.put(e)}}}});
   $("sentConfirm").hidden=true;pendingSent=[];toast("Marqué comme envoyé");renderJournal();refreshBadge()}
+async function supprimerConstat(e,b){
+  if(form.editId===e.id){toast("Ce constat est ouvert dans l'onglet Saisie : enregistre ou annule d'abord la modification.");return}
+  if(!b.dataset.ok){b.dataset.ok="1";b.classList.remove("ghost");b.classList.add("danger");
+    b.textContent=e.envoye?"Confirmer la suppression":"⚠ Pas envoyé au PC : supprimer quand même";
+    setTimeout(()=>{if(b.isConnected&&b.dataset.ok){b.dataset.ok="";b.classList.remove("danger");b.classList.add("ghost");b.textContent="🗑 Supprimer"}},6000);return}
+  await tx("photos","readwrite",s=>{for(const n of e.photos) s.delete(n)});await tx("entries","readwrite",s=>s.delete(e.id));
+  JSEL.delete(e.id);PREP=null;toast("Constat supprimé du téléphone.");await refreshBadge();renderJournal()}
 async function purge(){const en=(await allEntries()).filter(e=>e.envoye&&belongs(e));
   await tx("photos","readwrite",s=>{for(const e of en) for(const n of e.photos) s.delete(n)});
   await tx("entries","readwrite",s=>{for(const e of en) s.delete(e.id)});$("purgeConfirm").hidden=true;toast(`${en.length} constat(s) supprimé(s) du téléphone`);renderJournal()}
@@ -2669,6 +2679,11 @@ const TRAD_UI=[
 ["« {a} » est dans Téléchargements : envoie ce fichier au PC depuis Mes fichiers > Téléchargements > Partager > Quick Share.","“{a}” is in Downloads: send this file to the PC from My Files > Downloads > Share > Quick Share.","«{a}» está en Descargas: envía este archivo al PC desde Mis archivos > Descargas > Compartir > Quick Share.","„{a}“ ist in Downloads: diese Datei über Eigene Dateien > Downloads > Teilen > Quick Share an den PC senden."],
 ["📷 Photos prises le {a} : utiliser cette date","📷 Photos taken on {a}: use this date","📷 Fotos tomadas el {a}: usar esta fecha","📷 Fotos vom {a}: dieses Datum verwenden"],
 ["📷 Attention : photos prises sur plusieurs jours","📷 Note: photos taken over several days","📷 Atención: fotos tomadas en varios días","📷 Achtung: Fotos von mehreren Tagen"],
+["🗑 Supprimer","🗑 Delete","🗑 Eliminar","🗑 Löschen"],
+["Supprimer ce constat","Delete this finding","Eliminar este hallazgo","Diesen Befund löschen"],
+["⚠ Pas envoyé au PC : supprimer quand même","⚠ Not sent to the PC: delete anyway","⚠ No enviado al PC: eliminar de todos modos","⚠ Nicht an den PC gesendet: trotzdem löschen"],
+["Ce constat est ouvert dans l'onglet Saisie : enregistre ou annule d'abord la modification.","This finding is open in the Entry tab: save or cancel the edit first.","Este hallazgo está abierto en la pestaña Captura: guarda o cancela primero la modificación.","Dieser Befund ist im Tab Erfassung geöffnet: zuerst speichern oder Bearbeitung abbrechen."],
+["Constat supprimé du téléphone.","Finding deleted from the phone.","Hallazgo eliminado del teléfono.","Befund vom Telefon gelöscht."],
 ["PDF annulé.","PDF cancelled.","PDF cancelado.","PDF abgebrochen."],
 ["Confirmer la suppression","Confirm deletion","Confirmar la eliminación","Löschen bestätigen"],
 ["PDF supprimé du téléphone.","PDF deleted from the phone.","PDF eliminado del teléfono.","PDF vom Telefon gelöscht."],
