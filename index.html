@@ -118,6 +118,10 @@ nav button{background:transparent;border:0;border-radius:0;color:var(--tab-fg);m
 nav button svg{width:24px;height:24px}
 nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(--accent)}
 .badge{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:var(--accent-fg);font:700 12px/20px var(--font);margin-left:4px}
+nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% + 8px);margin:0;box-shadow:0 0 0 2px var(--tab)}
+#majBar{position:fixed;left:0;right:0;top:0;z-index:30;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;background:var(--accent);color:var(--accent-fg);font:600 15px var(--font);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+#majBar[hidden]{display:none}#majBar span{flex:1 1 180px}#majBar button{min-height:44px;background:var(--accent-fg);color:var(--accent);border:0;font-weight:700}#majBar button.ghost{background:transparent;color:var(--accent-fg);border:1px solid var(--accent-fg)}
+.acc-alerte{margin-top:8px;padding:8px 10px;border-radius:8px;border:2px solid var(--repair);background:var(--accent-soft);font-weight:600}.acc-alerte[hidden]{display:none}
 .entry{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .entry:first-of-type{border-top:0}
 .entry img{width:64px;height:48px;object-fit:cover;border-radius:6px;background:var(--bg)}
@@ -216,7 +220,8 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 <!-- ============ ACCUEIL ============ -->
 <section id="v-accueil">
   <div class="acc-titre"><span>The 982 Inspector Toolbox</span><span class="acc-ver" id="accVer"></span></div>
-  <div class="card c-bleu acc-tete"><h2>Mission active</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div></div>
+  <div class="card c-bleu acc-tete"><h2>Mission active</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div><div class="acc-alerte" id="accAlerte" hidden></div></div>
+  <div class="card confirm brCard" id="brCardA" hidden><strong class="brTxt"></strong><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
   <div class="acc-grille">
     <button type="button" class="acc c-ambre" data-go="saisie"><span class="acc-ic">📷</span><b>Nouveau constat</b><span class="hint">Photos, constat, observation</span></button>
     <button type="button" class="acc c-violet" data-go="prep"><span class="acc-ic">🎤</span><b>Préparer</b><span class="hint">Dicter les contrôles prévus</span></button>
@@ -230,6 +235,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <!-- ============ SAISIE ============ -->
 <section id="v-saisie" hidden>
+  <div class="card confirm brCard" id="brCardS" hidden><strong class="brTxt"></strong><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
   <div class="card c-violet" id="prepCard" hidden>
     <div class="ghead"><h2>Préparer des constats</h2><button type="button" class="ghost" id="prepClose">Fermer</button></div>
     <p class="hint">Avant d'aller en unité : dicte ou tape les contrôles prévus, séparés par « puis » ou « ensuite » (ou un retour à la ligne). Ex. : « je vais dans le régénérateur pour contrôler le soudage de l'hexmetal dans les cyclones primaires, puis les cyclones secondaires, ensuite la démolition du riser au MH2 ».</p>
@@ -482,6 +488,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
   <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h6l2 2"/></svg><span>Missions<span class="badge" id="mWarn" hidden>!</span></span></button>
 </nav>
 <div class="toast" id="toast" hidden></div>
+<div id="majBar" role="status" hidden><span>Nouvelle version de l'appli disponible.</span><button type="button" id="majGo">Recharger</button><button type="button" class="ghost" id="majPlusTard">Plus tard</button></div>
 <!-- ============ VISIONNEUSE DE LA GALERIE ============ -->
 <div id="gv" hidden>
   <div class="edbar"><button type="button" id="gvClose">✕ Fermer</button><span class="edsep"></span><button type="button" id="gvFirst" aria-label="Première photo">⏮</button><button type="button" id="gvPrev" aria-label="Photo précédente">‹</button><span id="gvNum"></span><button type="button" id="gvNext" aria-label="Photo suivante">›</button></div>
@@ -548,7 +555,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.45";
+const APP_VERSION="1.46";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -731,7 +738,7 @@ function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m
 const curMission=()=>MISSIONS.find(m=>m.id===CFG.mission.id);
 const belongs=e=>e.mission&&(e.mission.id?e.mission.id===CFG.mission.id:e.mission.no===CFG.mission.no);
 async function saveMissions(){await kvSet("missions",MISSIONS)}
-async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);resetForm(true);refreshSelects();renderHeader();renderCfg();refreshBadge();renderPrevus();renderDegats();renderAcces();toast(`Mission ${m.no} active`)}
+async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);BR.silence=true;resetForm(true);BR.silence=false;BR.session=false;refreshSelects();renderHeader();renderCfg();refreshBadge();renderPrevus();renderDegats();renderAcces();afficherBrouillon();toast(`Mission ${m.no} active`)}
 /* ---------- formulaire ---------- */
 function fillSelect(sel,items,keep){const v=keep??sel.value;sel.innerHTML="";for(const it of items){const o=document.createElement("option");o.value=it.code;o.textContent=it.nom;sel.append(o)}
   if(items.some(i=>i.code===v)) sel.value=v}
@@ -745,11 +752,11 @@ function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=$("fSub
   const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
   return ["Dossier Photo",safeDir(e?.nom),safeDir(sub),safeDir(act),safeDir(sact),$("fDate").value].filter(Boolean).join("\\")}
 function updatePath(){$("fPath").textContent="→ "+targetDir()}
-function renderGrav(){const g=$("grav");g.innerHTML="";for(const v of GRAVITES){const b=document.createElement("button");b.type="button";b.className="chip";b.dataset.g=v;b.textContent=v;
+function renderGrav(){planifierBrouillon(false);const g=$("grav");g.innerHTML="";for(const v of GRAVITES){const b=document.createElement("button");b.type="button";b.className="chip";b.dataset.g=v;b.textContent=v;
   b.setAttribute("aria-pressed",String(form.gravite===v));b.onclick=()=>{form.gravite=form.gravite===v?"":v;renderGrav()};g.append(b)}}
-async function makeThumb(blob){try{const bm=await createImageBitmap(blob);const w=240,h=Math.round(240*bm.height/bm.width);const c=document.createElement("canvas");c.width=w;c.height=h;
+async function makeThumb(blob){try{const bm=await createImageBitmap(blob);const w=Math.min(480,bm.width),h=Math.round(w*bm.height/bm.width);const c=document.createElement("canvas");c.width=w;c.height=h;
   c.getContext("2d").drawImage(bm,0,0,w,h);return c.toDataURL("image/jpeg",.7)}catch(e){return ""}}
-function renderThumbs(){const t=$("thumbs");t.innerHTML="";form.photos.forEach((p,i)=>{const d=document.createElement("div");d.className="thumb"+(p.inc===false?" hors":"");
+function renderThumbs(){planifierBrouillon(true);const t=$("thumbs");t.innerHTML="";form.photos.forEach((p,i)=>{const d=document.createElement("div");d.className="thumb"+(p.inc===false?" hors":"");
   d.innerHTML=`<img alt="Photo ${i+1} : toucher pour annoter">${p.annot?'<i class="an">annotée</i>':""}${p.inc===false?'<i class="hr">hors rapport</i>':""}<span>${pad(i+1)}${p.prise?" · "+p.prise.slice(11,16):""}</span><button type="button" aria-label="Retirer la photo ${i+1}">×</button>`;d.querySelector("img").src=p.thumb;
   d.querySelector("img").onclick=()=>ouvrirEditeur(i,{src:form.photos,rendu:renderThumbs,fin:renderThumbs});
   d.querySelector("button").onclick=()=>{form.photos.splice(i,1);renderThumbs()};t.append(d)});
@@ -810,9 +817,10 @@ async function saveEntry(){
   }catch(err){toast("Enregistrement impossible : "+(err&&err.name==="QuotaExceededError"?"mémoire du navigateur pleine. Envoie puis libère la place dans le Journal.":err));return}
   toast(old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`);
   if(!old) await prevuTermine();
-  resetForm(true);refreshBadge();
+  resetForm(true);effacerBrouillon();refreshBadge();
 }
-async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;
+async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;BR.silence=true;try{await editEntry2(en,id)}finally{BR.silence=false}}
+async function editEntry2(en,id){
   showView("saisie");refreshSelects({eq:en.equipement.code,act:en.activite.code});
   const absent=(sel,txt)=>{const o=document.createElement("option");o.value="";o.textContent=`⚠ ${txt} (n'existe plus dans la liste)`;sel.prepend(o);sel.value=""};
   if(!EQ.some(x=>x.code===en.equipement.code)){absent($("fEq"),en.equipement.nom);$("fSub").innerHTML="";absent($("fSub"),en.sousEquipement);
@@ -1927,7 +1935,7 @@ async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobil
   $("bTAll").onclick=()=>traduireLignes(T.rows.map((_,i)=>i),false);$("bTSave").onclick=enregistrerCsv;
   window.addEventListener("beforeunload",e=>{if(T.modif){e.preventDefault();e.returnValue=""}})}
 /* ---------- navigation ---------- */
-function showView(v){for(const s of ["accueil","saisie","journal","galerie","reglages","trad"]) $("v-"+s).hidden=s!==v;
+function showView(v){if(v!=="journal") PREP=null;for(const s of ["accueil","saisie","journal","galerie","reglages","trad"]) $("v-"+s).hidden=s!==v;
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v?"page":"false"));
   if(v==="journal") renderJournal();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();window.scrollTo(0,0)}
 /* ---------- accueil ---------- */
@@ -1936,6 +1944,14 @@ async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`
   const np=PREVUS.filter(p=>p.mission===m.id).length;$("accPrevus").textContent=np?`${np} à faire`:"Aucun";
   const en=(await allEntries()).filter(belongs);const n=en.filter(e=>!e.envoye).length;
   $("accJournal").textContent=n?`${n} constat${n>1?"s":""} à envoyer`:(en.length?`${en.length} constat${en.length>1?"s":""}, tout est envoyé`:"Aucun constat");
+  // constats qui n'existent que sur ce téléphone depuis plus de 4 h (ou depuis la veille)
+  const att=en.filter(e=>!e.envoye).map(e=>new Date(e.modifieLe||e.creeLe||e.date)).filter(d=>!isNaN(d)).sort((a,b)=>a-b),al=$("accAlerte");
+  const vieux=att[0],seuil=vieux&&(Date.now()-vieux>4*3600000||vieux.toDateString()!==new Date().toDateString());
+  al.hidden=!seuil;if(seuil){const hier=new Date(Date.now()-86400000).toDateString()===vieux.toDateString();
+    const quand=vieux.toDateString()===new Date().toDateString()?"aujourd'hui":hier?"hier":"le "+frDate(vieux.toISOString().slice(0,10));
+    al.textContent=`⚠ ${n} constat${n>1?"s":""} non envoyé${n>1?"s":""} au PC (le plus ancien : ${quand} à ${pad(vieux.getHours())}:${pad(vieux.getMinutes())}). Tant qu'il${n>1?"s ne sont pas envoyés, ils n'existent":" n'est pas envoyé, il n'existe"} que sur ce téléphone.`;
+    al.onclick=()=>showView("journal");al.style.cursor="pointer"}
+  afficherBrouillon();
   $("accTrad").hidden=$("navTrad").hidden}
 function initAccueil(){document.querySelectorAll("#v-accueil .acc").forEach(b=>b.onclick=()=>{const g=b.dataset.go;
   if(g==="prep"){showView("saisie");$("prepCard").hidden=false;$("prepTxt").focus();return}
@@ -1943,6 +1959,61 @@ function initAccueil(){document.querySelectorAll("#v-accueil .acc").forEach(b=>b
   showView(g)});
   document.querySelector("header h1").style.cursor="pointer";document.querySelector("header h1").onclick=()=>showView("accueil")}
 /* ---------- démarrage ---------- */
+/* ---------- mise à jour de l'appli (v1.46) ----------
+   L'appli s'ouvre avec la copie du téléphone ; une nouvelle version est téléchargée en arrière-plan,
+   puis proposée par la bannière « Recharger » (le constat en cours est gardé dans le brouillon). */
+function initMaj(){if(!("serviceWorker" in navigator)) return;let rechargee=false,derniere=0;
+  const proposer=w=>{if(!w||!navigator.serviceWorker.controller) return;MAJ=w;$("majBar").hidden=false};
+  $("majGo").onclick=async()=>{$("majBar").hidden=true;try{await sauverBrouillon()}catch(e){}if(MAJ) MAJ.postMessage("skipWaiting");else location.reload()};
+  $("majPlusTard").onclick=()=>{$("majBar").hidden=true};
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(rechargee) return;rechargee=true;location.reload()});
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    if(reg.waiting) proposer(reg.waiting);
+    reg.addEventListener("updatefound",()=>{const w=reg.installing;if(w) w.addEventListener("statechange",()=>{if(w.state==="installed") proposer(w)})});
+    // l'appli reste souvent ouverte des jours : on revérifie au retour sur l'appli (au plus toutes les 30 min)
+    const verifier=()=>{if(document.visibilityState!=="visible"||!navigator.onLine||Date.now()-derniere<30*60000) return;derniere=Date.now();reg.update().catch(()=>{})};
+    document.addEventListener("visibilitychange",verifier);derniere=Date.now()}).catch(()=>{})}
+let MAJ=null;
+/* ---------- brouillon du constat en cours (v1.46) ----------
+   Android peut fermer Chrome pendant l'appareil photo, la galerie ou un appel : le formulaire est gardé
+   dans le téléphone (photos à chaque changement, textes 1 s après la frappe, et dès que l'appli passe en arrière-plan). */
+const BR={silence:false,minuterie:null,photos:false,charge:false,session:false};
+function etatTexte(){return {mission:CFG.mission.id,t:Date.now(),eq:$("fEq").value,sub:$("fSub").value,act:$("fAct").value,subact:$("fSubAct").value,rep:$("fRep").value,date:$("fDate").value,
+  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null}}
+const aDuContenu=t=>!!(form.photos.length||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||t.editId);
+function planifierBrouillon(photos){if(BR.silence||!DB||!BR.charge) return;if(photos) BR.photos=true;clearTimeout(BR.minuterie);BR.minuterie=setTimeout(()=>sauverBrouillon().catch(()=>{}),photos?300:1000)}
+async function sauverBrouillon(){clearTimeout(BR.minuterie);if(!DB||!BR.charge) return;const t=etatTexte();
+  // formulaire vidé : on ne supprime que le brouillon écrit pendant cette session (jamais celui d'avant, pas encore repris)
+  if(!aDuContenu(t)){if(BR.session) await effacerBrouillon();return}
+  // photos : à chaque changement, et toujours au premier enregistrement du brouillon (ex. modification d'un constat existant)
+  if(BR.photos||!BR.session){BR.photos=false;await kvSet("brouillonPhotos",{mission:t.mission,photos:form.photos.map(p=>({id:p.id||null,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null,leg:p.leg||"",inc:p.inc!==false}))})}
+  await kvSet("brouillonTexte",t);BR.session=true}
+async function effacerBrouillon(){clearTimeout(BR.minuterie);BR.photos=false;BR.session=false;try{await tx("kv","readwrite",s=>{s.delete("brouillonTexte");s.delete("brouillonPhotos")})}catch(e){}afficherBrouillon()}
+async function afficherBrouillon(){let t=null,ph=null;try{t=await kvGet("brouillonTexte");ph=await kvGet("brouillonPhotos")}catch(e){}
+  const vide=document.querySelectorAll(".brCard");
+  // proposé seulement pour la mission active, et pas si ce brouillon est déjà dans le formulaire
+  if(!t||t.mission!==CFG.mission.id||BR.session){vide.forEach(c=>c.hidden=true);return}
+  const n=ph&&ph.mission===t.mission?ph.photos.length:0,d=new Date(t.t);
+  const quoi=t.editId?"Une modification de constat":"Un constat en cours";
+  const txt=`${quoi} n'a pas été enregistré${t.editId?"e":""} : ${n} photo${n>1?"s":""}${t.obs.trim()?", observation saisie":""} (le ${frDate(d.toISOString().slice(0,10))} à ${pad(d.getHours())}:${pad(d.getMinutes())}).`;
+  vide.forEach(c=>{c.hidden=false;c.querySelector(".brTxt").textContent=txt;const no=c.querySelector(".brNo");no.textContent="Supprimer le brouillon";no.dataset.ok=""})}
+async function reprendreBrouillon(){const t=await kvGet("brouillonTexte"),ph=await kvGet("brouillonPhotos");if(!t) return;
+  BR.silence=true;try{showView("saisie");
+    refreshSelects({eq:t.eq,act:t.act,subact:t.subact});if(t.sub) $("fSub").value=t.sub;fillSubAct(t.subact);
+    $("fRep").value=t.rep;$("fDate").value=t.date||today();$("fObs").value=t.obs;$("fReco").value=t.reco;$("fDec").checked=t.dec;$("fSurf").value=t.surf;$("fMarq").checked=t.marq;$("fAcces").value=t.acces||"";
+    form={photos:ph&&ph.mission===t.mission?ph.photos:[],gravite:t.gravite||"",editId:t.editId,prevuId:t.prevuId};
+    const pv=t.prevuId&&PREVUS.find(x=>x.id===t.prevuId);if(pv){$("prevuBanner").hidden=false;$("prevuTxt").textContent=pv.note}else{form.prevuId=null;$("prevuBanner").hidden=true}
+    if(t.editId){$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false}
+    renderThumbs();renderGrav();updatePath();if(typeof majDegats==="function") majDegats()}finally{BR.silence=false}
+  BR.session=true;document.querySelectorAll(".brCard").forEach(c=>c.hidden=true);window.scrollTo(0,0);toast("Constat en cours repris. Pense à l'enregistrer.")}
+function initBrouillon(){document.querySelectorAll(".brGo").forEach(b=>b.onclick=reprendreBrouillon);
+  document.querySelectorAll(".brNo").forEach(b=>b.onclick=()=>{if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer : supprimer (photos comprises)";return}effacerBrouillon()});
+  const sec=$("v-saisie");sec.addEventListener("input",e=>{if(!e.target.closest(".brCard,#prepCard,#addCard")) planifierBrouillon(false)});
+  sec.addEventListener("change",e=>{if(!e.target.closest(".brCard,#prepCard,#addCard")) planifierBrouillon(false)});
+  // l'appli passe en arrière-plan (appareil photo, appel, autre appli) : on enregistre tout de suite
+  const vite=()=>{if(document.visibilityState==="hidden"&&BR.minuterie) sauverBrouillon().catch(()=>{})};
+  document.addEventListener("visibilitychange",vite);addEventListener("pagehide",()=>{if(BR.minuterie) sauverBrouillon().catch(()=>{})});
+  BR.charge=true;afficherBrouillon()}
 async function start(){
   initEditeur2();initGalerie();initPrep();initTheme();
   initEditeur("fObs");initEditeur("fReco");
@@ -1961,7 +2032,7 @@ async function start(){
   kvGet("picker").then(v=>appliquerPicker(v||"1")).catch(()=>appliquerPicker("1"));
   $("cPicker").onchange=e=>{appliquerPicker(e.target.value);kvSet("picker",e.target.value).catch(()=>{});toast("Sélecteur de photos : variante "+e.target.value+". Essaie « Choisir dans la galerie ».")};
   $("iCam").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};$("iGal").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};
-  $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>resetForm(true);
+  $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>{resetForm(true);effacerBrouillon()};
   $("bSend").onclick=async()=>{if(PREP&&PREP.files.length) sendEntries(PREP.list,PREP.files);else sendEntries((await allEntries()).filter(e=>!e.envoye&&belongs(e)))};
   $("bSentYes").onclick=markSent;
   $("bDl").onclick=async()=>{const list=(PREP&&PREP.list.length)?PREP.list:(await allEntries()).filter(e=>!e.envoye&&belongs(e));if(!list.length) return;downloadFiles(list,(PREP&&PREP.files.length)?PREP.files:await buildFiles(list))};$("bSentNo").onclick=()=>{$("sentConfirm").hidden=true;pendingSent=[]};
@@ -1977,8 +2048,8 @@ async function start(){
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
   $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
-  initTrad();initAccueil();initEnvoi();showView("accueil");
-  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+  initTrad();initAccueil();initEnvoi();initBrouillon();showView("accueil");
+  initMaj();
 }
 start();
 </script>
