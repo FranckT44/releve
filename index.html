@@ -122,6 +122,13 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 #edCv{touch-action:none;position:absolute;inset:0;width:100%;height:100%}
 #edTxt{display:flex;flex-direction:column;gap:6px;padding:6px 8px}#edTxt[hidden]{display:none!important}#edTxt textarea{width:100%;box-sizing:border-box;font-size:16px;min-height:52px;resize:vertical}.edtxtopt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.edtxtopt button{min-height:44px;min-width:44px}.edtxtopt button[aria-pressed=true]{background:#2f6f8f;border-color:#8fd0ee}#edTxtTv{min-width:2ch}.edtxtopt .primary{margin-left:auto}
 .edfoot{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:6px}.edfoot button{min-height:44px;white-space:normal}
+.prevus{list-style:none;margin:0;padding:0;display:grid;gap:8px}.prevu{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px}.prevu>div{grid-column:1/-1}.prevu .hint{font-size:13px}
+.prevu .hint{display:block}.prevu.actif{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.prevuBanner{display:flex;justify-content:space-between;gap:8px;align-items:center;background:#fff4d6;color:#5a4300;border-radius:8px;padding:6px 10px;font-size:14px}
+.prepItem{border:1px solid var(--line);border-radius:8px;padding:8px;display:grid;gap:6px;margin-bottom:8px}.prepItem.doute{border-color:#e08a00;background:rgba(224,138,0,.08)}
+.prepTete{display:flex;gap:6px;align-items:baseline}.prepTete .hint{flex:1}.prepSel{display:grid;grid-template-columns:1fr 1fr;gap:6px}.prepSel select,.prepSel input{min-height:40px;font-size:15px}
+#prepCard[hidden],#prevusCard[hidden],.prevuBanner[hidden],#prepSave[hidden],#prepMic[hidden]{display:none!important}
+#prepMic.rec{background:#c0392b;color:#fff;border-color:#c0392b}
 .thumb.hors img{opacity:.38}.thumb .hr{position:absolute;right:4px;bottom:4px;font:600 10px var(--font);background:#555;color:#fff;padding:1px 5px;border-radius:4px}
 .gt{-webkit-touch-callout:none;user-select:none;cursor:pointer}.gt img{-webkit-user-drag:none;pointer-events:none}.gt .no{position:absolute;left:4px;top:4px;font:600 11px var(--mono);background:rgba(0,0,0,.65);color:#fff;padding:1px 6px;border-radius:4px}
 .gt .lg{position:absolute;left:0;right:0;bottom:0;font:11px var(--font);background:rgba(0,0,0,.62);color:#fff;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -158,8 +165,24 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 <main>
 <!-- ============ SAISIE ============ -->
 <section id="v-saisie">
+  <div class="card" id="prepCard" hidden>
+    <div class="ghead"><h2>Préparer des constats</h2><button type="button" class="ghost" id="prepClose">Fermer</button></div>
+    <p class="hint">Avant d'aller en unité : dicte ou tape les contrôles prévus, séparés par « puis » ou « ensuite » (ou un retour à la ligne). Ex. : « je vais dans le régénérateur pour contrôler le soudage de l'hexmetal dans les cyclones primaires, puis les cyclones secondaires, ensuite la démolition du riser au MH2 ».</p>
+    <div class="row2"><label>Langue de la dictée<select id="prepLang"><option value="fr-FR">Français</option><option value="en-GB">English</option><option value="es-ES">Español</option><option value="de-DE">Deutsch</option></select></label>
+      <div class="field"><span class="rtelab">&nbsp;</span><button type="button" id="prepMic">🎤 Dicter</button></div></div>
+    <textarea id="prepTxt" rows="4" placeholder="Contrôles prévus…" aria-label="Contrôles prévus"></textarea>
+    <p class="hint" id="prepLive" aria-live="polite"></p><p class="hint" id="prepMicHint"></p>
+    <button type="button" id="prepGo">Analyser</button>
+    <div id="prepRes"></div>
+    <button type="button" class="primary" id="prepSave" hidden>Créer les constats prévus</button>
+  </div>
+  <div class="card" id="prevusCard" hidden>
+    <h2>Constats prévus (<span id="prevusN">0</span>)</h2>
+    <ul id="prevusList" class="prevus"></ul>
+  </div>
   <div class="card">
-    <h2 id="formTitle">Nouveau constat</h2>
+    <div class="ghead"><h2 id="formTitle">Nouveau constat</h2><button type="button" id="bPrep">🎤 Préparer</button></div>
+    <div id="prevuBanner" class="prevuBanner" hidden><span>Constat prévu : <i id="prevuTxt"></i></span><button type="button" class="ghost" id="prevuQuit" aria-label="Ne plus lier ce constat au prévu">✕</button></div>
     <div class="field"><span class="rtelab" id="l_fEq">Équipement</span><div class="selrow"><select id="fEq" aria-labelledby="l_fEq"></select><button type="button" class="plus" data-add="eq" aria-label="Ajouter : équipement">+</button></div></div>
     <div class="field"><span class="rtelab" id="l_fSub">Sous-équipement</span><div class="selrow"><select id="fSub" aria-labelledby="l_fSub"></select><button type="button" class="plus" data-add="sub" aria-label="Ajouter : sous-équipement">+</button></div></div>
     <div class="field"><span class="rtelab" id="l_fAct">Activité</span><div class="selrow"><select id="fAct" aria-labelledby="l_fAct"></select><button type="button" class="plus" data-add="act" aria-label="Ajouter : activité">+</button></div></div>
@@ -423,7 +446,7 @@ nav button[aria-current=page]{color:var(--tab-on);box-shadow:inset 0 3px 0 var(-
 
 <script>
 "use strict";
-const APP_VERSION="1.23";
+const APP_VERSION="1.24";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -606,7 +629,7 @@ function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m
 const curMission=()=>MISSIONS.find(m=>m.id===CFG.mission.id);
 const belongs=e=>e.mission&&(e.mission.id?e.mission.id===CFG.mission.id:e.mission.no===CFG.mission.no);
 async function saveMissions(){await kvSet("missions",MISSIONS)}
-async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);resetForm(true);refreshSelects();renderHeader();renderCfg();refreshBadge();toast(`Mission ${m.no} active`)}
+async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);resetForm(true);refreshSelects();renderHeader();renderCfg();refreshBadge();renderPrevus();toast(`Mission ${m.no} active`)}
 /* ---------- formulaire ---------- */
 function fillSelect(sel,items,keep){const v=keep??sel.value;sel.innerHTML="";for(const it of items){const o=document.createElement("option");o.value=it.code;o.textContent=it.nom;sel.append(o)}
   if(items.some(i=>i.code===v)) sel.value=v}
@@ -650,7 +673,7 @@ async function addFiles(files){const nouv=[];
   if(jours.length===1&&jours[0]!==$("fDate").value){$("fDate").value=jours[0];updatePath();toast(`Date réglée sur la prise de vue : ${frDate(jours[0])}`)}
   else if(jours.length>1) toast("Attention : les photos ont été prises sur plusieurs jours.");
   renderThumbs()}
-function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null};$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";
+function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";
   if(!keepContext) $("fDate").value=today();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
 async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
@@ -684,6 +707,7 @@ async function saveEntry(){
     await tx("entries","readwrite",s=>s.put(entry));
   }catch(err){toast("Enregistrement impossible : "+(err&&err.name==="QuotaExceededError"?"mémoire du navigateur pleine. Envoie puis libère la place dans le Journal.":err));return}
   toast(old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`);
+  if(!old) await prevuTermine();
   resetForm(true);refreshBadge();
 }
 async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;
@@ -868,6 +892,117 @@ function initEditeur2(){
     if(x<=0.5&&y<=0.5&&x2>=ED.img.width-0.5&&y2>=ED.img.height-0.5){toast("Zoome d'abord sur la zone à garder.");return}
     edPousser();ED.crop={x,y,w:x2-x,h:y2-y};edDessiner();toast("Recadrage = la vue affichée. « Tout » pour revoir la photo entière.",3500)};
   $("edFirst").onclick=()=>edAller(0);$("edPrev").onclick=()=>edAller(ED.i-1);$("edNext").onclick=()=>edAller(ED.i+1)}
+/* ---------- préparation des constats (dictée ou texte) ---------- */
+// groupes de synonymes FR / EN / ES / DE (normalisés : minuscules, sans accents)
+const SYN=[
+ ["regenerator","regenerateur","regen","rege","regenerador","regenerators"],["reactor","reacteur","reaktor"],["disengager","desengageur","separateur","separator"],
+ ["stripper","strippeur"],["riser","colonne"],["cyclone","cyclones","ciclon","ciclones","zyklon"],["primary","primaire","primaires","primario","primarios","primar"],
+ ["secondary","secondaire","secondaires","secundario","secundarios","sekundar"],["wall","walls","paroi","parois","mur","murs","pared","wand"],["shell","virole","viroles","envolvente"],
+ ["cone","cones","conique","cono"],["dome","calotte","cupula"],["head","tete","fond"],["lower","inferieur","inferieure","bas","bottom","inferior"],["upper","superieur","superieure","haut","top","superior"],
+ ["crossover","traversee","cross"],["distributor","distributeur","grille","diffuseur","distribuidor"],["steam","vapeur","vapor"],["expansion","dilatation","soufflet"],
+ ["flue","fumees","fumee","humos"],["line","ligne","conduite","linea"],["baffle","chicane","chicanes","shed","sheds"],["feed","charge","alimentation"],["air","aire"],
+ ["initial","initiale","premiere","first","inicial"],["additional","complementaire","supplementaire","adicional"],["progress","avancement","suivi","progreso"],
+ ["final","finale","reception","finales"],["demolition","demolir","demoli","casse","demolicion","abbruch"],
+ ["anchor","anchors","anchoring","ancrage","ancrages","hexmetal","hexmesh","hexsteel","agrafes","agrafe","picots","studs","anclaje","anclajes","anker"],
+ ["installation","install","pose","poser","soudage","soudure","souder","soude","welding","weld","montage","instalacion","soldadura"],
+ ["preparation","sablage","sandblasting","grenaillage","blasting","nettoyage","preparacion"],["surface","superficie"],
+ ["lining","revetement","garnissage","refractaire","refractory","castable","beton","refractario","revestimiento"],
+ ["formwork","coffrage","coffrages","shuttering","encofrado"],["casting","coulage","couler","coule","cast","pouring","vertido","colado"],
+ ["gunning","gunitage","gunite","projection","projete","shotcrete","gunitado","proyectado"],["handpacking","damage","pisonnage","packing"],["fiber","fibre","fibres","ceramique"],
+ ["inspection","controle","controler","verifier","verification","check","visite","inspecter","inspeccion","prufung"]];
+const STOP=new Set("le la les l de du des d un une et dans au aux en pour sur par avec a je vais va on nous il puis ensuite apres the of in to an for at on and with go going el los las del y para con der die das und im zu".split(" "));
+const norm=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[’']/g," ").replace(/[^a-z0-9]+/g," ").trim();
+const stem=t=>/^\d+$/.test(t)?t:t.slice(0,6);
+const SYNIDX=new Map();SYN.forEach((g,i)=>g.forEach(v=>{SYNIDX.set(stem(v),i)}));
+function motsCles(nom){return norm(nom).split(" ").filter(t=>t&&!STOP.has(t)&&(t.length>1||/\d/.test(t)))}
+function variantes(t){const g=SYNIDX.get(stem(t));return g==null?[stem(t)]:SYN[g].map(stem)}
+// score d'un nom de liste dans une phrase : nb de mots retrouvés (+ part des mots retrouvés)
+function scoreNom(nom,stems,code){const mc=motsCles(nom);if(!mc.length) return 0;let n=0;
+  for(const t of mc) if(variantes(t).some(v=>stems.has(v))) n++;
+  if(code&&stems.has(norm(code))) n+=1;
+  return n?n+0.5*n/mc.length:0}
+function meilleur(items,stems,avecCode){let b=null,bs=0;for(const it of items){const s=scoreNom(it.nom,stems,avecCode?it.code:null);if(s>bs){bs=s;b=it}}return bs>=1?b:null}
+function decouper(txt){return txt.split(/\n|[.;!?]+\s|\b(?:puis|ensuite|et apres|apres ca|then|next|luego|despues|dann|danach|constat suivant)\b/i).map(s=>s.trim()).filter(s=>s.length>2)}
+function analyserTexte(txt){const out=[];let prev=null;
+  for(const seg of decouper(txt)){const stems=new Set(norm(seg).split(" ").filter(Boolean).map(stem));
+    let eq=meilleur(EQ,stems,true),sub=null,herite=false;
+    if(!eq){ // seul un sous-équipement est cité : on le cherche dans l'équipement précédent, puis partout
+      if(prev&&prev.eq){const e=EQ.find(x=>x.code===prev.eq);sub=e&&meilleur(e.enfants,stems);if(sub) eq=e}
+      if(!eq){let bs=0;for(const e of EQ) for(const c of e.enfants){const s=scoreNom(c.nom,stems);if(s>bs){bs=s;eq=e;sub=c}} if(bs<1){eq=null;sub=null}}
+      if(!eq&&prev){eq=EQ.find(x=>x.code===prev.eq);herite=true}}
+    if(eq&&!sub){const reste=new Set(stems);for(const t of motsCles(eq.nom)) for(const v of variantes(t)) reste.delete(v); // le nom de l'équipement ne désigne pas un sous-équipement
+      sub=meilleur(eq.enfants,reste)}
+    let act=null,sa=null,bs=0;
+    for(const a of ACT){const s=scoreNom(a.nom,stems);if(s>bs){bs=s;act=a;sa=null}for(const c of a.enfants){const t=scoreNom(c.nom,stems);if(t>bs){bs=t;act=a;sa=c}}}
+    if(bs<1){act=prev?ACT.find(x=>x.code===prev.act):null;sa=act&&prev.subact?act.enfants.find(x=>x.code===prev.subact):null;herite=true}
+    const rep=(seg.match(/\b(?:mh|manhole|trou d.homme|tdh|section|repere)\s*n?°?\s*\d+[a-z]?\b/i)||[""])[0].toUpperCase().replace(/^MANHOLE\s*|^TROU D.HOMME\s*|^TDH\s*/,"MH");
+    const p={id:newId(),mission:CFG.mission.id,eq:eq?eq.code:"",sub:sub?sub.code:"",act:act?act.code:"",subact:sa?sa.code:"",repere:rep,note:seg,sur:!!(eq&&act&&!herite&&(sub||!eq.enfants.length))}; // sur = tout reconnu dans la phrase, sinon ligne en orange à vérifier
+    out.push(p);prev=p}
+  return out}
+// stockage : kv « prevus » = constats préparés, toutes missions
+let PREVUS=[];
+let PREVUS_OK=false;
+async function chargerPrevus(){try{PREVUS=(await kvGet("prevus"))||[];PREVUS_OK=true}catch(e){PREVUS=[]}}
+async function sauverPrevus(){if(!PREVUS_OK) await chargerPrevusFusion();await kvSet("prevus",PREVUS);renderPrevus()}
+async function chargerPrevusFusion(){const nouv=PREVUS;await chargerPrevus();for(const p of nouv) if(!PREVUS.some(x=>x.id===p.id)) PREVUS.push(p)}
+const nomDe=(liste,code)=>(liste.find(x=>x.code===code)||{}).nom||"";
+function libellePrevu(p){const e=EQ.find(x=>x.code===p.eq),a=ACT.find(x=>x.code===p.act);
+  return [e?e.nom:"?",e?nomDe(e.enfants,p.sub):"",a?(p.subact?nomDe(a.enfants,p.subact):a.nom):"?"].filter(Boolean).join(" · ")+(p.repere?` · ${p.repere}`:"")}
+function renderPrevus(){const l=PREVUS.filter(p=>p.mission===CFG.mission.id),c=$("prevusCard");c.hidden=!l.length;if(!l.length) return;
+  $("prevusN").textContent=l.length;const ul=$("prevusList");ul.innerHTML="";
+  for(const p of l){const li=document.createElement("li");li.className="prevu"+(form.prevuId===p.id?" actif":"");
+    li.innerHTML=`<div><b></b><span class="hint"></span></div><button type="button" class="primary">Commencer</button><button type="button" class="ghost" aria-label="Supprimer ce constat prévu">✕</button>`;
+    li.querySelector("b").textContent=libellePrevu(p);li.querySelector(".hint").textContent=p.note;
+    const [bGo,bDel]=li.querySelectorAll("button");bGo.onclick=()=>commencerPrevu(p.id);
+    bDel.onclick=async()=>{PREVUS=PREVUS.filter(x=>x.id!==p.id);if(form.prevuId===p.id){form.prevuId=null;$("prevuBanner").hidden=true}await sauverPrevus()};
+    ul.append(li)}}
+function commencerPrevu(id){const p=PREVUS.find(x=>x.id===id);if(!p) return;
+  if(form.editId){toast("Termine ou annule d'abord la modification en cours.");return}
+  refreshSelects({eq:p.eq,sub:p.sub,act:p.act,subact:p.subact});if(p.sub) $("fSub").value=p.sub;fillSubAct(p.subact);updatePath();
+  if(p.repere) $("fRep").value=p.repere;
+  form.prevuId=id;$("prevuBanner").hidden=false;$("prevuTxt").textContent=p.note;renderPrevus();
+  $("formTitle").scrollIntoView({behavior:"smooth",block:"start"})}
+async function prevuTermine(){if(!form.prevuId) return;const id=form.prevuId;PREVUS=PREVUS.filter(x=>x.id!==id);await sauverPrevus()}
+// panneau de préparation
+let PROPS=[],REC=null;
+function selectPrep(items,val,vide){const s=document.createElement("select");if(vide){const o=document.createElement("option");o.value="";o.textContent=vide;s.append(o)}
+  for(const it of items){const o=document.createElement("option");o.value=it.code;o.textContent=it.nom;s.append(o)}s.value=items.some(i=>i.code===val)?val:(vide?"":items[0]?.code||"");return s}
+function renderPrep(){const box=$("prepRes");box.innerHTML="";$("prepSave").hidden=!PROPS.length;$("prepSave").textContent=`Créer ${PROPS.length} constat${PROPS.length>1?"s":""} prévu${PROPS.length>1?"s":""}`;
+  PROPS.forEach((p,i)=>{const d=document.createElement("div");d.className="prepItem"+(p.sur?"":" doute");
+    d.innerHTML=`<div class="prepTete"><b>${i+1}.</b> <span class="hint"></span><button type="button" class="ghost" aria-label="Retirer">✕</button></div><div class="prepSel"></div>`;
+    d.querySelector(".hint").textContent=p.note;d.querySelector("button").onclick=()=>{PROPS.splice(i,1);renderPrep()};
+    const zone=d.querySelector(".prepSel");
+    const sEq=selectPrep(EQ,p.eq,"Équipement ?");const e=EQ.find(x=>x.code===p.eq);
+    const sSub=selectPrep(e&&e.enfants.length?e.enfants:[{nom:GENERAL[langueMission()]||"(général)",code:"GEN"}],p.sub);
+    const sAct=selectPrep(ACT,p.act,"Activité ?");const a=ACT.find(x=>x.code===p.act);
+    const sSa=selectPrep(a&&a.enfants.length?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],p.subact);
+    const rep=document.createElement("input");rep.type="text";rep.placeholder="Repère";rep.value=p.repere||"";
+    sEq.setAttribute("aria-label","Équipement");sSub.setAttribute("aria-label","Sous-équipement");sAct.setAttribute("aria-label","Activité");sSa.setAttribute("aria-label","Sous-activité");rep.setAttribute("aria-label","Repère");
+    sEq.onchange=()=>{p.eq=sEq.value;p.sub="";p.sur=!!(p.eq&&p.act);renderPrep()};sSub.onchange=()=>{p.sub=sSub.value;p.sur=!!(p.eq&&p.act);d.classList.toggle("doute",!p.sur)};
+    sAct.onchange=()=>{p.act=sAct.value;p.subact="";p.sur=!!(p.eq&&p.act);renderPrep()};sSa.onchange=()=>{p.subact=sSa.value};rep.oninput=()=>{p.repere=rep.value.trim()};
+    p.sub=sSub.value;p.subact=sSa.value;zone.append(sEq,sSub,sAct,sSa,rep);box.append(d)})}
+function initPrep(){
+  $("bPrep").onclick=()=>{const c=$("prepCard");c.hidden=!c.hidden;if(!c.hidden) $("prepTxt").focus()};
+  $("prepClose").onclick=()=>{arreterDictee();$("prepCard").hidden=true};
+  $("prepGo").onclick=()=>{arreterDictee();PROPS=analyserTexte($("prepTxt").value);renderPrep();if(!PROPS.length) toast("Rien à analyser : dicte ou tape les constats à préparer.")};
+  $("prepSave").onclick=async()=>{const ok=PROPS.filter(p=>p.eq&&p.act);if(ok.length<PROPS.length){toast("Choisis l'équipement et l'activité des lignes où ils manquent.");return}
+    PREVUS.push(...ok.map(p=>({...p,creeLe:new Date().toISOString()})));await sauverPrevus();PROPS=[];renderPrep();$("prepTxt").value="";$("prepCard").hidden=true;
+    toast(`${ok.length} constat${ok.length>1?"s":""} prévu${ok.length>1?"s":""} : touche « Commencer » sur place.`,4000)};
+  $("prevuQuit").onclick=()=>{form.prevuId=null;$("prevuBanner").hidden=true;renderPrevus()};
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){$("prepMic").hidden=true;$("prepMicHint").textContent="Dictée : utilise le micro du clavier du téléphone dans la zone de texte."}
+  else $("prepMic").onclick=()=>REC?arreterDictee():lancerDictee(SR);
+}
+function lancerDictee(SR){const r=new SR();REC=r;r.lang=$("prepLang").value;r.continuous=true;r.interimResults=true;
+  const t=$("prepTxt");let base=t.value.trim();
+  r.onresult=ev=>{let fin="",tmp="";for(let i=ev.resultIndex;i<ev.results.length;i++){const x=ev.results[i];if(x.isFinal) fin+=x[0].transcript;else tmp+=x[0].transcript}
+    if(fin){base=(base?base+" ":"")+fin.trim();t.value=base}$("prepLive").textContent=tmp};
+  r.onerror=ev=>{if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){toast("Micro refusé : autorise le micro pour l'appli, ou utilise le micro du clavier.",5000);arreterDictee()}
+    else if(ev.error==="network"){toast("Dictée indisponible sans réseau : utilise le micro du clavier du téléphone.",5000);arreterDictee()}};
+  r.onend=()=>{if(REC===r){try{r.start()}catch(e){arreterDictee()}}}; // Android coupe après un silence : on relance
+  try{r.start()}catch(e){REC=null;return}
+  $("prepMic").classList.add("rec");$("prepMic").textContent="■ Arrêter";$("prepLive").textContent="…"}
+function arreterDictee(){const r=REC;REC=null;if(r){try{r.stop()}catch(e){}}$("prepMic").classList.remove("rec");$("prepMic").textContent="🎤 Dicter";$("prepLive").textContent=""}
 /* ---------- galerie ---------- */
 const GAL={items:[],vis:[],cur:-1,attente:null,url:null,drag:null};
 async function chargerGalerie(){const en=(await allEntries()).filter(belongs).sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));const items=[];
@@ -1328,11 +1463,12 @@ function showView(v){for(const s of ["saisie","journal","galerie","reglages","tr
   if(v==="journal") renderJournal();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();window.scrollTo(0,0)}
 /* ---------- démarrage ---------- */
 async function start(){
-  initEditeur2();initGalerie();
+  initEditeur2();initGalerie();initPrep();
   initEditeur("fObs");initEditeur("fReco");
   try{DB=await openDB()}catch(e){document.querySelector("main").innerHTML=`<div class="card"><strong>Stockage indisponible.</strong><p class="hint">Ouvre l'appli dans Chrome (pas en navigation privée).</p></div>`;return}
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
   await loadCfg();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
+  await chargerPrevus();renderPrevus();
   $("fEq").onchange=()=>{fillSub();updatePath()};$("fSub").onchange=updatePath;$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=updatePath;
   document.querySelectorAll(".plus").forEach(b=>b.onclick=()=>ouvrirAjout(b.dataset.add));
   $("addNom").oninput=proposerCode;$("addCode").oninput=()=>{$("addCode").dataset.touche=$("addCode").value?"1":""};
