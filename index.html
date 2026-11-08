@@ -600,7 +600,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.55";
+const APP_VERSION="1.56";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1694,9 +1694,28 @@ async function photoFile(n,original,e,k){const p=await getPhoto(n);if(!p) return
   if(type!=="image/jpeg"){const j=await versJpeg(blob);if(j){blob=j;type="image/jpeg"}} // tout passe en JPEG pour porter le nom
   blob=await marquerJpeg(blob,n);if(e) blob=await etiqueterJpeg(blob,metaPhoto(e,k));
   return new File([blob],n,{type:"image/jpeg"})}
-async function buildFiles(list){const files=[];
+// v1.56 : TOUT l'envoi (constats + photos + originaux) voyage dans UN SEUL fichier image « paquet » :
+// Samsung Internet / Mes fichiers ne transmettaient pas tous les fichiers. Ranger-Releves.ps1 le déballe.
+async function buildFiles(list){return list.length?[await paquetEnvoi(list,await fichiersEnvoi(list))]:[]}
+async function paquetEnvoi(list,files){const m=list[0].mission||{},np=list.reduce((a,e)=>a+e.photos.length,0),h=new Date();
+  const nom=nomSur(`${m.no||"mission"} - Envoi PC - ${today()} ${String(h.getHours()).padStart(2,"0")}h${String(h.getMinutes()).padStart(2,"0")} - ${list.length} constat${list.length>1?"s":""}`)+".releve.jpg";
+  const c=document.createElement("canvas");c.width=900;c.height=Math.min(1400,260+Math.min(list.length,20)*40);const g=c.getContext("2d");
+  g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.fillStyle="#6b2914";g.fillRect(0,0,900,10);g.font="bold 30px sans-serif";g.fillText("Envoi vers le PC – paquet de transfert",40,64);
+  g.fillStyle="#444";g.font="24px sans-serif";g.fillText(`Mission ${m.no||""} · ${list.length} constat${list.length>1?"s":""} · ${np} photo${np>1?"s":""}`,40,110);
+  g.fillStyle="#222";g.font="21px sans-serif";list.slice(0,20).forEach((e,i)=>{const t=`${frDate(e.date)} – ${libelleConstat(e)}`;g.fillText(t.length>70?t.slice(0,68)+"…":t,40,160+i*40)});
+  if(list.length>20) g.fillText(`… et ${list.length-20} autre(s)`,40,160+20*40);
+  g.fillStyle="#777";g.font="19px sans-serif";g.fillText("Déballé et rangé automatiquement sur le PC (Ranger les relevés). Ne pas ouvrir ni renommer.",40,c.height-30);
+  const jpg=new Uint8Array(await (await new Promise(r=>c.toBlob(r,"image/jpeg",0.8))).arrayBuffer());
+  let pos=2;while(pos+4<jpg.length&&jpg[pos]===0xFF&&jpg[pos+1]>=0xE0&&jpg[pos+1]<=0xEF) pos+=2+(jpg[pos+2]<<8|jpg[pos+3]);
+  const enc=new TextEncoder(),parts=[jpg.subarray(0,pos)],seg=(pre,data)=>{const L=pre.length+data.length+2;parts.push(new Uint8Array([0xFF,0xFE,L>>8,L&255]),pre,data)};
+  seg(enc.encode("RELEVE-FICHIER:"),enc.encode(nom));
+  seg(enc.encode("RELEVE-PAQUET:"),enc.encode(JSON.stringify({v:1,fichiers:files.map(f=>({nom:f.name,taille:f.size}))})));
+  const pre=enc.encode("RELEVE-DATA:"),T=65000;
+  for(const f of files){const b=new Uint8Array(await f.arrayBuffer());for(let i=0;i<b.length;i+=T) seg(pre,b.subarray(i,i+T))}
+  parts.push(jpg.subarray(pos));return new File(parts,nom,{type:"image/jpeg"})}
+async function fichiersEnvoi(list){const files=[];
   for(const e of list){for(const [k,n] of e.photos.entries()){const f=await photoFile(n,false,e,k);if(f) files.push(f);const o=await photoFile(n,true,e,k);if(o) files.push(o)}
-    files.push(await ficheConstat(e))}
+    files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))} // dans le paquet : simple texte, rangé au même passage
   return files}
 // v1.55 : le constat voyage DANS une image JPEG (« fiche constat ») : Samsung Internet ne partage que les images,
 // un fichier .txt était perdu en route. Le JSON est écrit dans des commentaires JPEG « RELEVE-CONSTAT: », relus par Ranger-Releves.ps1.
@@ -1719,7 +1738,7 @@ async function prepareSend(){const list=await selectionEnvoi();const p={list,fil
 async function sendEntries(list,prepared){return shareFiles(list,prepared||await buildFiles(list))}
 async function downloadFiles(list,files){pendingSent=list.map(e=>e.id);
   for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.append(a);a.click();a.remove();await new Promise(r=>setTimeout(r,300))}
-  toast("Fichiers enregistrés dans Téléchargements : envoie-les au PC depuis « Mes fichiers » > Téléchargements > Partager > Quick Share.",7000);$("sentConfirm").hidden=false}
+  toast(files.length===1?`« ${files[0].name} » est dans Téléchargements : envoie ce fichier au PC depuis Mes fichiers > Téléchargements > Partager > Quick Share.`:"Fichiers enregistrés dans Téléchargements : envoie-les au PC depuis « Mes fichiers » > Téléchargements > Partager > Quick Share.",9000);$("sentConfirm").hidden=false}
 // Samsung DeX (écran externe) : la fenêtre de partage s'ouvre et se referme aussitôt -> on enregistre dans Téléchargements
 function modeEnvoi(){try{return localStorage.getItem("envoi")||"auto"}catch(e){return "auto"}}
 function estDeX(){const m=modeEnvoi();if(m==="dl") return true;if(m==="share") return false;
@@ -2643,6 +2662,7 @@ const TRAD_UI=[
 ["{a} équipement(s), {b} sous-équipement(s) : {c}", "{a} equipment item(s), {b} sub-equipment item(s): {c}", "{a} equipo(s), {b} subequipo(s): {c}", "{a} Ausrüstung(en), {b} Unterausrüstung(en): {c}"],
 ["Je ne reconnais pas ce tableau : il faut au moins une colonne Équipement.", "I don't recognise this table: at least one Equipment column is needed.", "No reconozco esta tabla: se necesita al menos una columna Equipo.", "Diese Tabelle wird nicht erkannt: mindestens eine Spalte Ausrüstung nötig."],
 ["{a} constat(s) pas encore envoyé(s) utilisent l'ancien nom. « Mettre à jour » les renomme (photos et dossier de rangement compris). Les photos déjà rangées sur le PC se renomment avec l'outil « Renommer-Equipement » du dossier PC.", "{a} finding(s) not yet sent use the old name. “Update” renames them (photos and filing folder included). Photos already filed on the PC are renamed with the “Renommer-Equipement” tool in the PC folder.", "{a} hallazgo(s) aún no enviado(s) usan el nombre antiguo. «Actualizar» los renombra (fotos y carpeta de archivo incluidas). Las fotos ya archivadas en el PC se renombran con la herramienta «Renommer-Equipement» de la carpeta PC.", "{a} noch nicht gesendete(r) Befund(e) verwenden den alten Namen. „Aktualisieren“ benennt sie um (Fotos und Ablageordner inbegriffen). Bereits auf dem PC abgelegte Fotos werden mit dem Werkzeug „Renommer-Equipement“ im PC-Ordner umbenannt."],
+["« {a} » est dans Téléchargements : envoie ce fichier au PC depuis Mes fichiers > Téléchargements > Partager > Quick Share.","“{a}” is in Downloads: send this file to the PC from My Files > Downloads > Share > Quick Share.","«{a}» está en Descargas: envía este archivo al PC desde Mis archivos > Descargas > Compartir > Quick Share.","„{a}“ ist in Downloads: diese Datei über Eigene Dateien > Downloads > Teilen > Quick Share an den PC senden."],
 ["PDF annulé.","PDF cancelled.","PDF cancelado.","PDF abgebrochen."],
 ["Confirmer la suppression","Confirm deletion","Confirmar la eliminación","Löschen bestätigen"],
 ["PDF supprimé du téléphone.","PDF deleted from the phone.","PDF eliminado del teléfono.","PDF vom Telefon gelöscht."],
