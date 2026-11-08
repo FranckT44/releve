@@ -189,6 +189,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .prevus{list-style:none;margin:0;padding:0;display:grid;gap:8px}.prevu{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px}.prevu>div{grid-column:1/-1}.prevu .hint{font-size:13px}
 .prevu .hint{display:block}.prevu.actif{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 .prevuBanner{display:flex;justify-content:space-between;gap:8px;align-items:center;background:#fff4d6;color:#5a4300;border-radius:8px;padding:6px 10px;font-size:14px}
+#prepCard .ghead h2{cursor:pointer;margin:0}#prepCard.replie{padding-top:10px;padding-bottom:10px}
 .visite{border:1px solid var(--line);border-radius:8px;padding:10px;margin:4px 0 12px;display:grid;gap:8px}.visite h3{margin:0;font-size:16px}.visList{list-style:none;margin:0;padding:0;display:grid;gap:4px}.visList li{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:4px 6px}.visList li.off{opacity:.5}.visList label{flex:1;display:flex;align-items:center;gap:8px;min-height:36px}.visList .vn{color:var(--muted);font-size:13px;min-width:1.4em;text-align:right}.visList button{min-height:36px;min-width:40px;padding:2px 8px}.suivCard{display:grid;gap:6px}.suivCard .btns{display:flex;gap:8px;flex-wrap:wrap}
 .prepItem{border:1px solid var(--line);border-radius:8px;padding:8px;display:grid;gap:6px;margin-bottom:8px}.prepItem.doute{border-color:#e08a00;background:rgba(224,138,0,.08)}
 .prepTete{display:flex;gap:6px;align-items:baseline}.prepTete .hint{flex:1}.prepSel{display:grid;grid-template-columns:1fr 1fr;gap:6px}.prepSel select,.prepSel input{min-height:40px;font-size:15px}
@@ -196,7 +197,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .degats{display:grid;gap:6px}.degats[hidden]{display:none!important}#degats .chip{min-height:38px;padding:6px 10px;font-size:13px}
 .degParam{display:flex;flex-wrap:wrap;gap:8px;align-items:end;background:var(--surface-2,rgba(0,0,0,.04));border-radius:8px;padding:8px}.degParam[hidden]{display:none!important}
 .degParam label{flex:1 1 100%;font-size:14px}.degVal{display:flex;gap:6px;align-items:center;margin-top:4px}.degVal input{width:7em;font-size:16px;min-height:42px}
-#prepCard[hidden],#prevusCard[hidden],.prevuBanner[hidden],#prepSave[hidden],#prepMic[hidden]{display:none!important}
+#prepCorps[hidden],#prepCard[hidden],#prevusCard[hidden],.prevuBanner[hidden],#prepSave[hidden],#prepMic[hidden]{display:none!important}
 #prepMic.rec{background:#c0392b;color:#fff;border-color:#c0392b}
 .thumb.hors img{opacity:.38}.thumb .hr{position:absolute;right:4px;bottom:4px;font:600 10px var(--font);background:#555;color:#fff;padding:1px 5px;border-radius:4px}
 .gt{-webkit-touch-callout:none;user-select:none;cursor:pointer}.gt img{-webkit-user-drag:none;pointer-events:none}.gt .no{position:absolute;left:4px;top:4px;font:600 11px var(--mono);background:rgba(0,0,0,.65);color:#fff;padding:1px 6px;border-radius:4px}
@@ -260,8 +261,9 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 <!-- ============ SAISIE ============ -->
 <section id="v-saisie" hidden>
   <div class="card confirm brCard" id="brCardS" hidden><strong class="brTxt"></strong><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
-  <div class="card c-violet" id="prepCard" hidden>
-    <div class="ghead"><h2>Préparer des constats</h2><button type="button" class="ghost" id="prepClose">Fermer</button></div>
+  <div class="card c-violet replie" id="prepCard">
+    <div class="ghead"><h2 id="prepTitre">🎤 Préparer des constats</h2><button type="button" class="ghost" id="prepClose" aria-expanded="false" aria-controls="prepCorps">▸ Ouvrir</button></div>
+    <div id="prepCorps" hidden>
     <div class="visite" id="visBox">
       <h3>Préparer une visite</h3>
       <p class="hint">Choisis l'équipement et l'activité : un constat prévu par sous-équipement coché, dans l'ordre de ton parcours (flèches ↑ ↓).</p>
@@ -278,6 +280,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
     <button type="button" id="prepGo">Analyser</button>
     <div id="prepRes"></div>
     <button type="button" class="primary" id="prepSave" hidden>Créer les constats prévus</button>
+    </div>
   </div>
   <div class="card c-jaune" id="prevusCard" hidden>
     <h2>Constats prévus (<span id="prevusN">0</span>)</h2>
@@ -628,7 +631,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.63";
+const APP_VERSION="1.64";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -813,7 +816,7 @@ function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m
 const curMission=()=>MISSIONS.find(m=>m.id===CFG.mission.id);
 const belongs=e=>e.mission&&(e.mission.id?e.mission.id===CFG.mission.id:e.mission.no===CFG.mission.no);
 async function saveMissions(){await kvSet("missions",MISSIONS)}
-async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);BR.silence=true;resetForm(true);BR.silence=false;BR.session=false;refreshSelects();renderHeader();renderCfg();refreshBadge();renderPrevus();renderDegats();renderAcces();afficherBrouillon();toast(`Mission ${m.no} active`)}
+async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);BR.silence=true;resetForm(true);BR.silence=false;BR.session=false;refreshSelects();renderHeader();renderCfg();refreshBadge();renderPrevus();renderDegats();renderAcces();afficherBrouillon();if($("prepCorps")&&!$("prepCorps").hidden) visRemplir();toast(`Mission ${m.no} active`)}
 /* ---------- formulaire ---------- */
 function fillSelect(sel,items,keep){const v=keep??sel.value;sel.innerHTML="";for(const it of items){const o=document.createElement("option");o.value=it.code;o.textContent=it.nom;sel.append(o)}
   if(items.some(i=>i.code===v)) sel.value=v}
@@ -1498,7 +1501,7 @@ async function visCreer(){const e=EQ.find(x=>x.code===$("visEq").value),a=ACT.fi
   const vid=newId(),lib=[e.nom,sa?sa.nom:a.nom].join(" · "),now=new Date().toISOString();
   codes.forEach((code,k)=>PREVUS.push({id:newId(),mission:CFG.mission.id,eq:e.code,sub:code,act:a.code,subact:sa?sa.code:"",repere:"",note:`Visite ${lib} – ${k+1} / ${codes.length}`,sur:true,
     visite:{id:vid,total:codes.length,lib},ordre:k,creeLe:now}));
-  await sauverPrevus();arreterDictee();$("prepCard").hidden=true;
+  await sauverPrevus();prepOuvrir(false);
   toast(`${codes.length} constat${codes.length>1?"s":""} prévu${codes.length>1?"s":""} : touche « Commencer » sur place.`,4000)}
 function visites(){const m=new Map();for(const p of PREVUS) if(p.mission===CFG.mission.id&&p.visite){const v=m.get(p.visite.id)||{lib:p.visite.lib,total:p.visite.total,reste:0};v.reste++;m.set(p.visite.id,v)}
   return [...m.values()].map(v=>({...v,faits:v.total-v.reste}))}
@@ -1512,13 +1515,16 @@ function proposerSuivant(fini){const c=$("suivCard");if(!c||!fini) return;const 
   $("suivTxt").textContent=libellePrevu(s);$("suivVis").textContent=v&&s.visite&&s.visite.id===fini.visite.id?texteVisite(v):"";$("suivVis").hidden=!$("suivVis").textContent;
   c.hidden=false;$("suivGo").onclick=()=>{c.hidden=true;commencerPrevu(s.id)};$("suivNon").onclick=()=>{c.hidden=true};
   c.scrollIntoView({behavior:"smooth",block:"center"})}
+function prepOuvrir(v){const c=$("prepCorps"),b=$("prepClose");if(!c) return;c.hidden=!v;$("prepCard").classList.toggle("replie",!v);
+  b.textContent=v?"▾ Replier":"▸ Ouvrir";b.setAttribute("aria-expanded",String(v));if(v) visRemplir();else arreterDictee()}
 function initPrep(){
   $("visEq").onchange=()=>visListe(true);$("visAct").onchange=visSousAct;$("visSave").onclick=visCreer;
-  $("bPrep").onclick=()=>{const c=$("prepCard");c.hidden=!c.hidden;if(!c.hidden) visRemplir()};
-  $("prepClose").onclick=()=>{arreterDictee();$("prepCard").hidden=true};
+  // v1.64 : la carte reste affichée ; « ▸ Ouvrir / ▾ Replier » (ou toucher le titre) montre ou cache son contenu
+  $("bPrep").onclick=()=>{const v=$("prepCorps").hidden;prepOuvrir(v);if(v) $("prepCard").scrollIntoView({behavior:"smooth",block:"start"})};
+  $("prepClose").onclick=()=>prepOuvrir($("prepCorps").hidden);$("prepTitre").onclick=()=>prepOuvrir($("prepCorps").hidden);
   $("prepGo").onclick=()=>{arreterDictee();PROPS=analyserTexte($("prepTxt").value);renderPrep();if(!PROPS.length) toast("Rien à analyser : dicte ou tape les constats à préparer.")};
   $("prepSave").onclick=async()=>{const ok=PROPS.filter(p=>p.eq&&p.act);if(ok.length<PROPS.length){toast("Choisis l'équipement et l'activité des lignes où ils manquent.");return}
-    PREVUS.push(...ok.map(p=>({...p,creeLe:new Date().toISOString()})));await sauverPrevus();PROPS=[];renderPrep();$("prepTxt").value="";$("prepCard").hidden=true;
+    PREVUS.push(...ok.map(p=>({...p,creeLe:new Date().toISOString()})));await sauverPrevus();PROPS=[];renderPrep();$("prepTxt").value="";prepOuvrir(false);
     toast(`${ok.length} constat${ok.length>1?"s":""} prévu${ok.length>1?"s":""} : touche « Commencer » sur place.`,4000)};
   $("prevuQuit").onclick=()=>{form.prevuId=null;$("prevuBanner").hidden=true;renderPrevus()};
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -2294,7 +2300,7 @@ async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`
   try{const np=(await tousPdfs()).filter(p=>p.mission&&p.mission.id===m.id).length;$("accPdfs").textContent=np?`${np} PDF`:"Aucun"}catch(e){}
   $("accTrad").hidden=$("navTrad").hidden}
 function initAccueil(){$("pdfToutes").onchange=renderPdfs;document.querySelectorAll("#v-accueil .acc").forEach(b=>b.onclick=()=>{const g=b.dataset.go;
-  if(g==="prep"){showView("saisie");$("prepCard").hidden=false;visRemplir();$("prepCard").scrollIntoView({block:"start"});return}
+  if(g==="prep"){showView("saisie");prepOuvrir(true);$("prepCard").scrollIntoView({block:"start"});return}
   if(g==="prevus"){showView("saisie");if(!$("prevusCard").hidden) $("prevusCard").scrollIntoView({block:"start"});return}
   showView(g)});
   document.querySelector("header h1").style.cursor="pointer";document.querySelector("header h1").onclick=()=>showView("accueil")}
@@ -3074,6 +3080,8 @@ const TRAD_UI=[
 ["Tout replier","Collapse all","Plegar todo","Alle zuklappen"],
 ["▸ Aperçu","▸ Preview","▸ Vista previa","▸ Vorschau"],
 ["▾ Replier","▾ Collapse","▾ Plegar","▾ Zuklappen"],
+["▸ Ouvrir","▸ Open","▸ Abrir","▸ Öffnen"],
+["🎤 Préparer des constats","🎤 Prepare findings","🎤 Preparar hallazgos","🎤 Befunde vorbereiten"],
 ["Modifier","Edit","Modificar","Bearbeiten"],
 ["Envoyer la sélection au PC (Quick Share)","Send selection to PC (Quick Share)","Enviar la selección al PC (Quick Share)","Auswahl an PC senden (Quick Share)"],
 ["Enregistrer la sélection pour le PC (DeX : Téléchargements)","Save selection for the PC (DeX: Downloads)","Guardar la selección para el PC (DeX: Descargas)","Auswahl für den PC speichern (DeX: Downloads)"],
