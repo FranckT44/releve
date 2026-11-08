@@ -190,6 +190,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .prevu .hint{display:block}.prevu.actif{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 .prevuBanner{display:flex;justify-content:space-between;gap:8px;align-items:center;background:#fff4d6;color:#5a4300;border-radius:8px;padding:6px 10px;font-size:14px}
 #prepCard .ghead h2{cursor:pointer;margin:0}#prepCard.replie{padding-top:10px;padding-bottom:10px}
+.trList{display:grid;gap:6px;max-height:55vh;overflow:auto}.trRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px;align-items:center}.trRow span{font-size:14px;overflow-wrap:anywhere}@media (max-width:480px){.trRow{grid-template-columns:1fr}}
 .visite{border:1px solid var(--line);border-radius:8px;padding:10px;margin:4px 0 12px;display:grid;gap:8px}.visite h3{margin:0;font-size:16px}.visList{list-style:none;margin:0;padding:0;display:grid;gap:4px}.visList li{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:4px 6px}.visList li.off{opacity:.5}.visList label{flex:1;display:flex;align-items:center;gap:8px;min-height:36px}.visList .vn{color:var(--muted);font-size:13px;min-width:1.4em;text-align:right}.visList button{min-height:36px;min-width:40px;padding:2px 8px}.suivCard{display:grid;gap:6px}.suivCard .btns{display:flex;gap:8px;flex-wrap:wrap}
 .prepItem{border:1px solid var(--line);border-radius:8px;padding:8px;display:grid;gap:6px;margin-bottom:8px}.prepItem.doute{border-color:#e08a00;background:rgba(224,138,0,.08)}
 .prepTete{display:flex;gap:6px;align-items:baseline}.prepTete .hint{flex:1}.prepSel{display:grid;grid-template-columns:1fr 1fr;gap:6px}.prepSel select,.prepSel input{min-height:40px;font-size:15px}
@@ -481,7 +482,12 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
       <label id="lActSoc" hidden>Activité affichée dans l'en-tête<select id="cActSoc"><option value="API 936 Consultancy">API 936 Consultancy</option><option value="API 982 Consultancy">API 982 Consultancy</option></select></label></div>
     <p class="hint">Change le logo et l'en-tête des IPR / IR générés sur le PC pour cette mission (dossier _OUTILS\Sociétés).</p>
     <label>Dossier de la mission sur le PC<input type="text" id="cDir"></label>
-    <label>Langue des listes (activités, sous-activités)<select id="cLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
+    <label>Langue des listes (équipements, activités)<select id="cLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
+    <p class="hint" id="dicoInfo"></p>
+    <div class="card confirm" id="trCard" hidden><strong id="trTitre"></strong>
+      <p class="hint">Saisis la traduction de chaque nom (laisse-le tel quel s'il ne change pas). Elle est mémorisée dans la mission, envoyée avec elle aux autres appareils et au PC pour les rapports : la prochaine fois, la traduction sera automatique.</p>
+      <div class="trList" id="trList"></div>
+      <div class="btns"><button type="button" class="primary" id="trOk">Enregistrer les traductions</button><button type="button" class="ghost" id="trNon">Plus tard</button></div></div>
     <p class="hint">Les photos seront rangées dans ce dossier, sous « Dossier Photo\Équipement\Sous-équipement\Activité\Date ».</p>
     <div class="sync" id="syncInfo"></div>
   </div>
@@ -631,7 +637,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.65";
+const APP_VERSION="1.66";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -811,7 +817,7 @@ async function loadCfg(){
     MISSIONS=[{id:newId(),archive:false,...m}];await kvSet("missions",MISSIONS)}
   let act=null;try{act=await kvGet("active")}catch(e){}
   setActive(MISSIONS.find(m=>m.id===act&&!m.archive)||MISSIONS.find(m=>!m.archive)||MISSIONS[0])}
-function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m)},equipements:m.equipements,activites:m.activites};
+function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m),...(m.dico&&m.dico.length?{dico:m.dico}:{})},equipements:m.equipements,activites:m.activites};
   EQ=parseTree(CFG.equipements);ACT=parseTree(CFG.activites);kvSet("active",m.id).catch(()=>{})}
 const curMission=()=>MISSIONS.find(m=>m.id===CFG.mission.id);
 const belongs=e=>e.mission&&(e.mission.id?e.mission.id===CFG.mission.id:e.mission.no===CFG.mission.no);
@@ -1523,6 +1529,7 @@ function effacerPrep(){const b=$("prepClear");if(!$("prepTxt").value.trim()&&!PR
   clearTimeout(effacerPrep.t);b.dataset.ok="";b.textContent="🗑 Effacer le texte";
   $("prepTxt").value="";if(!REC) $("prepLive").textContent="";PROPS=[];renderPrep();toast("Texte effacé.");if(REC) $("prepTxt").focus()}
 function initPrep(){
+  $("trOk").onclick=enregistrerTrad;$("trNon").onclick=()=>{$("trCard").hidden=true;TRAD_EN_COURS=null};
   $("prepClear").onclick=effacerPrep;
   $("visEq").onchange=()=>visListe(true);$("visAct").onchange=visSousAct;$("visSave").onclick=visCreer;
   // v1.64 : la carte reste affichée ; « ▸ Ouvrir / ▾ Replier » (ou toucher le titre) montre ou cache son contenu
@@ -2003,15 +2010,41 @@ const DICO=[
  {fr:"Inspection",en:"Inspection",es:"Inspección",de:"Inspektion"}];
 const GENERAL={fr:"(général)",en:"(general)",es:"(general)",de:"(allgemein)"};
 const AUCUNE={fr:"(aucune)",en:"(none)",es:"(ninguna)",de:"(keine)"};
-function traduireNom(nom,l){const n=nom.trim().toLowerCase();const d=DICO.find(x=>Object.values(x).some(v=>v.toLowerCase()===n));return d?d[l]:nom}
+/* v1.66 : dictionnaire personnel de la mission (m.dico = [{fr,en,es,de}]) pour les noms que le dictionnaire intégré ne connaît pas */
+function trouverTrad(nom,l,m){const n=String(nom||"").trim().toLowerCase();if(!n) return null;const d=DICO.find(x=>Object.values(x).some(v=>v.toLowerCase()===n));if(d) return d[l];
+  m=m||curMission();const p=(m&&m.dico||[]).find(x=>Object.values(x).some(v=>v&&String(v).toLowerCase()===n));return p&&p[l]?p[l]:null}
+function traduireNom(nom,l,m){const t=trouverTrad(nom,l,m);return t==null?nom:t}
+function convertirEquipements(txt,l,m){const t=parseTree(txt);let chg=false;
+  for(const e of t){const a=traduireNom(e.nom,l,m);if(a!==e.nom){e.nom=a;chg=true}for(const c of e.enfants){const b=traduireNom(c.nom,l,m);if(b!==c.nom){c.nom=b;chg=true}}}
+  return chg?arbreVersTexte(t,true):txt}
+const aTraduire=nom=>/[A-Za-zÀ-ÿ]{3,}/.test(String(nom).replace(/\d+/g," "));
+function nomsSansTrad(m,l){const vus=new Set(),out=[];const voir=nom=>{const k=nom.trim().toLowerCase();if(!k||vus.has(k)) return;vus.add(k);if(aTraduire(nom)&&trouverTrad(nom,l,m)==null) out.push(nom.trim())};
+  for(const e of parseTree(m.equipements)){voir(e.nom);e.enfants.forEach(c=>voir(c.nom))}
+  for(const a of parseTree(m.activites)){voir(a.nom);a.enfants.forEach(c=>voir(c.nom))}return out}
+const NOM_LANGUE={fr:"français",en:"anglais",es:"espagnol",de:"allemand"};
+let TRAD_EN_COURS=null;
+function ouvrirTrad(manque,de,l){TRAD_EN_COURS={de,l};const box=$("trList");box.innerHTML="";
+  $("trTitre").textContent=`${manque.length} nom${manque.length>1?"s":""} sans traduction en ${NOM_LANGUE[l]}`;
+  for(const src of manque){const r=document.createElement("label");r.className="trRow";r.innerHTML=`<span data-noi18n></span><input type="text" autocomplete="off" data-noi18n>`;
+    r.querySelector("span").textContent=src;const i=r.querySelector("input");i.value=src;i.dataset.src=src;box.append(r)}
+  const c=$("trCard");c.hidden=false;c.scrollIntoView({behavior:"smooth",block:"center"})}
+async function enregistrerTrad(){const m=curMission();if(!m||!TRAD_EN_COURS) return;const {de,l}=TRAD_EN_COURS;m.dico=m.dico||[];let n=0;
+  for(const i of document.querySelectorAll("#trList input")){const src=i.dataset.src,v=i.value.trim()||src;const k=src.toLowerCase();
+    let d=m.dico.find(x=>Object.values(x).some(y=>y&&String(y).toLowerCase()===k));if(!d){d={};m.dico.push(d)}if(!d[de]) d[de]=src;d[l]=v;n++}
+  m.equipements=convertirEquipements(m.equipements,l,m);m.activites=convertirActivites(m.activites,l);m.modifieLe=new Date().toISOString();
+  await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();
+  $("trCard").hidden=true;TRAD_EN_COURS=null;toast(`${n} traduction${n>1?"s":""} enregistrée${n>1?"s":""} dans la mission.`,4000)}
+function majDicoInfo(){const m=curMission(),el=$("dicoInfo");if(!el) return;const n=(m&&m.dico||[]).length;el.textContent=n?`Dictionnaire de la mission : ${n} nom${n>1?"s":""} traduit${n>1?"s":""} à la main.`:"";el.hidden=!n}
 function convertirActivites(txt,l){const t=parseTree(txt);for(const a of t){a.nom=traduireNom(a.nom,l);for(const c of a.enfants) c.nom=traduireNom(c.nom,l)}
   return t.map(a=>`${a.nom} [${a.code}]`+a.enfants.map(c=>`\n- ${c.nom} [${c.code}]`).join("")).join("\n")}
 const langueMission=()=>(curMission()&&curMission().langue)||"fr";
-async function changerLangue(l){const m=curMission();if(!m) return;
-  const avant=m.activites;m.langue=l;m.activites=convertirActivites(m.activites,l);
-  if(m.activites!==avant) m.modifieLe=new Date().toISOString();
+async function changerLangue(l){const m=curMission();if(!m) return;const de=m.langue||"fr";
+  const manque=de===l?[]:nomsSansTrad(m,l);$("trCard").hidden=true;
+  const avant=m.activites,avantE=m.equipements;m.langue=l;m.activites=convertirActivites(m.activites,l);m.equipements=convertirEquipements(m.equipements,l,m);
+  if(m.activites!==avant||m.equipements!==avantE) m.modifieLe=new Date().toISOString();
   await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();renderDegats();renderAcces();
-  toast("Listes passées en "+{fr:"français",en:"anglais",es:"espagnol",de:"allemand"}[l]+". Les constats déjà saisis gardent leurs noms ; les nouvelles photos iront dans des dossiers à ce nom.",6000)}
+  toast("Listes passées en "+{fr:"français",en:"anglais",es:"espagnol",de:"allemand"}[l]+". Les constats déjà saisis gardent leurs noms ; les nouvelles photos iront dans des dossiers à ce nom.",6000);
+  if(manque.length) ouvrirTrad(manque,de,l)}
 /* ---------- mission transportée dans une image ----------
    Quick Share envoie mal un fichier texte seul : la mission part comme une image JPEG (carte lisible),
    les données sont dans des segments « commentaire » du JPEG (RELEVE-MISSION:<base64>). */
@@ -2062,7 +2095,7 @@ function renderCfg(){
   const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;f.append(o)};
   add("copy:"+CFG.mission.id,`Copie de la mission ${CFG.mission.no}`);
   for(const m of MISSIONS.filter(m=>m.id!==CFG.mission.id&&!m.archive)) add("copy:"+m.id,`Copie de la mission ${m.no}`);
-  for(const [k,t] of Object.entries(TEMPLATES)) add("tpl:"+k,t.nom);renderSync()}
+  for(const [k,t] of Object.entries(TEMPLATES)) add("tpl:"+k,t.nom);majDicoInfo();renderSync()}
 function detecterRenommages(ancien,nouveau){
   const cle=e=>e.code+"|"+e.nom;const kN=new Set(nouveau.map(cle)),kA=new Set(ancien.map(cle));
   const partis=ancien.filter(e=>!kN.has(cle(e)));let venus=nouveau.filter(e=>!kA.has(cle(e)));const paires=[];
@@ -2112,7 +2145,7 @@ async function createMission(){
   if(MISSIONS.some(m=>m.no===no&&!m.archive)){toast(`La mission ${no} existe déjà.`);return}
   const [kind,ref]=$("nFrom").value.split(":");const src=kind==="copy"?MISSIONS.find(m=>m.id===ref):TEMPLATES[ref];
   const lang=$("nLang").value||"fr";
-  const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",equipements:src.equipements,activites:convertirActivites(src.activites,lang),modifieLe:new Date().toISOString()};
+  const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",equipements:src.equipements,activites:convertirActivites(src.activites,lang),dico:kind==="copy"&&src.dico?JSON.parse(JSON.stringify(src.dico)):[],modifieLe:new Date().toISOString()};
   MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
   toast(`Mission ${no} créée : vérifie le dossier PC et complète les listes`,4000)}
 async function toggleArchive(){const m=curMission();
@@ -2144,7 +2177,7 @@ async function appliquerImport(d){$("impCard").hidden=true;IMPORT_EN_ATTENTE=nul
   let m=MISSIONS.find(x=>x.no===d.no);const maj=!!m;
   if(!m){m={id:newId(),archive:false};MISSIONS.push(m)}
   const v=d.modifieLe||new Date().toISOString();
-  Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",societe:d.societe||"QUARTIS",activiteSociete:d.activiteSociete||"",equipements:d.equipements,activites:d.activites,archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
+  Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",societe:d.societe||"QUARTIS",activiteSociete:d.activiteSociete||"",equipements:d.equipements,activites:d.activites,dico:Array.isArray(d.dico)?d.dico:(m.dico||[]),archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
   await saveMissions();await switchMission(m.id);toast(maj?`Mission ${m.no} mise à jour`:`Mission ${m.no} ajoutée`)}
 /* ---------- import depuis Excel (copier-coller) ---------- */
 let COLLAGE=null;
@@ -2948,6 +2981,15 @@ const TRAD_UI=[
 ["Nouvelle version de l'appli disponible.","New version of the app available.","Nueva versión de la app disponible.","Neue App-Version verfügbar."],
 ["Recharger","Reload","Recargar","Neu laden"],
 ["Plus tard","Later","Más tarde","Später"],
+["Langue des listes (équipements, activités)","Language of the lists (equipment, activities)","Idioma de las listas (equipos, actividades)","Sprache der Listen (Ausrüstungen, Tätigkeiten)"],
+["Saisis la traduction de chaque nom (laisse-le tel quel s'il ne change pas). Elle est mémorisée dans la mission, envoyée avec elle aux autres appareils et au PC pour les rapports : la prochaine fois, la traduction sera automatique.","Enter the translation of each name (leave it as it is if it does not change). It is saved in the job, sent with it to the other devices and to the PC for the reports: next time the translation will be automatic.","Escribe la traducción de cada nombre (déjalo igual si no cambia). Se guarda en la misión, se envía con ella a los otros equipos y al PC para los informes: la próxima vez la traducción será automática.","Übersetzung jedes Namens eingeben (unverändert lassen, wenn er gleich bleibt). Sie wird im Auftrag gespeichert, mit ihm an die anderen Geräte und an den PC für die Berichte gesendet: beim nächsten Mal wird automatisch übersetzt."],
+["Enregistrer les traductions","Save the translations","Guardar las traducciones","Übersetzungen speichern"],
+["{a} nom sans traduction en {b}","{a} name without translation in {b}","{a} nombre sin traducción en {b}","{a} Name ohne Übersetzung in {b}"],
+["{a} noms sans traduction en {b}","{a} names without translation in {b}","{a} nombres sin traducción en {b}","{a} Namen ohne Übersetzung in {b}"],
+["{a} traduction enregistrée dans la mission.","{a} translation saved in the job.","{a} traducción guardada en la misión.","{a} Übersetzung im Auftrag gespeichert."],
+["{a} traductions enregistrées dans la mission.","{a} translations saved in the job.","{a} traducciones guardadas en la misión.","{a} Übersetzungen im Auftrag gespeichert."],
+["Dictionnaire de la mission : {a} nom traduit à la main.","Job dictionary: {a} name translated by hand.","Diccionario de la misión: {a} nombre traducido a mano.","Auftragswörterbuch: {a} Name von Hand übersetzt."],
+["Dictionnaire de la mission : {a} noms traduits à la main.","Job dictionary: {a} names translated by hand.","Diccionario de la misión: {a} nombres traducidos a mano.","Auftragswörterbuch: {a} Namen von Hand übersetzt."],
 ["🗑 Effacer le texte","🗑 Clear the text","🗑 Borrar el texto","🗑 Text löschen"],["Confirmer : effacer","Confirm: clear","Confirmar: borrar","Bestätigen: löschen"],
 ["Texte effacé.","Text cleared.","Texto borrado.","Text gelöscht."],["Rien à effacer.","Nothing to clear.","Nada que borrar.","Nichts zu löschen."],
 ["Préparer une visite","Prepare a visit","Preparar una visita","Besuch vorbereiten"],
