@@ -237,6 +237,30 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .sync.warn{border-color:var(--repair);background:var(--accent-soft)}
 .sync.ok{border-color:var(--ok)}
 @media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+
+/* v1.70 : sablier, onglet Constats, Journal en lignes */
+#busy{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+#busy[hidden]{display:none}
+#busy .bx{background:var(--surface);color:var(--fg);border-radius:14px;padding:22px 20px;max-width:340px;width:100%;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.35);display:grid;gap:10px;justify-items:center}
+#busy .sp{width:52px;height:52px;border-radius:50%;border:5px solid var(--line);border-top-color:var(--accent);animation:tourne 1s linear infinite}
+@keyframes tourne{to{transform:rotate(360deg)}}
+#busyTxt{font-weight:650;font-size:16px}#busySub{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+#busy .bar{width:100%;height:6px;border-radius:3px;background:var(--line);overflow:hidden}#busy .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}#busy .bar[hidden],#busy button[hidden]{display:none}
+.jl{display:grid;grid-template-columns:30px 44px minmax(0,1fr) auto;gap:8px;align-items:center;padding:4px 0;border-top:1px solid var(--line);cursor:pointer}
+.jl:first-of-type{border-top:0}.jl.coche{background:linear-gradient(90deg,var(--accent-soft),transparent 60%)}
+.jl .sel{display:flex;align-items:center;justify-content:center;min-height:40px;margin:0}.jl .sel input{width:24px;height:24px;accent-color:var(--accent);margin:0}
+.jl .h{font:13px var(--mono);color:var(--muted)}.jl .l{font-size:14px;line-height:1.3;overflow-wrap:anywhere}.jl .l small{color:var(--muted);white-space:nowrap}
+.st{display:inline-block;font:600 11px var(--font);padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid var(--line);color:var(--muted)}
+.st.aenv{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}.st.env{color:var(--ok);border-color:var(--ok)}.st.prevu{border-style:dashed}
+.ehead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.ehead h3{margin:0}
+.cgrp{margin:12px 0 2px;font-weight:650;font-size:14px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:3px}
+.cst{display:grid;grid-template-columns:64px minmax(0,1fr);gap:4px 10px;padding:8px 0;align-items:start}
+.cst img{width:64px;height:48px;object-fit:cover;border-radius:6px;background:var(--bg);cursor:pointer}
+.cst .t{font-weight:650;font-size:15px;line-height:1.3}.cst .m{font-size:13px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.cst .acts{grid-column:2;display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}.cst .acts button.ouvrir{min-width:108px}.cst .acts button[aria-expanded=true]{background:var(--accent-soft);border-color:var(--accent)}
+.cst.prevu>*:not(.acts){opacity:.55}.cst.prevu .ic{width:64px;height:48px;border-radius:6px;border:1px dashed var(--muted);display:grid;place-items:center;font-size:20px}
+.cst.flash{animation:flash 2s ease-out}@keyframes flash{from{background:var(--accent-soft)}to{background:transparent}}
+@media (max-width:420px){nav button{font-size:12px;padding:6px 2px}}
 </style>
 </head>
 <body>
@@ -370,6 +394,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
     <h2>Envoi vers le PC</h2>
     <p class="hint" id="sendInfo"></p>
     <p class="hint" id="selInfo"></p>
+    <p class="hint">Coche les constats à envoyer au PC (un constat déjà envoyé peut être renvoyé). Touche une ligne pour voir le constat dans l'onglet Constats.</p>
     <button class="primary big" id="bSend" type="button">Envoyer au PC (Quick Share)</button>
     <button class="big" id="bDl" type="button">Enregistrer dans Téléchargements (secours)</button>
     <button class="big" id="bPdfSel" type="button">📄 PDF rapide de la sélection</button>
@@ -388,6 +413,18 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
       <div class="btns"><button class="danger" id="bPurgeYes" type="button">Supprimer</button><button id="bPurgeNo" type="button">Annuler</button></div>
     </div>
   </div>
+</section>
+
+<!-- ============ CONSTATS (v1.70 : visualisation) ============ -->
+<section id="v-constats" hidden>
+  <div class="card c-vert">
+    <h2>Constats de la mission</h2>
+    <div class="row2"><label>Équipement<select id="cEq"></select></label><label>Statut<select id="cSt"><option value="">Tous</option><option value="prevu">Prévus</option><option value="aenv">À envoyer</option><option value="env">Envoyés</option></select></label></div>
+    <label>Activité<select id="cAct"></select></label>
+    <p class="stat" id="cInfo"></p>
+    <p class="hint">Tous les constats de la mission, par équipement et sous-zone, dans l'ordre de la liste. Les constats prévus (pas encore commencés) sont en grisé. L'envoi au PC se fait depuis le Journal.</p>
+  </div>
+  <div id="constats"></div>
 </section>
 
 <!-- ============ GALERIE ============ -->
@@ -538,23 +575,30 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
       <div id="progTxt" class="path"></div>
       <div class="btns"><button class="primary" id="bProgOk" type="button">Charger le programme</button><button id="bProgCancel" type="button">Annuler</button></div>
     </div>
+    <div class="btns">
+      <button id="bCfgExport" type="button">Envoyer cette mission</button>
+      <button id="bCfgImport" type="button">Charger une mission</button>
+    </div>
+    <input type="file" id="iCfg" accept="image/jpeg,.jpg,.txt,.json,text/plain,application/json" hidden>
+    <p class="hint" id="appVer"></p>
+    <p class="hint">Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
+    <p class="hint">« Charger une mission » accepte aussi l'image « programme-N°.jpg » préparée sur le PC (Préparer l'arrêt) : elle crée les constats prévus de l'arrêt.</p>
+  </div>
+  <div class="card c-vert">
+    <h2>Navette téléphone ⇄ tablette</h2>
     <div id="navCard" class="card confirm" hidden>
       <strong>Navette reçue</strong>
       <div id="navTxt" class="path"></div>
       <div class="btns"><button class="primary" id="bNavOk" type="button">Fusionner</button><button id="bNavCancel" type="button">Annuler</button></div>
     </div>
     <div class="btns">
-      <button id="bCfgExport" type="button">Envoyer cette mission</button>
-      <button id="bCfgImport" type="button">Charger une mission</button>
       <button id="bNavette" type="button">🔄 Créer la navette</button>
+      <button id="bNavLoad" type="button">📥 Charger une navette</button>
     </div>
     <label class="toggle"><input type="checkbox" id="navTout"> Navette complète (sinon : seulement ce qui est nouveau ou modifié depuis la dernière navette)</label>
     <p class="hint" id="navInfo"></p>
-    <input type="file" id="iCfg" accept="image/jpeg,.jpg,.txt,.json,text/plain,application/json" hidden>
-    <p class="hint" id="appVer"></p>
-    <p class="hint">Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
-    <p class="hint">« Charger une mission » accepte aussi l'image « programme-N°.jpg » préparée sur le PC (Préparer l'arrêt) : elle crée les constats prévus de l'arrêt.</p>
-    <p class="hint">Navette téléphone ⇄ tablette : « Créer la navette » met dans une image les constats (photos complètes), les constats prévus et les listes de la mission. Dépose-la dans OneDrive (982 Toolbox › Navette) ou envoie-la par Quick Share, puis sur l'autre appareil : « Charger une mission ». Les deux appareils sont alors à jour, sans doublon.</p>
+    <input type="file" id="iNav" accept="image/jpeg,.jpg" hidden>
+    <p class="hint">« Créer la navette » met dans une image les constats (photos complètes), les constats prévus et les listes de la mission. Dépose-la dans OneDrive (982 Toolbox › Navette) ou envoie-la par Quick Share, puis sur l'autre appareil : « Charger une navette ». Les deux appareils sont alors à jour, sans doublon.</p>
   </div>
   <div class="card">
     <h2>Réglage de ce téléphone</h2>
@@ -578,6 +622,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 <nav>
   <button type="button" data-v="accueil" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>Accueil</button>
   <button type="button" data-v="saisie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Saisie</button>
+  <button type="button" data-v="constats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11M3.5 18l1.5 1.5L7.5 17"/></svg>Constats</button>
   <button type="button" data-v="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Journal<span class="badge" id="nbPending" hidden></span></span></button>
   <button type="button" data-v="galerie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><circle cx="9" cy="10" r="2"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>Galerie</button>
   <button type="button" data-v="trad" id="navTrad" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 6 8M11 5c-1 4-4 7-7 8"/><path d="M13 21l4-9 4 9M14.5 18h5"/></svg>Traduction</button>
@@ -585,6 +630,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 </nav>
 <div id="pretCard" class="card confirm" hidden><strong id="pretTxt"></strong><p class="hint" id="pretPq"></p>
   <div class="btns"><button class="primary" id="bPretPartager" type="button">Partager</button><button id="bPretDl" type="button">Enregistrer dans Téléchargements</button><button class="ghost" id="bPretNon" type="button">Fermer</button></div></div>
+<div id="busy" role="status" aria-live="polite" hidden><div class="bx"><div class="sp" aria-hidden="true"></div><div id="busyTxt"></div><div id="busySub"></div><div class="bar" id="busyBar" hidden><i id="busyBarI"></i></div><button type="button" class="ghost" id="busyStop" hidden>Annuler</button></div></div>
 <div class="toast" id="toast" hidden></div>
 <div id="majBar" role="status" hidden><span>Nouvelle version de l'appli disponible.</span><button type="button" id="majGo">Recharger</button><button type="button" class="ghost" id="majPlusTard">Plus tard</button></div>
 <!-- ============ VISIONNEUSE DE LA GALERIE ============ -->
@@ -658,7 +704,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.69";
+const APP_VERSION="1.70";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1894,34 +1940,20 @@ async function renderJournal(){
   const byDay={};for(const e of en)(byDay[e.date]??=[]).push(e);
   for(const [day,list] of Object.entries(byDay)){
     const c=document.createElement("div");c.className="card";
-    c.innerHTML=`<div class="dayhead"><label class="sel"><input type="checkbox" class="selJour" aria-label="Sélectionner tous les constats du jour"></label><h3>${frDate(day)}</h3><span class="stat">${list.length} constat${list.length>1?"s":""}</span><button type="button" class="ghost tout">Tout dérouler</button></div>`;
-    const lignes=[],cases=[];
-    for(const e of list){const r=document.createElement("div");r.className="entry";
-      const g=e.gravite?`<span class="pill" style="background:${GCOL[e.gravite]}">${esc(e.gravite)}</span>`:"";
-      r.innerHTML=`<label class="sel"><input type="checkbox" aria-label="Sélectionner ce constat (envoi au PC, PDF)"></label><img alt=""><div><div class="t"></div><div class="m"></div></div><div class="acts"></div><div class="apercu" hidden></div>`;
+    c.innerHTML=`<div class="dayhead"><label class="sel"><input type="checkbox" class="selJour" aria-label="Sélectionner tous les constats du jour"></label><h3>${frDate(day)}</h3><span class="stat">${list.length} constat${list.length>1?"s":""}</span></div>`;
+    const cases=[];
+    // v1.70 : une ligne courte par constat ; toucher la ligne ouvre le constat dans l'onglet Constats
+    for(const e of list){const r=document.createElement("div");r.className="jl";
+      r.innerHTML=`<label class="sel"><input type="checkbox" aria-label="Sélectionner ce constat (envoi au PC, PDF)"></label><span class="h"></span><div class="l" data-noi18n></div><span class="st"></span>`;
       const cb=r.querySelector(".sel input");cb.checked=JSEL.has(e.id);r.classList.toggle("coche",cb.checked);cases.push([e,cb,r]);
       cb.onchange=()=>{cb.checked?JSEL.add(e.id):JSEL.delete(e.id);r.classList.toggle("coche",cb.checked);majJour();majSelection(en)};
-      r.querySelector(".t").innerHTML=g;r.querySelector(".t").append(libelleConstat(e));
-      const h=e.hms?` · ${e.hms.slice(0,2)}:${e.hms.slice(2,4)}`:"";
-      const env=e.envoye?`envoyé ✓${e.envoyeLe?" le "+fmtCourt(e.envoyeLe):""}`:"à envoyer";
-      r.querySelector(".m").textContent=`${e.repere?"Repère "+e.repere+" · ":""}${e.photos.length} photo${e.photos.length>1?"s":""}${h} · ${env}`;
-      if(e.photos[0]) getPhoto(e.photos[0]).then(p=>{if(p) r.querySelector("img").src=p.thumb});
-      const acts=r.querySelector(".acts"),ap=r.querySelector(".apercu");ap.id="ap_"+e.id;
-      const bO=document.createElement("button");bO.type="button";bO.className="ouvrir";bO.setAttribute("aria-controls",ap.id);
-      const basculer=ouvert=>{ap.hidden=!ouvert;bO.setAttribute("aria-expanded",String(ouvert));bO.textContent=ouvert?"▾ Replier":"▸ Aperçu";
-        if(ouvert){JOURNAL_OUVERTS.add(e.id);if(!ap.dataset.fait){ap.dataset.fait="1";remplirApercu(ap,e)}}else JOURNAL_OUVERTS.delete(e.id)};
-      bO.onclick=()=>{basculer(ap.hidden);majTout()};basculer(JOURNAL_OUVERTS.has(e.id));lignes.push(basculer);acts.append(bO);
-      r.querySelector("img").onclick=()=>bO.click();
-      const bE=document.createElement("button");bE.type="button";bE.textContent="Modifier";bE.onclick=()=>editEntry(e.id);acts.append(bE);
-      const bP=document.createElement("button");bP.type="button";bP.textContent="📄 PDF";bP.setAttribute("aria-label","PDF rapide de ce constat");bP.onclick=()=>pdfRapide([e]);acts.append(bP);
-      if(e.envoye){const bR=document.createElement("button");bR.type="button";bR.textContent="Renvoyer";bR.onclick=()=>sendEntries([e]);acts.append(bR)}
-      // v1.58 : supprimer un constat (deux touches ; avertit s'il n'est pas encore au PC)
-      const bS=document.createElement("button");bS.type="button";bS.className="ghost";bS.textContent="🗑 Supprimer";bS.setAttribute("aria-label","Supprimer ce constat");
-      bS.onclick=()=>supprimerConstat(e,bS);acts.append(bS);
+      r.querySelector(".sel").onclick=ev=>ev.stopPropagation();
+      r.querySelector(".h").textContent=e.hms?`${e.hms.slice(0,2)}:${e.hms.slice(2,4)}`:"";
+      const l=r.querySelector(".l");l.textContent=libelleConstat(e);
+      const sm=document.createElement("small");sm.textContent=` · ${e.photos.length} 📷${e.repere?" · "+e.repere:""}`;l.append(sm);
+      const st=r.querySelector(".st");st.textContent=e.envoye?"envoyé ✓":"à envoyer";st.classList.add(e.envoye?"env":"aenv");
+      r.title="Voir ce constat dans l'onglet Constats";r.onclick=()=>voirConstat(e.id);
       c.append(r)}
-    // bouton « Tout dérouler / Tout replier » de la journée
-    const bT=c.querySelector(".tout"),majTout=()=>{const tous=list.every(e=>JOURNAL_OUVERTS.has(e.id));bT.textContent=tous?"Tout replier":"Tout dérouler";bT.dataset.ouvrir=tous?"":"1"};
-    bT.onclick=()=>{const o=!!bT.dataset.ouvrir;lignes.forEach(f=>f(o));majTout()};majTout();
     // case de la journée : tout cocher / tout décocher
     const cj=c.querySelector(".selJour"),majJour=()=>{const n=cases.filter(x=>x[1].checked).length;cj.checked=n===cases.length;cj.indeterminate=n>0&&n<cases.length};
     cj.onchange=()=>{for(const [e,cb,r] of cases){cb.checked=cj.checked;cj.checked?JSEL.add(e.id):JSEL.delete(e.id);r.classList.toggle("coche",cb.checked)}majJour();majSelection(en)};majJour();
@@ -2027,7 +2059,7 @@ async function supprimerConstat(e,b){
     b.textContent=e.envoye?"Confirmer la suppression":"⚠ Pas envoyé au PC : supprimer quand même";
     setTimeout(()=>{if(b.isConnected&&b.dataset.ok){b.dataset.ok="";b.classList.remove("danger");b.classList.add("ghost");b.textContent="🗑 Supprimer"}},6000);return}
   await tx("photos","readwrite",s=>{for(const n of e.photos) s.delete(n)});await tx("entries","readwrite",s=>s.delete(e.id));
-  JSEL.delete(e.id);PREP=null;toast("Constat supprimé du téléphone.");await refreshBadge();renderJournal()}
+  JSEL.delete(e.id);PREP=null;toast("Constat supprimé du téléphone.");await refreshBadge();renderJournal();if(!$("v-constats").hidden) renderConstats()}
 async function purge(){const en=(await allEntries()).filter(e=>e.envoye&&belongs(e));
   await tx("photos","readwrite",s=>{for(const e of en) for(const n of e.photos) s.delete(n)});
   await tx("entries","readwrite",s=>{for(const e of en) s.delete(e.id)});$("purgeConfirm").hidden=true;toast(`${en.length} constat(s) supprimé(s) du téléphone`);renderJournal()}
@@ -2210,7 +2242,8 @@ async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new
   if(!ok){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();
     toast(`« ${f.name} » est dans Téléchargements : glisse-le dans la fenêtre Quick Share, ou clic droit > Envoyer avec Quick Share. Sur le téléphone : Missions > Charger une mission.`,9000)}
   m.envoyeLe=new Date().toISOString();await saveMissions();renderSync()}
-async function importCfg(file){if(/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)){const nv=await lireNavette(file).catch(()=>null);if(nv){afficherNavette(nv);return}const pr=await lireImageProgramme(file).catch(()=>null);if(pr){afficherProgramme(pr);return}}
+async function importCfg(file){busy("Lecture du fichier…",`${file.name} · ${taille(file.size)}`);await repos();try{await importCfg0(file)}finally{busyFin()}}
+async function importCfg0(file){if(/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)){const nv=await lireNavette(file).catch(()=>null);if(nv){afficherNavette(nv);return}const pr=await lireImageProgramme(file).catch(()=>null);if(pr){afficherProgramme(pr);return}}
   let j;try{j=/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)?await lireImageMission(file):JSON.parse(await file.text())}catch(e){j=null}
   if(!j||!j.equipements||!j.activites){toast("Ce fichier n'est pas un fichier de mission valide.");return}
   const d=j.schema==="reglages-releve/1"?{...j.mission,equipements:j.equipements,activites:j.activites}:j; // ancien format accepté
@@ -2295,47 +2328,52 @@ async function partagerImage(f,msg){let ok=false;const mobile=/Android|iPhone|iP
   if(mobile&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});ok=true}catch(e){if(e.name==="AbortError") return false}}
   if(!ok){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();toast(msg,9000)}return true}
 async function creerNavette(){const m=curMission();if(!m) return;const ap=await appareilInfo();const tout=$("navTout").checked;const depuis=tout?"":(m.navetteLe||"");
-  const b=$("bNavette");b.disabled=true;b.textContent="Préparation de la navette…";
+  const b=$("bNavette");b.disabled=true;b.textContent="Préparation de la navette…";busy("Préparation de la navette…","",0);await repos();
   try{const en=(await allEntries()).filter(e=>belongs(e)&&(tout||!e.navRecu||e.navRecu!==e.modifieLe)&&(!depuis||(e.modifieLe||e.creeLe||"")>depuis));
-    const photos=[],blobs=[];let off=0;
-    for(const e of en) for(const n of e.photos){const p=await getPhoto(n);if(!p) continue;
+    const photos=[],blobs=[];let off=0;const nTot=en.reduce((s,e)=>s+e.photos.length,0);let iP=0;
+    for(const e of en) for(const n of e.photos){iP++;busyMaj(`Photo ${iP} / ${nTot}`,Math.round(iP/Math.max(1,nTot)*90));const p=await getPhoto(n);if(!p) continue;
       const r={id:p.id,entry:p.entry,type:p.type,prise:p.prise||null,annot:p.annot||null,thumb:p.thumb||""};
       for(const k of ["blob","orig"]) if(p[k]&&p[k].size){r[k]={off,taille:p[k].size,type:p[k].type||"image/jpeg"};blobs.push(p[k]);off+=p[k].size}
       photos.push(r)}
     const faits=(await tombesPrevus()).filter(t=>t.no===m.no);
     const {id,archive,envoyeLe,recuLe,versionRecue,navetteLe,...mis}=m;
     const h={schema:"releve-navette/1",cree:new Date().toISOString(),appareil:ap,depuis,mission:mis,entrees:en,photos,prevus:PREVUS.filter(p=>p.mission===m.id).map(({mission,...p})=>p),faits};
-    const f=await fichierNavette(h,blobs,off);
-    const ok=await partagerImage(f,`« ${f.name} » est dans Téléchargements : dépose-le dans OneDrive (982 Toolbox › Navette) depuis Mes fichiers, ou envoie-le par Quick Share. Sur l'autre appareil : Missions > Charger une mission.`);
+    busyMaj("Assemblage du fichier…",95);await repos();
+    const f=await fichierNavette(h,blobs,off);busyFin();
+    const ok=await partagerImage(f,`« ${f.name} » est dans Téléchargements : dépose-le dans OneDrive (982 Toolbox › Navette) depuis Mes fichiers, ou envoie-le par Quick Share. Sur l'autre appareil : Missions > Charger une navette.`);
     if(ok){m.navetteLe=h.cree;await saveMissions();majNavInfo();toast(`Navette créée : ${en.length} constat(s), ${photos.length} photo(s), ${h.prevus.length} constat(s) prévu(s).`,6000)}}
   catch(e){toast("Navette impossible : "+(e&&e.message||e),8000)}
-  finally{b.disabled=false;b.textContent="🔄 Créer la navette"}}
+  finally{busyFin();b.disabled=false;b.textContent="🔄 Créer la navette"}}
 async function fichierNavette(h,blobs,total){const c=document.createElement("canvas");c.width=900;c.height=480;const g=c.getContext("2d");
   g.fillStyle="#1d2a33";g.fillRect(0,0,900,480);g.fillStyle="#2e7d4f";g.fillRect(0,0,14,480);
   g.fillStyle="#fff";g.font="bold 42px sans-serif";g.fillText("Navette – mission "+h.mission.no,50,95);
   g.font="28px sans-serif";g.fillText((h.mission.client||"").slice(0,50),50,148);g.fillStyle="#c9d3d9";g.font="26px sans-serif";
   g.fillText(`${h.entrees.length} constat(s) · ${h.photos.length} photo(s) · ${h.prevus.length} constat(s) prévu(s)`,50,230);
   g.fillText(`De : ${h.appareil.nom} · ${fmtDT(h.cree)}`,50,272);g.fillText(h.depuis?`Nouveautés depuis le ${fmtDT(h.depuis)}`:"Navette complète",50,314);
-  g.font="22px sans-serif";g.fillText("The 982 Inspector Toolbox : Missions › Charger une mission",50,420);
+  g.font="22px sans-serif";g.fillText("The 982 Inspector Toolbox : Missions › Charger une navette",50,420);
   const jpg=new Uint8Array(await (await new Promise(r=>c.toBlob(r,"image/jpeg",0.85))).arrayBuffer());
   const enc=new TextEncoder(),parts=[jpg.subarray(0,2)],T=65000;
   const seg=(pre,len,...data)=>{const L=pre.length+len+2;parts.push(new Uint8Array([0xFF,0xFE,L>>8,L&255]),pre,...data)};
+  const hh=new Date(h.cree),nE=h.entrees.length;
+  const nom=`Navette ${safeDir(h.mission.no)} - ${h.appareil.nom} - ${hh.getFullYear()}-${pad(hh.getMonth()+1)}-${pad(hh.getDate())} ${pad(hh.getHours())}h${pad(hh.getMinutes())} - ${nE} constat${nE>1?"s":""}.jpg`;
+  {const nb=enc.encode(nom);seg(enc.encode("RELEVE-FICHIER:"),nb.length,nb)}
   const hb=enc.encode(JSON.stringify(h)),pn=enc.encode("RELEVE-NAVETTE:"),pd=enc.encode("RELEVE-NDATA:");
   for(let i=0;i<hb.length;i+=T) seg(pn,Math.min(T,hb.length-i),hb.subarray(i,i+T));
   const cum=[];let c0=0;for(const b of blobs){cum.push(c0);c0+=b.size}
   for(let pos=0,k=0;pos<total;pos+=T){const len=Math.min(T,total-pos),morceaux=[];let cur=pos,reste=len;
     while(reste>0){while(cum[k]+blobs[k].size<=cur) k++;const d=cur-cum[k],n=Math.min(blobs[k].size-d,reste);morceaux.push(blobs[k].slice(d,d+n));cur+=n;reste-=n}
     seg(pd,len,...morceaux)}
-  parts.push(jpg.subarray(2));const hh=new Date(h.cree);
-  return new File(parts,`navette-${safeDir(h.mission.no)}-${h.appareil.nom}-${today()}-${pad(hh.getHours())}${pad(hh.getMinutes())}.jpg`,{type:"image/jpeg"})}
-async function lireNavette(file){const rd=async(a,b)=>new Uint8Array(await file.slice(a,b).arrayBuffer());
+  parts.push(jpg.subarray(2));
+  return new File(parts,nom,{type:"image/jpeg"})}
+async function lireNavette(file,onp){const rd=async(a,b)=>new Uint8Array(await file.slice(a,b).arrayBuffer());
   const s0=await rd(0,2);if(s0[0]!==0xFF||s0[1]!==0xD8) return null;
-  const dec=new TextDecoder(),PN="RELEVE-NAVETTE:",PD="RELEVE-NDATA:",hdr=[],data=[];let pos=2;
+  const dec=new TextDecoder(),PN="RELEVE-NAVETTE:",PD="RELEVE-NDATA:",hdr=[],data=[];let pos=2,nSeg=0;
   while(pos+4<=file.size){const b=await rd(pos,pos+4);if(b[0]!==0xFF) break;const mk=b[1],L=b[2]<<8|b[3];
     if(mk===0xFE){const t=dec.decode(await rd(pos+4,pos+4+15));
       if(t.startsWith(PN)) hdr.push(await rd(pos+4+PN.length,pos+2+L));else if(t.startsWith(PD)) data.push([pos+4+PD.length,pos+2+L])}
     else if(mk===0xDA) break;
-    pos+=2+L;if(!hdr.length&&pos>200000) break}
+    pos+=2+L;if(!hdr.length&&pos>200000) break;
+    if(onp&&++nSeg%8===0){onp(Math.round(pos/file.size*100));await repos()}}
   if(!hdr.length) return null;
   const tot=hdr.reduce((a,x)=>a+x.length,0),u=new Uint8Array(tot);let o=0;for(const x of hdr){u.set(x,o);o+=x.length}
   let h;try{h=JSON.parse(dec.decode(u))}catch(e){return null}if(!h||h.schema!=="releve-navette/1") return null;
@@ -2363,12 +2401,13 @@ async function afficherNavette(h){const a=await analyseNavette(h);
   const box=$("navTxt");box.innerHTML="";for(const x of t){const d=document.createElement("div");d.textContent=x;box.append(d)}
   NAV_EN_ATTENTE=h;$("navCard").hidden=false;$("navCard").scrollIntoView({behavior:"smooth",block:"center"})}
 async function appliquerNavette(){const h=NAV_EN_ATTENTE;$("navCard").hidden=true;NAV_EN_ATTENTE=null;if(!h) return;
-  const b=$("bNavOk");b.disabled=true;
+  const b=$("bNavOk");b.disabled=true;busy("Fusion de la navette…","",0);await repos();
   try{const a=await analyseNavette(h);const now=new Date().toISOString();let m=a.m;const hm=h.mission;
     if(!m){m={id:newId(),archive:false,...hm,recuLe:now,versionRecue:hm.modifieLe||now};delete m.navetteLe;MISSIONS.push(m)}
     else if(a.listes) Object.assign(m,{equipements:hm.equipements,activites:hm.activites,dico:Array.isArray(hm.dico)?hm.dico:(m.dico||[]),programme:hm.programme||m.programme,modifieLe:hm.modifieLe,versionRecue:hm.modifieLe,recuLe:now,dossierPC:m.dossierPC||hm.dossierPC||""});
     let nE=0,nP=0;
-    for(const e of h.entrees||[]){const l=await tx("entries","readonly",s=>s.get(e.id));if(l&&!((e.modifieLe||"")>(l.modifieLe||""))) continue;
+    const LE=h.entrees||[];let iE=0;
+    for(const e of LE){iE++;busyMaj(`Constat ${iE} / ${LE.length}`,Math.round(iE/Math.max(1,LE.length)*100));const l=await tx("entries","readonly",s=>s.get(e.id));if(l&&!((e.modifieLe||"")>(l.modifieLe||""))) continue;
       const recs=[];for(const r of (h.photos||[]).filter(r=>r.entry===e.id)){const blob=h._blob(r.blob);if(!blob) continue;
         recs.push({id:r.id,entry:r.entry,type:r.type,prise:r.prise||null,annot:r.annot||null,thumb:r.thumb||"",blob,orig:h._blob(r.orig)})}
       const ent={...e,mission:{...e.mission,id:m.id},navRecu:e.modifieLe};
@@ -2380,10 +2419,10 @@ async function appliquerNavette(){const h=NAV_EN_ATTENTE;$("navCard").hidden=tru
     for(const p of a.ajouts) PREVUS.push({...p,mission:m.id});
     await saveMissions();await sauverPrevus();
     if(m.id!==CFG.mission.id) await switchMission(m.id);else{setActive(m);refreshSelects();renderCfg();renderHeader();renderPrevus()}
-    await refreshBadge();if(!$("v-journal").hidden) renderJournal();majNavInfo();
+    await refreshBadge();if(!$("v-journal").hidden) renderJournal();if(!$("v-constats").hidden) renderConstats();majNavInfo();
     toast(`Navette fusionnée : ${nE} constat(s) (${nP} photo(s)), ${a.retires.length} constat(s) prévu(s) retiré(s), ${a.ajouts.length} ajouté(s).`,7000)}
   catch(e){toast("Fusion impossible : "+(e&&e.message||e),8000)}
-  finally{b.disabled=false}}
+  finally{busyFin();b.disabled=false}}
 function majNavInfo(){const m=curMission(),el=$("navInfo");if(!m||!el) return;el.textContent=m.navetteLe?`Dernière navette créée sur cet appareil : ${fmtDT(m.navetteLe)}.`:"Aucune navette créée sur cet appareil pour cette mission : la première sera complète."}
 /* ---------- import depuis Excel (copier-coller) ---------- */
 let COLLAGE=null;
@@ -2525,9 +2564,101 @@ async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobil
   $("bTAll").onclick=()=>traduireLignes(T.rows.map((_,i)=>i),false);$("bTSave").onclick=enregistrerCsv;
   window.addEventListener("beforeunload",e=>{if(T.modif){e.preventDefault();e.returnValue=""}})}
 /* ---------- navigation ---------- */
-function showView(v){if(v!=="journal") PREP=null;for(const s of ["accueil","saisie","journal","galerie","reglages","trad","pdfs"]) $("v-"+s).hidden=s!==v;
+function showView(v){if(v!=="journal") PREP=null;for(const s of ["accueil","saisie","constats","journal","galerie","reglages","trad","pdfs"]) $("v-"+s).hidden=s!==v;
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v?"page":"false"));
-  if(v==="journal") renderJournal();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();if(v==="pdfs") renderPdfs();window.scrollTo(0,0)}
+  if(v==="journal") renderJournal();if(v==="constats") renderConstats();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();if(v==="pdfs") renderPdfs();window.scrollTo(0,0)}
+
+/* ---------- v1.70 : onglet Constats (visualisation par équipement / sous-zone ; l'envoi reste dans le Journal) ---------- */
+const CST={eq:"",act:"",st:"",ouvrir:null};
+function voirConstat(id){CST.ouvrir=id;CST.eq="";CST.act="";CST.st="";showView("constats")}
+function remplirFiltre(sel,items,val,tous){sel.innerHTML="";const o=document.createElement("option");o.value="";o.textContent=tous;sel.append(o);
+  for(const it of items){const x=document.createElement("option");x.value=it.code;x.textContent=it.nom;x.dataset.noi18n="";sel.append(x)}
+  sel.value=items.some(i=>i.code===val)?val:""}
+function ligneConstat(e){const r=document.createElement("div");r.className="cst";r.id="cst_"+e.id;
+  r.innerHTML=`<img alt=""><div><div class="t"></div><div class="m"></div></div><div class="acts"></div><div class="apercu" hidden></div>`;
+  const t=r.querySelector(".t");if(e.gravite) t.innerHTML=`<span class="pill" style="background:${GCOL[e.gravite]}">${esc(e.gravite)}</span>`;
+  const sp=document.createElement("span");sp.dataset.noi18n="";sp.textContent=[e.activite&&e.activite.nom,e.sousActivite&&e.sousActivite.nom].filter(Boolean).join(" – ");t.append(sp);
+  const m=r.querySelector(".m"),h=e.hms?` ${e.hms.slice(0,2)}:${e.hms.slice(2,4)}`:"";
+  const d=document.createElement("span");d.textContent=`${frDate(e.date)}${h} · ${e.repere?"Repère "+e.repere+" · ":""}${e.photos.length} photo${e.photos.length>1?"s":""} `;m.append(d);
+  const st=document.createElement("span");st.className="st "+(e.envoye?"env":"aenv");st.textContent=e.envoye?`envoyé ✓${e.envoyeLe?" le "+fmtCourt(e.envoyeLe):""}`:"à envoyer";m.append(st);
+  if(e.photos[0]) getPhoto(e.photos[0]).then(p=>{if(p) r.querySelector("img").src=p.thumb});
+  const acts=r.querySelector(".acts"),ap=r.querySelector(".apercu");ap.id="cap_"+e.id;
+  const bO=document.createElement("button");bO.type="button";bO.className="ouvrir";bO.setAttribute("aria-controls",ap.id);
+  const basculer=o=>{ap.hidden=!o;bO.setAttribute("aria-expanded",String(o));bO.textContent=o?"▾ Replier":"▸ Aperçu";
+    if(o){JOURNAL_OUVERTS.add(e.id);if(!ap.dataset.fait){ap.dataset.fait="1";remplirApercu(ap,e)}}else JOURNAL_OUVERTS.delete(e.id)};
+  bO.onclick=()=>basculer(ap.hidden);basculer(JOURNAL_OUVERTS.has(e.id));acts.append(bO);r.querySelector("img").onclick=()=>bO.click();
+  const bE=document.createElement("button");bE.type="button";bE.textContent="Modifier";bE.onclick=()=>editEntry(e.id);acts.append(bE);
+  const bP=document.createElement("button");bP.type="button";bP.textContent="📄 PDF";bP.setAttribute("aria-label","PDF rapide de ce constat");bP.onclick=()=>pdfRapide([e]);acts.append(bP);
+  const bS=document.createElement("button");bS.type="button";bS.className="ghost";bS.textContent="🗑 Supprimer";bS.setAttribute("aria-label","Supprimer ce constat");bS.onclick=()=>supprimerConstat(e,bS);acts.append(bS);
+  return r}
+function lignePrevu(p){const r=document.createElement("div");r.className="cst prevu";r.id="cpv_"+p.id;
+  r.innerHTML=`<div class="ic" aria-hidden="true">⏳</div><div><div class="t"></div><div class="m"></div></div><div class="acts"></div>`;
+  const a=ACT.find(x=>x.code===p.act);const sp=document.createElement("span");sp.dataset.noi18n="";
+  sp.textContent=a?(p.subact&&nomDe(a.enfants,p.subact)||a.nom):"?";r.querySelector(".t").append(sp);
+  const m=r.querySelector(".m");if(p.note||p.repere){const n=document.createElement("span");n.dataset.noi18n="";n.textContent=[p.note,p.repere].filter(Boolean).join(" · ")+" ";m.append(n)}
+  const st=document.createElement("span");st.className="st prevu";st.textContent="prévu";m.append(st);
+  const b=document.createElement("button");b.type="button";b.textContent="Commencer";b.onclick=()=>{showView("saisie");commencerPrevu(p.id)};r.querySelector(".acts").append(b);
+  return r}
+async function renderConstats(){
+  const en=(await allEntries()).filter(belongs).sort((a,b)=>(a.date+(a.hms||"")).localeCompare(b.date+(b.hms||"")));
+  const pv=PREVUS.filter(p=>p.mission===CFG.mission.id);
+  remplirFiltre($("cEq"),EQ,CST.eq,"Tous");remplirFiltre($("cAct"),ACT,CST.act,"Toutes");$("cSt").value=CST.st;CST.eq=$("cEq").value;CST.act=$("cAct").value;
+  const nP=pv.length,nA=en.filter(e=>!e.envoye).length,nE=en.length-nA;
+  $("cInfo").textContent=`${en.length+nP} constat(s) : ${nP} prévu(s), ${nA} à envoyer, ${nE} envoyé(s)`;
+  const items=[...en.map(e=>({k:"e",e,eq:e.equipement&&e.equipement.code||"",act:e.activite&&e.activite.code||"",st:e.envoye?"env":"aenv"})),
+               ...pv.map(p=>({k:"p",p,eq:p.eq||"",act:p.act||"",st:"prevu"}))]
+    .filter(x=>(!CST.eq||x.eq===CST.eq)&&(!CST.act||x.act===CST.act)&&(!CST.st||x.st===CST.st));
+  // équipements dans l'ordre de la liste de la mission, puis ceux qui n'y sont plus
+  const eqs=EQ.map(q=>({code:q.code,nom:q.nom,enfants:q.enfants}));
+  for(const x of items) if(x.eq&&!eqs.some(q=>q.code===x.eq)) eqs.push({code:x.eq,nom:x.k==="e"?x.e.equipement.nom:x.eq,enfants:[]});
+  if(items.some(x=>!x.eq)) eqs.push({code:"",nom:"Autres",enfants:[]});
+  const box=$("constats");box.innerHTML="";
+  for(const q of eqs){const li=items.filter(x=>x.eq===q.code);if(!li.length) continue;
+    const c=document.createElement("div");c.className="card";
+    const n=li.length,np=li.filter(x=>x.k==="p").length;
+    c.innerHTML=`<div class="ehead"><h3></h3><span class="stat"></span></div>`;const h3=c.querySelector("h3");h3.textContent=q.nom;if(q.code) h3.dataset.noi18n="";
+    c.querySelector(".stat").textContent=np?`${n} constat(s), dont ${np} prévu(s)`:`${n} constat(s)`;
+    // sous-zones : ordre de la liste, puis « (général) », puis celles qui n'y sont plus
+    const cle=x=>{if(x.k==="p") return x.p.sub||"";const nom=x.e.sousEquipement||"";if(!nom) return "";
+      const ch=q.enfants.find(z=>z.nom===nom||z.code===slug(nom));return ch?ch.code:"#"+nom};
+    const sous=[...q.enfants.map(z=>({code:z.code,nom:z.nom})),{code:"",nom:"(général)"}];
+    for(const x of li){const k=cle(x);if(!sous.some(z=>z.code===k)) sous.push({code:k,nom:k.startsWith("#")?k.slice(1):(nomDe(q.enfants,k)||k)})}
+    for(const z of sous){const ls=li.filter(x=>cle(x)===z.code);if(!ls.length) continue;
+      if(q.enfants.length||z.code){const g=document.createElement("div");g.className="cgrp";g.textContent=z.nom;if(z.code) g.dataset.noi18n="";c.append(g)}
+      for(const x of ls.filter(x=>x.k==="e")) c.append(ligneConstat(x.e));
+      for(const x of ls.filter(x=>x.k==="p")) c.append(lignePrevu(x.p))}
+    box.append(c)}
+  if(!items.length) box.innerHTML=`<div class="card"><p class="hint">${en.length+nP?"Aucun constat ne correspond à ces filtres.":"Aucun constat pour cette mission. Les constats enregistrés depuis l'onglet Saisie et les constats prévus apparaissent ici, par équipement."}</p></div>`;
+  if(CST.ouvrir){const el=$("cst_"+CST.ouvrir);CST.ouvrir=null;
+    if(el){const b=el.querySelector("button.ouvrir");if(b&&b.getAttribute("aria-expanded")!=="true") b.click();
+      el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash");setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),60)}}}
+function initConstats(){
+  $("cEq").onchange=()=>{CST.eq=$("cEq").value;renderConstats()};
+  $("cAct").onchange=()=>{CST.act=$("cAct").value;renderConstats()};
+  $("cSt").onchange=()=>{CST.st=$("cSt").value;renderConstats()}}
+/* ---------- v1.70 : sablier pendant les opérations longues ---------- */
+let BUSY_T=null,ATTENTE_FICHIER=null;
+function busy(txt,sub,pct){$("busyTxt").textContent=txt;$("busySub").textContent=sub||"";const bar=$("busyBar");bar.hidden=pct==null;
+  if(pct!=null) $("busyBarI").style.width=Math.max(0,Math.min(100,pct))+"%";$("busyStop").hidden=true;$("busy").hidden=false}
+function busyMaj(sub,pct){$("busySub").textContent=sub||"";if(pct!=null){$("busyBar").hidden=false;$("busyBarI").style.width=Math.max(0,Math.min(100,pct))+"%"}}
+function busyFin(){$("busy").hidden=true;clearTimeout(BUSY_T);ATTENTE_FICHIER=null}
+const repos=()=>new Promise(r=>setTimeout(r,30)); // laisse l'écran se redessiner
+function taille(n){return n<1048576?Math.max(1,Math.round(n/1024))+" Ko":(n/1048576).toFixed(1).replace(".",",")+" Mo"}
+// choix d'un fichier : pendant que le sélecteur Android récupère le fichier (téléchargement OneDrive), la page n'a aucune nouvelle
+// -> sablier dès le retour dans l'appli, jusqu'à l'arrivée du fichier (ou Annuler)
+function choisirFichier(input){ATTENTE_FICHIER=input;input.value="";input.click()}
+function retourSelecteur(){if(!ATTENTE_FICHIER||document.hidden) return;
+  busy("Réception du fichier…","Un fichier pris dans OneDrive est d'abord téléchargé sur l'appareil : cela peut prendre quelques secondes.");
+  $("busyStop").hidden=false;clearTimeout(BUSY_T);BUSY_T=setTimeout(()=>{if(ATTENTE_FICHIER) busyFin()},180000)}
+function initBusy(){$("busyStop").onclick=busyFin;
+  document.addEventListener("visibilitychange",retourSelecteur);window.addEventListener("focus",()=>setTimeout(retourSelecteur,300));
+  for(const id of ["iCfg","iNav"]) $(id).addEventListener("cancel",busyFin)}
+async function chargerNavette(file){const info=`${file.name} · ${taille(file.size)}`;busy("Lecture de la navette…",info,0);await repos();
+  try{const nv=await lireNavette(file,p=>busyMaj(info,p)).catch(()=>null);
+    if(!nv){busyFin();toast("Ce fichier n'est pas une navette. Mission ou programme d'arrêt : « Charger une mission ».",7000);return}
+    busy("Analyse de la navette…",`${(nv.entrees||[]).length} constat(s), ${(nv.photos||[]).length} photo(s)`);await repos();
+    await afficherNavette(nv)}
+  finally{busyFin()}}
 /* ---------- accueil ---------- */
 async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`${m.no} · ${m.client||""}`;
   $("accInfo").textContent=[m.inspecteur,libelleSociete(m)].filter(Boolean).join(" · ");$("accVer").textContent="version "+APP_VERSION;
@@ -2896,7 +3027,7 @@ const TRAD_UI=[
 ["🔄 Créer la navette","🔄 Create the shuttle file","🔄 Crear la lanzadera","🔄 Shuttle-Datei erstellen"],
 ["Préparation de la navette…","Preparing the shuttle file…","Preparando la lanzadera…","Shuttle-Datei wird vorbereitet…"],
 ["Navette complète (sinon : seulement ce qui est nouveau ou modifié depuis la dernière navette)","Full shuttle file (otherwise: only what is new or changed since the last one)","Lanzadera completa (si no: solo lo nuevo o modificado desde la última)","Vollständige Shuttle-Datei (sonst: nur Neues oder Geändertes seit der letzten)"],
-["Navette téléphone ⇄ tablette : « Créer la navette » met dans une image les constats (photos complètes), les constats prévus et les listes de la mission. Dépose-la dans OneDrive (982 Toolbox › Navette) ou envoie-la par Quick Share, puis sur l'autre appareil : « Charger une mission ». Les deux appareils sont alors à jour, sans doublon.","Phone ⇄ tablet shuttle: “Create the shuttle file” puts the findings (full photos), planned findings and job lists into an image. Put it in OneDrive (982 Toolbox › Navette) or send it via Quick Share, then on the other device: “Load a job”. Both devices are then up to date, without duplicates.","Lanzadera teléfono ⇄ tableta: «Crear la lanzadera» guarda en una imagen las constataciones (fotos completas), las previstas y las listas de la misión. Déjala en OneDrive (982 Toolbox › Navette) o envíala por Quick Share; luego en el otro dispositivo: «Cargar una misión». Ambos quedan al día, sin duplicados.","Shuttle Telefon ⇄ Tablet: „Shuttle-Datei erstellen“ packt Befunde (volle Fotos), geplante Befunde und Auftragslisten in ein Bild. In OneDrive ablegen (982 Toolbox › Navette) oder per Quick Share senden, dann auf dem anderen Gerät: „Auftrag laden“. Beide Geräte sind danach aktuell, ohne Duplikate."],
+["« Créer la navette » met dans une image les constats (photos complètes), les constats prévus et les listes de la mission. Dépose-la dans OneDrive (982 Toolbox › Navette) ou envoie-la par Quick Share, puis sur l'autre appareil : « Charger une navette ». Les deux appareils sont alors à jour, sans doublon.","“Create the shuttle file” puts the findings (full photos), planned findings and job lists into an image. Put it in OneDrive (982 Toolbox › Navette) or send it via Quick Share, then on the other device: “Load a shuttle file”. Both devices are then up to date, without duplicates.","«Crear la lanzadera» guarda en una imagen las constataciones (fotos completas), las previstas y las listas de la misión. Déjala en OneDrive (982 Toolbox › Navette) o envíala por Quick Share; luego en el otro dispositivo: «Cargar una lanzadera». Ambos quedan al día, sin duplicados.","„Shuttle-Datei erstellen“ packt Befunde (volle Fotos), geplante Befunde und Auftragslisten in ein Bild. In OneDrive ablegen (982 Toolbox › Navette) oder per Quick Share senden, dann auf dem anderen Gerät: „Shuttle-Datei laden“. Beide Geräte sind danach aktuell, ohne Duplikate."],
 ["Navette de la mission {a}, créée sur « {b} » le {c}.","Shuttle file for job {a}, created on “{b}” on {c}.","Lanzadera de la misión {a}, creada en «{b}» el {c}.","Shuttle-Datei für Auftrag {a}, erstellt auf „{b}“ am {c}."],
 ["La mission {a} n'est pas sur cet appareil : elle sera ajoutée.","Job {a} is not on this device: it will be added.","La misión {a} no está en este dispositivo: se añadirá.","Auftrag {a} ist nicht auf diesem Gerät: Er wird hinzugefügt."],
 ["Constats : {a} nouveau(x), {b} mis à jour, {c} déjà à jour.","Findings: {a} new, {b} updated, {c} already up to date.","Constataciones: {a} nueva(s), {b} actualizada(s), {c} ya al día.","Befunde: {a} neu, {b} aktualisiert, {c} bereits aktuell."],
@@ -2906,7 +3037,7 @@ const TRAD_UI=[
 ["Navette fusionnée : {a} constat(s) ({b} photo(s)), {c} constat(s) prévu(s) retiré(s), {d} ajouté(s).","Shuttle file merged: {a} finding(s) ({b} photo(s)), {c} planned finding(s) removed, {d} added.","Lanzadera fusionada: {a} constatación(es) ({b} foto(s)), {c} prevista(s) retirada(s), {d} añadida(s).","Shuttle-Datei zusammengeführt: {a} Befund(e) ({b} Foto(s)), {c} geplante(r) Befund(e) entfernt, {d} hinzugefügt."],
 ["Dernière navette créée sur cet appareil : {a}.","Last shuttle file created on this device: {a}.","Última lanzadera creada en este dispositivo: {a}.","Letzte auf diesem Gerät erstellte Shuttle-Datei: {a}."],
 ["Aucune navette créée sur cet appareil pour cette mission : la première sera complète.","No shuttle file created on this device for this job yet: the first one will be full.","Ninguna lanzadera creada en este dispositivo para esta misión: la primera será completa.","Noch keine Shuttle-Datei auf diesem Gerät für diesen Auftrag: Die erste ist vollständig."],
-["« {a} » est dans Téléchargements : dépose-le dans OneDrive (982 Toolbox › Navette) depuis Mes fichiers, ou envoie-le par Quick Share. Sur l'autre appareil : Missions > Charger une mission.","“{a}” is in Downloads: put it in OneDrive (982 Toolbox › Navette) from My Files, or send it via Quick Share. On the other device: Jobs > Load a job.","«{a}» está en Descargas: déjalo en OneDrive (982 Toolbox › Navette) desde Mis archivos, o envíalo por Quick Share. En el otro dispositivo: Misiones > Cargar una misión.","„{a}“ ist in Downloads: Aus Eigene Dateien in OneDrive ablegen (982 Toolbox › Navette) oder per Quick Share senden. Auf dem anderen Gerät: Aufträge > Auftrag laden."],
+["« {a} » est dans Téléchargements : dépose-le dans OneDrive (982 Toolbox › Navette) depuis Mes fichiers, ou envoie-le par Quick Share. Sur l'autre appareil : Missions > Charger une navette.","“{a}” is in Downloads: put it in OneDrive (982 Toolbox › Navette) from My Files, or send it via Quick Share. On the other device: Jobs > Load a shuttle file.","«{a}» está en Descargas: déjalo en OneDrive (982 Toolbox › Navette) desde Mis archivos, o envíalo por Quick Share. En el otro dispositivo: Misiones > Cargar una lanzadera.","„{a}“ ist in Downloads: Aus Eigene Dateien in OneDrive ablegen (982 Toolbox › Navette) oder per Quick Share senden. Auf dem anderen Gerät: Aufträge > Shuttle-Datei laden."],
 ["Tout déplier","Expand all","Desplegar todo","Alle aufklappen"],
 ["Programme d'arrêt","Turnaround programme","Programa de parada","Stillstandsprogramm"],
 ["Charger le programme","Load the programme","Cargar el programa","Programm laden"],
@@ -3514,7 +3645,37 @@ const TRAD_UI=[
 ["Contrôles prévus…","Planned checks…","Controles previstos…","Geplante Prüfungen…"],
 ["Contrôles prévus","Planned checks","Controles previstos","Geplante Prüfungen"],
 ["Traduire les observations","Translate the observations","Traducir las observaciones","Beobachtungen übersetzen"],
-["Glossaire réfractaire","Refractory glossary","Glosario de refractarios","Feuerfest-Glossar"]
+["Glossaire réfractaire","Refractory glossary","Glosario de refractarios","Feuerfest-Glossar"],
+// v1.70 : onglet Constats, Journal en lignes, navette, sablier
+["Constats","Findings","Hallazgos","Befunde"],
+["Constats de la mission","Job findings","Hallazgos de la misión","Befunde des Auftrags"],
+["Statut","Status","Estado","Status"],
+["Prévus","Planned","Previstos","Geplant"],
+["À envoyer","To send","Por enviar","Zu senden"],
+["Envoyés","Sent","Enviados","Gesendet"],
+["prévu","planned","previsto","geplant"],
+["Autres","Others","Otros","Andere"],
+["(général)","(general)","(general)","(allgemein)"],
+["Tous les constats de la mission, par équipement et sous-zone, dans l'ordre de la liste. Les constats prévus (pas encore commencés) sont en grisé. L'envoi au PC se fait depuis le Journal.","All the job findings, by equipment and sub-area, in list order. Planned findings (not started yet) are greyed out. Sending to the PC is done from the Log.","Todos los hallazgos de la misión, por equipo y subzona, en el orden de la lista. Los previstos (aún no empezados) aparecen en gris. El envío al PC se hace desde el Diario.","Alle Befunde des Auftrags, nach Ausrüstung und Unterbereich, in Listenreihenfolge. Geplante (noch nicht begonnene) Befunde sind ausgegraut. Das Senden an den PC erfolgt im Journal."],
+["{a} constat(s) : {b} prévu(s), {c} à envoyer, {d} envoyé(s)","{a} finding(s): {b} planned, {c} to send, {d} sent","{a} hallazgo(s): {b} previsto(s), {c} por enviar, {d} enviado(s)","{a} Befund(e): {b} geplant, {c} zu senden, {d} gesendet"],
+["{a} constat(s), dont {b} prévu(s)","{a} finding(s), including {b} planned","{a} hallazgo(s), de ellos {b} previsto(s)","{a} Befund(e), davon {b} geplant"],
+["Aucun constat ne correspond à ces filtres.","No finding matches these filters.","Ningún hallazgo coincide con estos filtros.","Kein Befund entspricht diesen Filtern."],
+["Aucun constat pour cette mission. Les constats enregistrés depuis l'onglet Saisie et les constats prévus apparaissent ici, par équipement.","No finding for this job yet. Findings saved from the Entry tab and planned findings appear here, by equipment.","Ningún hallazgo para esta misión. Los hallazgos guardados desde la pestaña Captura y los previstos aparecen aquí, por equipo.","Noch keine Befunde für diesen Auftrag. In „Erfassung“ gespeicherte und geplante Befunde erscheinen hier, nach Ausrüstung."],
+["Voir ce constat dans l'onglet Constats","See this finding in the Findings tab","Ver este hallazgo en la pestaña Hallazgos","Diesen Befund im Reiter Befunde anzeigen"],
+["Coche les constats à envoyer au PC (un constat déjà envoyé peut être renvoyé). Touche une ligne pour voir le constat dans l'onglet Constats.","Tick the findings to send to the PC (a finding already sent can be sent again). Tap a line to see the finding in the Findings tab.","Marca los hallazgos que enviar al PC (uno ya enviado se puede reenviar). Toca una línea para ver el hallazgo en la pestaña Hallazgos.","Die an den PC zu sendenden Befunde ankreuzen (ein bereits gesendeter kann erneut gesendet werden). Eine Zeile antippen, um den Befund im Reiter Befunde zu sehen."],
+["Navette téléphone ⇄ tablette","Phone ⇄ tablet shuttle file","Lanzadera teléfono ⇄ tableta","Shuttle-Datei Telefon ⇄ Tablet"],
+["📥 Charger une navette","📥 Load a shuttle file","📥 Cargar una lanzadera","📥 Shuttle-Datei laden"],
+["Ce fichier n'est pas une navette. Mission ou programme d'arrêt : « Charger une mission ».","This file is not a shuttle file. Job or turnaround programme: “Load a job”.","Este archivo no es una lanzadera. Misión o programa de parada: «Cargar una misión».","Diese Datei ist keine Shuttle-Datei. Auftrag oder Stillstandsprogramm: „Auftrag laden“."],
+["Réception du fichier…","Receiving the file…","Recibiendo el archivo…","Datei wird empfangen…"],
+["Un fichier pris dans OneDrive est d'abord téléchargé sur l'appareil : cela peut prendre quelques secondes.","A file taken from OneDrive is first downloaded to the device: this can take a few seconds.","Un archivo de OneDrive se descarga primero en el dispositivo: puede tardar unos segundos.","Eine Datei aus OneDrive wird zuerst auf das Gerät geladen: Das kann einige Sekunden dauern."],
+["Lecture du fichier…","Reading the file…","Leyendo el archivo…","Datei wird gelesen…"],
+["Lecture de la navette…","Reading the shuttle file…","Leyendo la lanzadera…","Shuttle-Datei wird gelesen…"],
+["Analyse de la navette…","Analysing the shuttle file…","Analizando la lanzadera…","Shuttle-Datei wird analysiert…"],
+["Fusion de la navette…","Merging the shuttle file…","Fusionando la lanzadera…","Shuttle-Datei wird zusammengeführt…"],
+["Assemblage du fichier…","Assembling the file…","Montando el archivo…","Datei wird zusammengestellt…"],
+["Constat {a} / {b}","Finding {a} / {b}","Hallazgo {a} / {b}","Befund {a} / {b}"],
+["Photo {a} / {b}","Photo {a} / {b}","Foto {a} / {b}","Foto {a} / {b}"],
+["{a} constat(s), {b} photo(s)","{a} finding(s), {b} photo(s)","{a} hallazgo(s), {b} foto(s)","{a} Befund(e), {b} Foto(s)"]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
@@ -3604,7 +3765,9 @@ async function start(){
   $("cLang").onchange=e=>changerLangue(e.target.value);
   $("bRenAll").onclick=()=>finirRenommage(true);$("bRenOnly").onclick=()=>finirRenommage(false);$("bRenCancel").onclick=()=>{$("renCard").hidden=true;REN_EN_ATTENTE=null};
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
-  $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bProgOk").onclick=appliquerProgramme;$("bNavOk").onclick=appliquerNavette;$("bNavCancel").onclick=()=>{$("navCard").hidden=true;NAV_EN_ATTENTE=null};$("bNavette").onclick=creerNavette;$("bProgCancel").onclick=()=>{$("progCard").hidden=true;PROG_EN_ATTENTE=null};$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
+  $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bProgOk").onclick=appliquerProgramme;$("bNavOk").onclick=appliquerNavette;$("bNavCancel").onclick=()=>{$("navCard").hidden=true;NAV_EN_ATTENTE=null};$("bNavette").onclick=creerNavette;$("bProgCancel").onclick=()=>{$("progCard").hidden=true;PROG_EN_ATTENTE=null};$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>choisirFichier($("iCfg"));$("iCfg").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];if(f) importCfg(f);else busyFin();e.target.value=""};
+  $("bNavLoad").onclick=()=>choisirFichier($("iNav"));$("iNav").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];if(f) chargerNavette(f);else busyFin();e.target.value=""};
+  initBusy();initConstats();
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
   initTrad();initAccueil();initEnvoi();initBrouillon();showView("accueil");
   initMaj();
