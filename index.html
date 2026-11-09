@@ -810,7 +810,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.01";
+const APP_VERSION="2.04";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2835,7 +2835,7 @@ const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION S
   res:["Résultats de la préqualification","Prequalification results","Resultados de la precualificación","Ergebnisse der Präqualifikation"],
   methode:["Méthode","Method","Método","Verfahren"],date:["Date","Date","Fecha","Datum"],
   fichier:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht Präqualifikationssitzung"],
-  laboC:["labo","lab","lab.","Labor"],spec:["Spécification applicable","Applicable specification","Especificación aplicable","Anwendbare Spezifikation"],docs:["Documents de référence","Reference documents","Documentos de referencia","Referenzdokumente"],ref:["Référence","Reference","Referencia","Referenz"],titreDoc:["Titre","Title","Título","Titel"],rev:["Rév.","Rev.","Rev.","Rev."],res1:["Résultats de la séance de préqualification du {a}","Results of the prequalification session of {a}","Resultados de la sesión de precualificación del {a}","Ergebnisse der Präqualifikationssitzung vom {a}"],resN:["Résultats des séances de préqualification du {a} au {b}","Results of the prequalification sessions from {a} to {b}","Resultados de las sesiones de precualificación del {a} al {b}","Ergebnisse der Präqualifikationssitzungen vom {a} bis {b}"],pres:["Applicateurs présentés","Applicators presented","Aplicadores presentados","Vorgestellte Verarbeiter"],eauCert:["Certificat de l'eau","Water certificate","Certificado del agua","Wasserzertifikat"],conformeM:["conforme","compliant","conforme","konform"]};
+  laboC:["labo","lab","lab.","Labor"],spec:["Spécification applicable","Applicable specification","Especificación aplicable","Anwendbare Spezifikation"],docs:["Documents de référence","Reference documents","Documentos de referencia","Referenzdokumente"],ref:["Référence","Reference","Referencia","Referenz"],titreDoc:["Titre","Title","Título","Titel"],rev:["Rév.","Rev.","Rev.","Rev."],res1:["Résultats de la séance de préqualification du {a}","Results of the prequalification session of {a}","Resultados de la sesión de precualificación del {a}","Ergebnisse der Präqualifikationssitzung vom {a}"],resN:["Résultats des séances de préqualification du {a} au {b}","Results of the prequalification sessions from {a} to {b}","Resultados de las sesiones de precualificación del {a} al {b}","Ergebnisse der Präqualifikationssitzungen vom {a} bis {b}"],pres:["Applicateurs présentés","Applicators presented","Aplicadores presentados","Vorgestellte Verarbeiter"],eauCert:["Certificat de l'eau","Water certificate","Certificado del agua","Wasserzertifikat"],conformeM:["conforme","compliant","conforme","konform"],conformeC:["Conforme","Compliant","Conforme","Konform"],nonConformeC:["Non conforme","Non-compliant","No conforme","Nicht konform"]};
 const apqL=(k,l)=>APQL[k][iLangue(l)];
 // v1.81 : le rapport suit la langue de l'appli (sélecteur FR / EN / ES / DE de l'en-tête)
 const apqLangue=m=>LANGUI.codes.includes(LANGUI.lang)?LANGUI.lang:((m&&m.langue)||langueMission());
@@ -3067,6 +3067,12 @@ function apqLabo(a){const c=apqE("input",{type:"checkbox"});c.checked=!!a.labo;c
   const maj=()=>{box.innerHTML="";box.append(apqE("label",{class:"toggle"},c," Échantillons envoyés au laboratoire"));
     if(a.labo) box.append(apqChoix("Début des travaux en attente des résultats",a,"laboDebut",APQ_DEBUT))};
   c.onchange=()=>{a.labo=c.checked;apqSauver();maj()};maj();return box}
+// v2.02 : certificat de l'eau Conforme (vert) / Non conforme (rouge) ; ancien « true » = conforme
+function apqEauConf(a){if(a.eauConf===true) a.eauConf="oui";const box=apqE("div",{class:"apqv"},apqE("span",{class:"apqst",text:"Certificat de l'eau"}));
+  for(const [k,t,c] of [["oui","Conforme","var(--ok)"],["non","Non conforme","var(--crit)"]]){const on=a.eauConf===k;
+    const b=apqE("button",{type:"button","aria-pressed":String(on)},t);if(on) b.style.background=c;
+    b.onclick=()=>{a.eauConf=a.eauConf===k?"":k;apqSauver();renderApq()};box.append(b)}
+  return box}
 async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqTdsMem();await apqRecuperer(a);await apqListeMat();
   $("apqMission").textContent=`${CFG.mission.no} · ${CFG.mission.client||""}`;
   apqEquip(a);
@@ -3086,7 +3092,7 @@ async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apq
     apqE("div",{class:"apqrow"},apqChoix("Preshipment test",m,"psh",APQ_PSH),apqChamp("Réf. du rapport de preshipment test",m,"pshRef",null,"ex. PST-2408-112")),apqTdsBloc(m),
     apqPhotos(m.photos,APQ_SLOTS_M)))}
   mt.append(apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:async()=>{a.materiaux.push({id:apqId(),produit:"",role:"",lots:""});await apqSauver(true);renderApq()}},"＋ Matériau")));
-  const g=$("apqGen");g.innerHTML="";g.append(apqZone("Conditions (températures, humidité…)",a,"conditions"),apqE("div",{class:"apqrow"},apqChamp("Origine de l'eau",a,"eau",null,"ex. réseau d'eau potable du site"),apqChamp("Certificat de l'eau (n°, laboratoire, date)",a,"eauCert",null,"ex. analyse n° 2026-118 du 03/11/2026")),apqCoche("Certificat de l'eau conforme",a,"eauConf"),
+  const g=$("apqGen");g.innerHTML="";g.append(apqZone("Conditions (températures, humidité…)",a,"conditions"),apqE("div",{class:"apqrow"},apqChamp("Origine de l'eau",a,"eau",null,"ex. réseau d'eau potable du site"),apqChamp("Certificat de l'eau (n°, laboratoire, date)",a,"eauCert",null,"ex. analyse n° 2026-118 du 03/11/2026")),apqEauConf(a),
     apqE("p",{class:"apqst",text:"Certificat de l'eau"}),apqPhotos(a.eauPhotos=a.eauPhotos||[],["Certificat de l'eau"],true));
   const se=$("apqSes");se.innerHTML="";for(const s of a.sessions) se.append(apqSession(s));
   se.append(apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:async()=>{const s={id:apqId(),methode:"",date:today(),mats:a.materiaux.map(m=>m.id),applicateurs:[],photos:[],releves:{}};
@@ -3285,13 +3291,13 @@ async function apqFusion(octets,ann){const L=await apqPdfLib();const doc=await L
 // la classe est créée à la demande : PdfRapide est défini plus loin dans la page
 function PdfApqClasse(){return class PdfApq extends PdfRapide{
   constructor(l,soc,m){super(l,soc,m);this.titre1=apqL("titre",l);this.nPh=0}
-  sousTitre(t,suite){this.place(22+(suite??50));this.y+=4;this.txt(this.M,this.y+10,t,"B",10.5,"0.20 0.20 0.20");this.y+=16}
-  boite(lg){const M=this.M,L=this.W-2*M,s=9.5,lh=12.5;const rows=lg.map(([k,v])=>({k,ll:this.lignes([{t:String(v)}],L-170,s)}));
-    const h=rows.reduce((t,r)=>t+Math.max(1,r.ll.length)*lh+3,0)+6;this.place(h);const y0=this.y;this.rect(M,y0,L,h,"0.96 0.96 0.95");this.y+=4;
+  sousTitre(t,suite){this.place(22+(suite??70));this.y+=4;this.txt(this.M,this.y+10,t,"B",10.5,"0.20 0.20 0.20");this.y+=16}
+  boite(lg,cadre){const M=this.M,L=this.W-2*M,s=9.5,lh=12.5;const rows=lg.map(([k,v])=>({k,ll:this.lignes([{t:String(v)}],L-170,s)}));
+    const h=rows.reduce((t,r)=>t+Math.max(1,r.ll.length)*lh+3,0)+6;this.place(h);const y0=this.y;this.rect(M,y0,L,h,"0.96 0.96 0.95");if(cadre) this.cadre(M,y0,L,h,"0.42 0.16 0.08",0.9);this.y+=4;
     for(const r of rows){this.txt(M+8,this.y+10,r.k,"B",8.5,"0.40 0.40 0.40");let yy=this.y;
       for(const ln of r.ll){let cx=M+160;for(const m of ln){if(m.t!==" ") this.txt(cx,yy+10,m.t,m.f,s);cx+=m.w}yy+=lh}this.y=Math.max(yy,this.y+lh)+3}
     this.y=y0+h+6}
-  tableau(cols,rows){const M=this.M,L=this.W-2*M,s=8.6,pad=4,lh=s*1.3;const xs=[];let x=M;for(const c of cols){xs.push(x);x+=c.w*L}
+  tableau(cols,rows){const M=this.M,L=this.W-2*M,s=8.6,pad=4,lh=s*1.3;const xs=[];this.place(2*(lh+2*pad)+lh+8);let x=M;for(const c of cols){xs.push(x);x+=c.w*L}
     const ligne=(cells,ent)=>{const z=cells.map((c,i)=>{const cc=c&&typeof c==="object"?c:{t:String(c??"")};
         return {cc,ll:cc.pill?[[{t:cc.t,f:"B",w:0}]]:this.lignes([{t:cc.t,b:ent||cc.b}],cols[i].w*L-2*pad,s)}});
       const h=Math.max(1,...z.map(q=>q.ll.length))*lh+2*pad;
@@ -3318,13 +3324,13 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const k=APQ_SLOT_T[x.slot];if(!(x.leg&&x.leg.trim())&&k&&releves&&releves[k]!==""&&releves[k]!=null) leg+=` : ${releves[k]} °C`;
       try{out.push({im:this.ajouterImage(await jpegPdf(p.blob,1600)),n:++this.nPh,leg})}catch(e){}}
     return out}
-  async rapport(a,ann){const l=this.l,M=this.M,L=this.W-2*M,T=k=>apqL(k,l),m=this.m;this.nouvellePage();
+  async rapport(a,ann){const l=this.l,M=this.M,L=this.W-2*M,T=k=>apqL(k,l),m=this.m;this.nouvellePage();this.grandEntete=true;this.sansMission=true;this.y+=24;
     // v1.92 : matériaux et sessions vides (créés puis non remplis) laissés hors du PDF
     a={...a,materiaux:(a.materiaux||[]).filter(x=>(x.produit||"").trim()||(x.lots||"").trim()||(x.photos||[]).length||x.tds),
       sessions:(a.sessions||[]).filter(s=>s.methode||(s.applicateurs||[]).length||(s.photos||[]).length||(s.ctrlPhotos||[]).length||(s.commentaire||"").trim())};
     this.paragraphe([{t:T("h1"),b:true}],M,L,14);this.y+=4;
     const dates=[...new Set(a.sessions.map(s=>s.date).filter(Boolean))].sort().map(frDate).join(", ");
-    this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(a.lieu&&a.lieu.trim()?[[T("lieu"),a.lieu.trim()]]:[]),...(this.inspBoite||m.inspecteur?[[pdfL("insp",l),this.inspBoite||m.inspecteur]]:[]),...(apqEquipTexte(a)?[[T("equip"),apqEquipTexte(a)]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")],...(a.labo&&a.laboDebut?[[T("laboDebut"),apqTr(a.laboDebut,l)]]:[])]);
+    this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(a.lieu&&a.lieu.trim()?[[T("lieu"),a.lieu.trim()]]:[]),...(this.inspBoite||m.inspecteur?[[pdfL("insp",l),this.inspBoite||m.inspecteur]]:[]),...(apqEquipTexte(a)?[[T("equip"),apqEquipTexte(a)]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")],...(a.labo&&a.laboDebut?[[T("laboDebut"),apqTr(a.laboDebut,l)]]:[])],true);
     if(a.intro&&a.intro.trim()){this.texteBalise(a.intro,M,L,10);this.y+=4}
     if(a.perimetre&&a.perimetre.trim()){this.titreSection(T("perim"));this.texteBalise(a.perimetre,M,L,10)}
     // v1.78 : documents de référence
@@ -3345,7 +3351,9 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       if(pm.length) this.grille(pm)}
     if((a.conditions&&a.conditions.trim())||a.eau||a.eauCert||a.eauConf||(a.eauPhotos||[]).length){this.titreSection("2. "+T("gen"));if(a.conditions) this.texteBalise(a.conditions,M,L,10);
       if(a.eau){this.y+=2;this.paragraphe([{t:T("eau")+" : ",b:true},{t:a.eau}],M,L,10)}
-      if(a.eauCert||a.eauConf){this.y+=2;this.paragraphe([{t:T("eauCert")+" : ",b:true},{t:[a.eauCert,a.eauConf?T("conformeM"):""].filter(Boolean).join(" – ")}],M,L,10)}
+      const ec=a.eauConf===true?"oui":a.eauConf;
+      if(ec==="oui"||ec==="non"){this.y+=4;this.tableau([{t:T("eauCert"),w:.72},{t:T("verdict"),w:.28}],[[a.eauCert||"–",{t:T(ec==="oui"?"conformeC":"nonConformeC"),pill:ec==="oui"?"0.18 0.49 0.31":"0.70 0.15 0.12"}]])}
+      else if(a.eauCert){this.y+=2;this.paragraphe([{t:T("eauCert")+" : ",b:true},{t:a.eauCert}],M,L,10)}
       const pc=await this.photos((a.eauPhotos||[]).map(x=>({...x,leg:x.leg||T("eauCert")})),null);if(pc.length){this.y+=4;this.grille(pc)}}
     for(const s of a.sessions){this.titreSection([apqTr(s.methode,l),s.date&&frDate(s.date)].filter(Boolean).join(" – ")||T("methode"));
       const r=s.releves||{},bl=[];
@@ -3359,7 +3367,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const ct=[s.ctrlDelai&&T("apres").replace("{a}",String(s.ctrlDelai).trim().replace(/^(\d+(?:[.,]\d+)?)(?![\d.,])(?!\s*(?:h\b|j\b|d\b|heure|hour|jour|day|min|stund|tag|hora|día|dia))/i,"$1 h")),s.ctrlDate&&frDate(s.ctrlDate)].filter(Boolean).join(" – ");if(ct) bl.push([T("ctrl"),ct]);
       if(bl.length) this.boite(bl);
       if(tabT){this.sousTitre(T("releves")+" (°C)");const tri=[...rel].sort((x,y)=>(x.heure||"99").localeCompare(y.heure||"99"));
-        this.tableau([{t:T("heure"),w:.15},...TK.map(k=>({t:T(k+"C"),w:.17}))],tri.map(o=>[{t:o.heure||"–",b:true},...TK.map(k=>o[k]!==""&&o[k]!=null?String(o[k]):"–")]));this.y+=4}
+        this.tableau([{t:T("heure"),w:.15},...TK.map(k=>({t:T(k+"C"),w:.17}))],tri.map(o=>[{t:o.heure||"–",b:true},...TK.map(k=>o[k]!==""&&o[k]!=null?`${o[k]} °C`:"–")]));this.y+=4}
       if(s.commentaire&&s.commentaire.trim()){this.texteBalise(s.commentaire,M,L,10);this.y+=4}
       const ph=await this.photos(s.photos,r);if(ph.length) this.grille(ph);
       if(s.applicateurs.length){this.sousTitre(T("appl"));
@@ -3603,12 +3611,16 @@ class PdfRapide{
     const quand=new Date(),gen=pdfL("gen",l).replace("{a}",`${frDate(today())} ${pad(quand.getHours())}:${pad(quand.getMinutes())}`);
     this.pages.forEach((pg,i)=>{const ops=pg.ops,dd=pg.d;pg.ops=[];pg.d=[];this.page=pg;
       // en-tête : logo, société, titre ; pied : inspecteur, date, page
-      let x=M;if(logo){const h=38,w=h*logo.w/logo.h;this.image(logo,M,M,w,h);x=M+w+10}
-      this.txt(x,M+15,nomSoc,"B",11);this.txt(x,M+29,actSoc,"R",8.5,"0.40 0.40 0.40");
-      const t1=this.titre1||pdfL(this.prog?"titreAv":"titre",l);this.txt(W-M-pdfLargeur(t1,"B",10),M+13,t1,"B",10,"0.42 0.16 0.08");
-      const t2=`${pdfL("mission",l)} ${this.m.no||""}`;this.txt(W-M-pdfLargeur(t2,"R",8.5),M+26,t2,"R",8.5,"0.40 0.40 0.40");
-      if(this.soc!=="FTA"){const t3=pdfL("prelim",l);this.txt(W-M-pdfLargeur(t3,"I",8),M+38,t3,"I",8,"0.70 0.15 0.12")}
-      this.trait(M,M+48,W-M,M+48,"0.42 0.16 0.08",1);
+      const G=this.grandEntete&&i===0;
+      let x=M;if(logo){const h=G?64:38,w=h*logo.w/logo.h;this.image(logo,M,M,w,h);x=M+w+10}
+      if(G){this.txt(x,M+26,nomSoc,"B",13);this.txt(x,M+42,actSoc,"R",9.5,"0.40 0.40 0.40")}else{this.txt(x,M+15,nomSoc,"B",11);this.txt(x,M+29,actSoc,"R",8.5,"0.40 0.40 0.40")}
+      const t1=this.titre1||pdfL(this.prog?"titreAv":"titre",l);
+      if(G){const fin=x+Math.max(pdfLargeur(nomSoc,"B",13),pdfLargeur(actSoc,"R",9.5))+18,fs=Math.max(10,Math.min(16,10*(W-M-fin)/pdfLargeur(t1,"B",10)));
+        this.txt(W-M-pdfLargeur(t1,"B",fs),M+30,t1,"B",fs,"0.42 0.16 0.08")}
+      else this.txt(W-M-pdfLargeur(t1,"B",10),M+13,t1,"B",10,"0.42 0.16 0.08");
+      if(!this.sansMission){const t2=`${pdfL("mission",l)} ${this.m.no||""}`;this.txt(W-M-pdfLargeur(t2,"R",8.5),M+26,t2,"R",8.5,"0.40 0.40 0.40")}
+      if(this.soc!=="FTA"){const t3=pdfL("prelim",l);this.txt(W-M-pdfLargeur(t3,"I",8),G?M+46:(this.sansMission?M+28:M+38),t3,"I",8,"0.70 0.15 0.12")}
+      this.trait(M,G?M+72:M+48,W-M,G?M+72:M+48,"0.42 0.16 0.08",1);
       const pied=this.pied||[this.m.inspecteur?`${pdfL("insp",l)} : ${this.m.inspecteur}`:"",gen].filter(Boolean).join(" · ");
       this.trait(M,this.H-M-14,W-M,this.H-M-14,"0.85 0.85 0.85",0.5);this.txt(M,this.H-M-3,pied,"R",7.5,"0.45 0.45 0.45");
       const np=`${pdfL("page",l)} ${i+1} / ${N}`;this.txt(W-M-pdfLargeur(np,"R",7.5),this.H-M-3,np,"R",7.5,"0.45 0.45 0.45");pg.ops.push(...ops);pg.d.push(...dd)})}
@@ -3958,6 +3970,9 @@ const TRAD_UI=[
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
 ["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
 ["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["Conforme", "Compliant", "Conforme", "Konform"],
+["Non conforme", "Non-compliant", "No conforme", "Nicht konform"],
+["Certificat de l'eau", "Water certificate", "Certificado del agua", "Wasserzertifikat"],
 ["Équipement non listé", "Unlisted equipment", "Equipo no listado", "Nicht gelistete Ausrüstung"],
 ["Précision (zone, repère…)", "Details (area, mark…)", "Detalle (zona, marca…)", "Präzisierung (Bereich, Markierung…)"],
 ["Aucun équipement dans la mission active (Réglages) : ajoutez-le ci-dessous.", "No equipment in the active mission (Settings): add it below.", "Ningún equipo en la misión activa (Ajustes): añádalo abajo.", "Keine Ausrüstung in der aktiven Mission (Einstellungen): unten hinzufügen."],
