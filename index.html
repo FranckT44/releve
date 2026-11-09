@@ -279,6 +279,21 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
   #ed .edtools,#edCols{flex-wrap:wrap}
   #edSide .edfoot{position:sticky;bottom:0;z-index:1;background:#0e1316;margin-top:auto}#edSide .edfoot button{min-height:40px}
 }
+.impxl{margin-top:4px;border-top:1px solid var(--line);padding-top:6px;display:grid;gap:8px}.impxl summary{cursor:pointer;font-weight:650;font-size:14px;color:var(--muted);min-height:40px;display:flex;align-items:center;gap:6px;list-style:none}.impxl summary::-webkit-details-marker{display:none}.impxl summary::before{content:"▸";display:inline-block;width:1.15em}.impxl[open] summary::before{content:"▾"}
+
+/* v1.73 : réglages de l'éditeur en lignes compactes sur téléphone (couleurs / opacité + remplir / ép. + trait / inclinaison + 90°) */
+.edrow{display:contents}.lgC{display:none}
+@media (max-width:700px),(orientation:landscape) and (max-height:600px){
+  #edOpts{row-gap:2px}
+  .edrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;width:100%}
+  .lgL{display:none}.lgC{display:inline}
+  #edOpts .edl{gap:4px}
+  #edOpts .edl input[type=range]{width:72px}
+  #edWn,#edOpn{width:2.5em;padding:2px 2px}
+  #edIncl{width:2.6em!important}
+  #edInclW .edpm{min-width:30px;padding:0 4px!important}
+  #edRotG,#edRotD{padding:4px 7px}
+}
 </style>
 </head>
 <body>
@@ -437,9 +452,9 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 <section id="v-constats" hidden>
   <div class="card c-vert">
     <h2>Constats de la mission</h2>
-    <div class="row2"><label>Équipement<select id="cEq"></select></label><label>Statut<select id="cSt"><option value="">Tous</option><option value="prevu">Prévus</option><option value="aenv">À envoyer</option><option value="env">Envoyés</option></select></label></div>
-    <label>Activité<select id="cAct"></select></label>
-    <p class="stat" id="cInfo"></p>
+    <div class="row2"><label>Équipement<select id="kEq"></select></label><label>Statut<select id="kSt"><option value="">Tous</option><option value="prevu">Prévus</option><option value="aenv">À envoyer</option><option value="env">Envoyés</option></select></label></div>
+    <label>Activité<select id="kAct"></select></label>
+    <p class="stat" id="kInfo"></p>
     <p class="hint">Tous les constats de la mission, par équipement et sous-zone, dans l'ordre de la liste. Les constats prévus (pas encore commencés) sont en grisé. L'envoi au PC se fait depuis le Journal.</p>
   </div>
   <div id="constats"></div>
@@ -558,19 +573,18 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
     <h2>Équipements et sous-équipements</h2>
     <p class="hint">Une ligne par équipement avec son code entre crochets, puis ses sous-équipements précédés d'un tiret.</p>
     <textarea class="cfg" id="cEq" spellcheck="false"></textarea>
+    <details class="impxl"><summary>Importer les équipements depuis Excel</summary>
+    <p class="hint">Copie les lignes de l'onglet « Équipements » du registre (avec la ligne de titres), ou un tableau à 2 colonnes Équipement | Sous-équipement (3 si un code est en première colonne), puis colle-les ici avec Ctrl+V.</p>
+    <textarea class="cfg" id="pasteBox" spellcheck="false" placeholder="Colle ici les cellules copiées dans Excel"></textarea>
+    <div class="path" id="pastePreview">Rien à importer pour l'instant.</div>
+    <div class="btns"><button class="primary" id="bPasteReplace" type="button" disabled>Remplacer la liste</button><button id="bPasteAdd" type="button" disabled>Ajouter à la liste</button></div>
+    </details>
   </div>
   <div class="card c-ambre">
     <h2>Activités et sous-activités</h2>
     <p class="hint">Même principe : code entre crochets, sous-activités précédées d'un tiret.</p>
     <textarea class="cfg" id="cAct" spellcheck="false"></textarea>
   </div>
-  </div>
-  <div class="card">
-    <h2>Importer les équipements depuis Excel</h2>
-    <p class="hint">Copie les lignes de l'onglet « Équipements » du registre (avec la ligne de titres), ou un tableau à 2 colonnes Équipement | Sous-équipement (3 si un code est en première colonne), puis colle-les ici avec Ctrl+V.</p>
-    <textarea class="cfg" id="pasteBox" spellcheck="false" placeholder="Colle ici les cellules copiées dans Excel"></textarea>
-    <div class="path" id="pastePreview">Rien à importer pour l'instant.</div>
-    <div class="btns"><button class="primary" id="bPasteReplace" type="button" disabled>Remplacer la liste</button><button id="bPasteAdd" type="button" disabled>Ajouter à la liste</button></div>
   </div>
   <div id="renCard" class="card confirm" hidden>
     <strong>Renommage détecté</strong>
@@ -722,7 +736,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.71";
+const APP_VERSION="1.73";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1376,7 +1390,13 @@ function initEditeur2(){
   {const ed=$("ed"),z=$("edZone");if(!$("edSide")){const side=document.createElement("div");side.id="edSide";
     const bars=[...ed.children].filter(c=>c!==z&&c.id!=="edQuit");ed.insertBefore(side,ed.firstChild);for(const c of bars) side.append(c);
     bars[0].classList.add("edtools");
-    const vue=side.querySelector(".edvue"),sep=vue.querySelector(".edsep");for(const id of ["edUndo","edRedo","edDel"]) vue.insertBefore($(id),sep)}}
+    const vue=side.querySelector(".edvue"),sep=vue.querySelector(".edsep");for(const id of ["edUndo","edRedo","edDel"]) vue.insertBefore($(id),sep);
+    // v1.73 : réglages regroupés en lignes (affichées en lignes sur téléphone, à la suite sur grand écran)
+    const o=$("edOpts"),L=id=>$(id).closest("label")||$(id);
+    const ligne=(...els)=>{const r=document.createElement("div");r.className="edrow";for(const e of els) r.append(e);o.append(r)};
+    const ep=L("edW"),t=[...ep.childNodes].find(n=>n.nodeType===3&&n.data.trim());
+    if(t){const a=document.createElement("span"),b=document.createElement("span");a.className="lgL";a.textContent="Épaisseur";b.className="lgC";b.textContent="Ép.";t.replaceWith(a,b)}
+    ligne($("edCols"));ligne(L("edOp"),L("edFill"));ligne(ep,L("edDash"));ligne($("edInclW"),$("edRotG"),$("edRotD"))}}
   renderCouleurs();
   try{$("edDirect").checked=localStorage.getItem("selDirecte")==="1"}catch(e){}
   const montrerOpts=v=>{$("edOpts").hidden=!v;$("edProBar").classList.toggle("replie",!v);$("edOptsBtn").setAttribute("aria-expanded",String(v));$("edOptsBtn").textContent=v?"⚙ ▴":"⚙ ▾"};
@@ -2625,9 +2645,9 @@ function lignePrevu(p){const r=document.createElement("div");r.className="cst pr
 async function renderConstats(){
   const en=(await allEntries()).filter(belongs).sort((a,b)=>(a.date+(a.hms||"")).localeCompare(b.date+(b.hms||"")));
   const pv=PREVUS.filter(p=>p.mission===CFG.mission.id);
-  remplirFiltre($("cEq"),EQ,CST.eq,"Tous");remplirFiltre($("cAct"),ACT,CST.act,"Toutes");$("cSt").value=CST.st;CST.eq=$("cEq").value;CST.act=$("cAct").value;
+  remplirFiltre($("kEq"),EQ,CST.eq,"Tous");remplirFiltre($("kAct"),ACT,CST.act,"Toutes");$("kSt").value=CST.st;CST.eq=$("kEq").value;CST.act=$("kAct").value;
   const nP=pv.length,nA=en.filter(e=>!e.envoye).length,nE=en.length-nA;
-  $("cInfo").textContent=`${en.length+nP} constat(s) : ${nP} prévu(s), ${nA} à envoyer, ${nE} envoyé(s)`;
+  $("kInfo").textContent=`${en.length+nP} constat(s) : ${nP} prévu(s), ${nA} à envoyer, ${nE} envoyé(s)`;
   const items=[...en.map(e=>({k:"e",e,eq:e.equipement&&e.equipement.code||"",act:e.activite&&e.activite.code||"",st:e.envoye?"env":"aenv"})),
                ...pv.map(p=>({k:"p",p,eq:p.eq||"",act:p.act||"",st:"prevu"}))]
     .filter(x=>(!CST.eq||x.eq===CST.eq)&&(!CST.act||x.act===CST.act)&&(!CST.st||x.st===CST.st));
@@ -2656,9 +2676,9 @@ async function renderConstats(){
     if(el){const b=el.querySelector("button.ouvrir");if(b&&b.getAttribute("aria-expanded")!=="true") b.click();
       el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash");setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),60)}}}
 function initConstats(){
-  $("cEq").onchange=()=>{CST.eq=$("cEq").value;renderConstats()};
-  $("cAct").onchange=()=>{CST.act=$("cAct").value;renderConstats()};
-  $("cSt").onchange=()=>{CST.st=$("cSt").value;renderConstats()}}
+  $("kEq").onchange=()=>{CST.eq=$("kEq").value;renderConstats()};
+  $("kAct").onchange=()=>{CST.act=$("kAct").value;renderConstats()};
+  $("kSt").onchange=()=>{CST.st=$("kSt").value;renderConstats()}}
 /* ---------- v1.70 : sablier pendant les opérations longues ---------- */
 let BUSY_T=null,ATTENTE_FICHIER=null;
 function busy(txt,sub,pct){$("busyTxt").textContent=txt;$("busySub").textContent=sub||"";const bar=$("busyBar");bar.hidden=pct==null;
@@ -3182,6 +3202,7 @@ const TRAD_UI=[
 ["Pipette", "Eyedropper", "Cuentagotas", "Pipette"],
 ["Étalon", "Scale", "Patrón", "Maßstab"],
 ["Épaisseur", "Width", "Grosor", "Stärke"],
+["Ép.", "W.", "Gr.", "St."],
 ["Trait", "Stroke", "Trazo", "Strich"],
 ["━ plein", "━ solid", "━ continuo", "━ durchgezogen"],
 ["╍ tirets", "╍ dashed", "╍ discontinuo", "╍ gestrichelt"],
