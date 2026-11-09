@@ -490,6 +490,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <div id="apqTete"></div>
     <div class="btns"><button class="primary" id="bApqPdf" type="button">📄 Créer le PDF</button><button id="bApqSave" type="button">💾 Sauvegarder</button><button id="bApqRest" type="button">📂 Restaurer</button></div>
     <p class="hint" id="apqSauveInfo"></p>
+    <div id="apqRecup" class="card confirm" hidden></div>
     <p class="hint">Sur PC : glissez des photos depuis l'explorateur directement sur une case photo.</p>
     <div id="apqRestCard" class="card confirm" hidden><strong>Restaurer une sauvegarde</strong><div id="apqRestTxt" class="path"></div>
       <div class="btns"><button class="primary" id="bApqRestOk" type="button">Remplacer</button><button id="bApqRestNo" type="button">Annuler</button></div></div>
@@ -791,7 +792,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="1.84";
+const APP_VERSION="1.86";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2815,15 +2816,21 @@ const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION S
 const apqL=(k,l)=>APQL[k][iLangue(l)];
 // v1.81 : le rapport suit la langue de l'appli (sélecteur FR / EN / ES / DE de l'en-tête)
 const apqLangue=m=>LANGUI.codes.includes(LANGUI.lang)?LANGUI.lang:((m&&m.langue)||langueMission());
-let APQ=null,APQ_M=null,APQ_T=null,APQ_CIBLE=null;const APQ_OUV=new Set();
+let APQ=null,APQ_M=null,APQ_T=null,APQ_CIBLE=null;const APQ_SRC=new Map();/* pid -> liste qui contient la photo (déplacement) */const APQ_OUV=new Set();
 const apqVide=()=>({v:1,intro:"",perimetre:"",conditions:"",eau:"",labo:false,personnes:[],materiaux:[],sessions:[],resultats:""});
-async function apqCharger(){const id=CFG.mission.id;if(APQ&&APQ_M===id) return APQ;let a=null;try{a=await kvGet("apq:"+id)}catch(e){}
+let APQ_REF=null,APQ_SALE=false,APQ_CONFLIT=false;
+async function apqCharger(){const id=CFG.mission.id;if(APQ&&APQ_M===id) return APQ;let a=null;try{a=await kvGet("apq:"+id)}catch(e){}APQ_REF=a&&a.modifieLe||null;APQ_CONFLIT=false;
   APQ=a&&a.v?a:apqVide();APQ_M=id;
   // v1.79 : inspecteur et certification API (repris du dernier rapport, sinon de la mission)
   if(APQ.inspecteur==null){let d=null;try{d=await kvGet("apqInsp")}catch(e){}d=d||{};APQ.inspecteur=d.nom||CFG.mission.inspecteur||"";APQ.apiNo=d.no||"";APQ.apiType=d.type||"936"}
   return APQ}
-function apqSauver(tout){clearTimeout(APQ_T);const go=async()=>{if(!APQ) return;APQ.modifieLe=new Date().toISOString();
-    try{await kvSet("apq:"+APQ_M,APQ);await kvSet("apqInsp",{nom:APQ.inspecteur||"",no:APQ.apiNo||"",type:APQ.apiType||"936"})}catch(e){toast("Préqualification non enregistrée (mémoire pleine ?).",5000)}};
+function apqSauver(tout){clearTimeout(APQ_T);APQ_SALE=true;const go=async()=>{if(!APQ||APQ_CONFLIT) return;
+    // v1.85 : si le rapport a été enregistré entre-temps par une autre fenêtre (ou une ancienne version de l'appli restée ouverte), on ne l'écrase pas
+    let st=null;try{st=await kvGet("apq:"+APQ_M)}catch(e){}
+    if(st&&st.modifieLe&&APQ_REF!==undefined&&st.modifieLe!==APQ_REF&&st.modifieLe!==APQ.modifieLe){APQ_CONFLIT=true;
+      toast("Ce rapport a été modifié dans une autre fenêtre de l'appli : rien n'est enregistré ici. Fermez les autres fenêtres puis rechargez (F5).",12000);return}
+    APQ.modifieLe=new Date().toISOString();APQ_SALE=false;
+    try{await kvSet("apq:"+APQ_M,APQ);APQ_REF=APQ.modifieLe;await kvSet("apqInsp",{nom:APQ.inspecteur||"",no:APQ.apiNo||"",type:APQ.apiType||"936"})}catch(e){toast("Préqualification non enregistrée (mémoire pleine ?).",5000)}};
   if(tout) return go();APQ_T=setTimeout(go,400)}
 // petits constructeurs de formulaire (chaque saisie est enregistrée aussitôt)
 function apqE(tag,props,...kids){const e=document.createElement(tag);
@@ -2855,12 +2862,17 @@ function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
   for(const sl of sansAutre?slots:[...slots,"Autre"]){const ph=liste.filter(x=>x.slot===sl);const box=apqE("div",{class:"apqslot"+(ph.length?" fait":"")});
     const nomC=sl==="Autre"?"Autre photo":sl,ajout=()=>{APQ_CIBLE={liste,slot:sl};choisirFichier($("iApq"))};
     // v1.84 : glisser-déposer des photos depuis l'explorateur (PC)
-    box.ondragover=e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes("Files")){e.preventDefault();box.classList.add("drop")}};
+    box.ondragover=e=>{const ty=e.dataTransfer?[...e.dataTransfer.types]:[];if(ty.includes("Files")||ty.includes("text/x-apq-photo")){e.preventDefault();box.classList.add("drop")}};
     box.ondragleave=()=>box.classList.remove("drop");
-    box.ondrop=e=>{e.preventDefault();box.classList.remove("drop");const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])].filter(f=>f.type.startsWith("image/"));if(fs.length){APQ_CIBLE={liste,slot:sl};apqAjouterPhotos(fs)}};
+    box.ondrop=e=>{e.preventDefault();box.classList.remove("drop");
+      const pid=e.dataTransfer&&e.dataTransfer.getData("text/x-apq-photo");
+      if(pid){const src=APQ_SRC.get(pid);if(!src) return;const i=src.findIndex(z=>z.pid===pid);if(i<0) return;const [x]=src.splice(i,1);
+        x.slot=sl;liste.push(x);apqSauver(true).then(renderApq);return}
+      const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])].filter(f=>f.type.startsWith("image/"));if(fs.length){APQ_CIBLE={liste,slot:sl};apqAjouterPhotos(fs)}};
     // v1.76 : plusieurs photos par case (toucher à nouveau, ou en choisir plusieurs d'un coup)
     box.append(apqE("button",{type:"button",title:"Ajouter une ou plusieurs photos",onclick:ajout},ph.length?apqE("span",{},"✓ ",nomC,apqE("span",{class:"apqn",text:` (${ph.length})`})):"📷 "+nomC));
-    for(const x of ph){const im=apqE("img",{alt:""});getPhoto(x.pid).then(p=>{if(p) im.src=p.thumb});
+    for(const x of ph){const im=apqE("img",{alt:"",draggable:"true",title:"Glisser vers une autre case pour déplacer la photo"});getPhoto(x.pid).then(p=>{if(p) im.src=p.thumb});
+      APQ_SRC.set(x.pid,liste);im.ondragstart=e=>{e.dataTransfer.setData("text/x-apq-photo",x.pid);e.dataTransfer.effectAllowed="move"};
       const lg=apqE("input",{type:"text",value:x.leg||"",placeholder:sl==="Autre"?"Légende":sl,"aria-label":"Légende de la photo"});lg.oninput=()=>{x.leg=lg.value;apqSauver()};
       const del=apqE("button",{type:"button",class:"ghost","aria-label":"Retirer la photo",onclick:async()=>{liste.splice(liste.indexOf(x),1);
         try{await tx("photos","readwrite",s=>s.delete(x.pid))}catch(e){}await apqSauver(true);renderApq()}},"✕");
@@ -2960,12 +2972,20 @@ function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has
       for(const x of [...s.photos,...s.applicateurs.flatMap(p=>p.photos||[])]) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
       APQ.sessions.splice(APQ.sessions.indexOf(s),1);await apqSauver(true);renderApq()}},"🗑 Supprimer la session")));
   return d}
-async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqListeMat();
+let APQ_RECUP_FAIT=null;
+async function apqRecuperer(a){if(APQ_RECUP_FAIT===APQ_M) return;APQ_RECUP_FAIT=APQ_M;
+  let l=[];try{l=await tx("photos","readonly",s=>s.getAll(IDBKeyRange.bound("apq_","apq_\uffff")))}catch(e){return}
+  const vus=new Set(apqPids(a)),orph=(l||[]).filter(p=>p.entry==="apq:"+APQ_M&&!vus.has(p.id)).sort((x,y)=>(x.prise||"").localeCompare(y.prise||""));
+  if(!orph.length) return;a.recup=a.recup||[];for(const p of orph) a.recup.push({pid:p.id,slot:"Photos retrouvées",leg:""});
+  await apqSauver(true);toast(`${orph.length} photo(s) de ce rapport n'étaient plus rattachées à une case : elles sont dans « Photos retrouvées » (en haut). Glissez-les vers leur case.`,12000)}
+async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqRecuperer(a);await apqListeMat();
   $("apqMission").textContent=`${CFG.mission.no} · ${CFG.mission.client||""}`;
   const t=$("apqTete");t.innerHTML="";t.append(apqZone("Introduction",a,"intro","Qui, quand, quels matériaux ; applicateurs déjà qualifiés…"),
     apqZone("Périmètre / limites",a,"perimetre","ex. - Démontrer la maîtrise du malaxage\n- Pas d'échantillons pour le laboratoire"),apqCoche("Échantillons envoyés au laboratoire",a,"labo"),
     apqE("div",{class:"apqrow"},apqChamp("Inspecteur",a,"inspecteur"),apqChoix("Certification API",a,"apiType",["936","982"]),apqChamp("N° de certification",a,"apiNo",null,"ex. 95863")),
     apqE("div",{class:"apqrow"},apqChamp("Spécification applicable",a,"spec",null,"ex. UOP 9-11-1 Rev. 12 / API 936")),apqDocs(a));
+  const rc=$("apqRecup");rc.innerHTML="";rc.hidden=!(a.recup&&a.recup.length);
+  if(a.recup&&a.recup.length) rc.append(apqE("strong",{text:`Photos retrouvées (${a.recup.length})`}),apqE("p",{class:"hint",text:"Ces photos de ce rapport n'étaient plus rattachées à une case. Glissez chacune vers sa case (sur PC), ou retirez-la avec ✕."}),apqPhotos(a.recup,["Photos retrouvées"],true));
   const ga=$("apqPers");ga.innerHTML="";ga.append(apqGalerie(a));
   const mt=$("apqMat");mt.innerHTML="";
   // v1.83 : photos par matériau (sac / étiquette du lot, certificat / preshipment test, autre)
@@ -2995,12 +3015,12 @@ function apqTexteResultats(a,l){const out=[];
   return out.join("\n")}
 function initApq(){$("iApq").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.target.files];e.target.value="";if(fs.length) apqAjouterPhotos(fs);else busyFin()};
   $("iApq").addEventListener("cancel",busyFin);$("bApqPdf").onclick=pdfApq;initApqSauve();
-  document.addEventListener("visibilitychange",()=>{if(document.hidden&&APQ) apqSauver(true)})}
+  document.addEventListener("visibilitychange",()=>{if(document.hidden&&APQ&&APQ_SALE) apqSauver(true)})}
 /* ---------- v1.84 : sauvegarde / restauration du rapport APQ (avec les photos) ----------
    Fichier image « Sauvegarde APQ <N°> - AAAA-MM-JJ HHhMM.jpg » : carte lisible + commentaires JPEG
    « RELEVE-FICHIER: » (nom), « RELEVE-APQ: » (en-tête JSON, morceaux de 65 000 octets), « RELEVE-ADATA: » (photos à la suite). */
 function apqPids(a){const l=[];const ph=x=>{for(const p of x||[]) l.push(p.pid)};
-  ph(a.eauPhotos);for(const q of a.personnes||[]) ph(q.photos);for(const m of a.materiaux||[]) ph(m.photos);
+  ph(a.eauPhotos);ph(a.recup);for(const q of a.personnes||[]) ph(q.photos);for(const m of a.materiaux||[]) ph(m.photos);
   for(const s of a.sessions||[]){ph(s.photos);for(const p of s.applicateurs||[]) ph(p.photos)}return [...new Set(l)]}
 async function apqSauvegarder(){const a=await apqCharger();await apqSauver(true);const m=curMission()||CFG.mission;
   busy("Sauvegarde du rapport…","",0);await repos();
@@ -3054,7 +3074,7 @@ async function apqRestaurer(){const h=APQ_REST;APQ_REST=null;$("apqRestCard").hi
   try{const id=CFG.mission.id,ph=h.photos||[];let k=0;
     for(const p of ph){k++;busyMaj(`Photo ${k} / ${ph.length}`,Math.round(k/Math.max(1,ph.length)*100));const blob=h._blob(p.blob);if(!blob) continue;
       await tx("photos","readwrite",s=>s.put({id:p.id,entry:"apq:"+id,type:p.type,prise:p.prise,blob,thumb:p.thumb||""}))}
-    APQ={...apqVide(),...h.apq};APQ_M=id;await kvSet("apq:"+id,APQ);toast(`Rapport restauré : ${(APQ.sessions||[]).length} session(s), ${ph.length} photo(s).`,6000)}
+    APQ={...apqVide(),...h.apq};APQ_M=id;APQ.modifieLe=new Date().toISOString();await kvSet("apq:"+id,APQ);APQ_REF=APQ.modifieLe;APQ_CONFLIT=false;toast(`Rapport restauré : ${(APQ.sessions||[]).length} session(s), ${ph.length} photo(s).`,6000)}
   catch(e){toast("Restauration impossible : "+(e&&e.message||e),8000)}finally{busyFin();renderApq()}}
 async function apqInfoSauve(){const el=$("apqSauveInfo");if(!el) return;let d=null;try{d=await kvGet("apqSauveLe:"+CFG.mission.id)}catch(e){}
   el.textContent=d?`Dernière sauvegarde (fichier) : ${fmtDT(d)}.`:"Aucune sauvegarde en fichier pour ce rapport : pensez à « 💾 Sauvegarder » régulièrement."}
@@ -3459,6 +3479,8 @@ let FICHIERS_PRETS=null;
 // Samsung Internet ne transmet pas les PDF au partage Android (images et vidéos : oui) – problème connu, non corrigé par Samsung
 const samsungPdf=files=>/SamsungBrowser/i.test(navigator.userAgent)&&files.some(f=>/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name));
 async function proposerFichiers(files,quoi){
+  if(!/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)){await telechargerFichiers(files);montrerPret(files,"Enregistré dans Téléchargements.");
+    let ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files}))}catch(e){}$("bPretPartager").textContent="Partager";$("bPretPartager").hidden=!ok;$("bPretDl").hidden=true;return}
   if(samsungPdf(files)){await telechargerFichiers(files);montrerPret(files,`Enregistré dans Téléchargements. Samsung Internet ne sait pas envoyer un PDF au partage Android : partage-le depuis Mes fichiers (appui long > Partager).`);
     $("bPretPartager").hidden=false;$("bPretPartager").textContent="Essayer le partage quand même";$("bPretDl").hidden=true;return}
   $("bPretPartager").textContent="Partager";$("bPretDl").hidden=false;let ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files}))}catch(e){}
@@ -3717,6 +3739,10 @@ const TRAD_UI=[
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
 ["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
 ["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["Photos retrouvées", "Recovered photos", "Fotos recuperadas", "Wiedergefundene Fotos"],
+["Photos retrouvées ({a})", "Recovered photos ({a})", "Fotos recuperadas ({a})", "Wiedergefundene Fotos ({a})"],
+["Ces photos de ce rapport n'étaient plus rattachées à une case. Glissez chacune vers sa case (sur PC), ou retirez-la avec ✕.", "These photos of this report were no longer attached to a box. Drag each one to its box (on a PC), or remove it with ✕.", "Estas fotos del informe ya no estaban en ninguna casilla. Arrastra cada una a su casilla (en PC) o quítala con ✕.", "Diese Fotos des Berichts waren keinem Feld mehr zugeordnet. Jedes auf sein Feld ziehen (am PC) oder mit ✕ entfernen."],
+["Glisser vers une autre case pour déplacer la photo", "Drag to another box to move the photo", "Arrastrar a otra casilla para mover la foto", "Auf ein anderes Feld ziehen, um das Foto zu verschieben"],
 ["💾 Sauvegarder", "💾 Back up", "💾 Copia de seguridad", "💾 Sichern"],
 ["📂 Restaurer", "📂 Restore", "📂 Restaurar", "📂 Wiederherstellen"],
 ["Restaurer une sauvegarde", "Restore a backup", "Restaurar una copia", "Sicherung wiederherstellen"],
@@ -3804,6 +3830,7 @@ const TRAD_UI=[
 ["Acceptable", "Acceptable", "Aceptable", "Akzeptabel"],
 ["Refusé", "Rejected", "Rechazado", "Abgelehnt"],
 ["À repasser", "To be re-tested", "A repetir", "Zu wiederholen"],
+["Enregistré dans Téléchargements.", "Saved in Downloads.", "Guardado en Descargas.", "In Downloads gespeichert."],
 ["Trait", "Stroke", "Trazo", "Strich"],
 ["━ plein", "━ solid", "━ continuo", "━ durchgezogen"],
 ["╍ tirets", "╍ dashed", "╍ discontinuo", "╍ gestrichelt"],
