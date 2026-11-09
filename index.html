@@ -309,6 +309,12 @@ details.apqs>summary{cursor:pointer;font-weight:650;min-height:42px;display:flex
 details.apqs>summary::-webkit-details-marker{display:none}
 details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}details.apqs[open]>summary>span:first-child::before{content:"▾ "}
 .apqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;align-items:start}
+@media (min-width:701px){.apqgrid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
+.apqplus{min-height:36px;font-size:13px}
+.apqdoc{display:grid;grid-template-columns:1fr 2fr 70px auto;gap:8px;align-items:end;padding:4px 0;border-bottom:1px solid var(--line)}@media (max-width:560px){.apqdoc{grid-template-columns:1fr 70px}.apqdoc>label:nth-child(2){grid-column:1/-1;grid-row:2}.apqdoc>button{grid-row:1;grid-column:3}}
+.apqpers{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-items:start}.apqfiche{border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface)}.apqfiche .apqgrid{grid-template-columns:1fr}.apqfiche .apqrow{grid-template-columns:1fr}.apqpers>.btns{grid-column:1/-1}
+.apqchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}.apqchip{display:inline-flex;align-items:center;gap:2px;padding:2px 2px 2px 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);font-size:14px}.apqchip button{min-height:32px;min-width:32px;padding:0;border:0}
+.apqmatadd{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}.apqn{color:var(--muted);font-weight:500}
 .apqslot{border:1px dashed var(--line);border-radius:8px;padding:6px;display:grid;gap:6px;align-content:start}
 .apqslot.fait{border-style:solid;border-color:var(--ok)}
 .apqslot>button{min-height:42px;font-size:13px;white-space:normal;padding:4px 6px}
@@ -482,6 +488,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <div id="apqTete"></div>
     <div class="btns"><button class="primary" id="bApqPdf" type="button">📄 Créer le PDF</button></div>
   </div>
+  <div class="card c-vert"><h2>Applicateurs présentés</h2><p class="hint">Une fiche par applicateur présenté : portrait, prénom, nom, société. Ils se choisissent ensuite dans chaque session.</p><div id="apqPers"></div></div>
   <div class="card c-ambre"><h2>1. Matériaux</h2><div id="apqMat"></div></div>
   <div class="card c-vert"><h2>2. Conditions générales</h2><div id="apqGen"></div></div>
   <div class="card c-violet"><h2>Sessions (méthode et date)</h2><div id="apqSes"></div></div>
@@ -777,7 +784,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="1.75";
+const APP_VERSION="1.82";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2773,14 +2780,14 @@ const APQ_TR={"Gunning":["Gunning","Gunning","Gunitado","Torkretieren"],"Coulage
   "T° eau":["T° eau","Water T°","T° agua","T° Wasser"],"T° matériau gâché":["T° matériau gâché","Mixed material T°","T° material amasado","T° angemischtes Material"],
   "Test « boule en main »":["Test « boule en main »","“Ball in hand” test","Prueba de «bola en mano»","„Ball in der Hand“-Test"],
   "Application":["Application","Application","Aplicación","Verarbeitung"],"Échantillonnage":["Échantillonnage","Sampling","Muestreo","Probenahme"],
-  "Feuille de relevé":["Feuille de relevé","Data sheet","Hoja de registro","Messblatt"],"Portrait":["Portrait","Portrait","Retrato","Porträt"],
+  "Feuille de relevé":["Feuille de relevé","Data sheet","Hoja de registro","Messblatt"],"Certificat de l'eau":["Certificat de l'eau","Water certificate","Certificado del agua","Wasserzertifikat"],"Portrait":["Portrait","Portrait","Retrato","Porträt"],
   "Face arrière":["Face arrière","Back side","Cara posterior","Rückseite"],"Démontage":["Démontage","Dismantling","Desmontaje","Ausbau"],
   "Demi-coupe":["Demi-coupe","Half-cut","Corte por la mitad","Halbschnitt"],"Casse au marteau":["Casse au marteau","Hammer break","Rotura con martillo","Hammerbruch"],
   "Densité":["Densité","Density","Densidad","Dichte"],"Abrasion":["Abrasion","Abrasion","Abrasión","Abrieb"],
   "OK":["OK","OK","OK","OK"],"Acceptable":["Acceptable","Acceptable","Aceptable","Akzeptabel"],"Refusé":["Refusé","Rejected","Rechazado","Abgelehnt"],"À repasser":["À repasser","To be re-tested","A repetir","Zu wiederholen"]};
 const apqTr=(v,l)=>v?(APQ_TR[v]?APQ_TR[v][iLangue(l)]:v):"";
-const APQL={titre:["RAPPORT DE PRÉQUALIFICATION","PREQUALIFICATION REPORT","INFORME DE PRECUALIFICACIÓN","PRÄQUALIFIKATIONSBERICHT"],
-  h1:["Préqualification des applicateurs","Applicator prequalification","Precualificación de aplicadores","Präqualifikation der Verarbeiter"],
+const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION SESSION REPORT","INFORME DE SESIÓN DE PRECUALIFICACIÓN","BERICHT ZUR PRÄQUALIFIKATIONSSITZUNG"],
+  h1:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht zur Präqualifikationssitzung"],
   dates:["Dates","Dates","Fechas","Daten"],labo:["Échantillons pour laboratoire","Samples for laboratory","Muestras para laboratorio","Proben für Labor"],
   oui:["Oui","Yes","Sí","Ja"],non:["Non","No","No","Nein"],perim:["Périmètre","Scope","Alcance","Umfang"],
   mat:["Matériaux","Materials","Materiales","Materialien"],produit:["Produit","Product","Producto","Produkt"],role:["Utilisation","Use","Uso","Verwendung"],
@@ -2795,15 +2802,20 @@ const APQL={titre:["RAPPORT DE PRÉQUALIFICATION","PREQUALIFICATION REPORT","INF
   ctl:["Contrôles","Checks","Controles","Prüfungen"],verdict:["Résultat","Result","Resultado","Ergebnis"],
   res:["Résultats de la préqualification","Prequalification results","Resultados de la precualificación","Ergebnisse der Präqualifikation"],
   methode:["Méthode","Method","Método","Verfahren"],date:["Date","Date","Fecha","Datum"],
-  fichier:["Préqualification applicateurs","Applicator prequalification","Precualificación aplicadores","Präqualifikation Verarbeiter"],
-  laboC:["labo","lab","lab.","Labor"]};
+  fichier:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht Präqualifikationssitzung"],
+  laboC:["labo","lab","lab.","Labor"],spec:["Spécification applicable","Applicable specification","Especificación aplicable","Anwendbare Spezifikation"],docs:["Documents de référence","Reference documents","Documentos de referencia","Referenzdokumente"],ref:["Référence","Reference","Referencia","Referenz"],titreDoc:["Titre","Title","Título","Titel"],rev:["Rév.","Rev.","Rev.","Rev."],res1:["Résultats de la séance de préqualification du {a}","Results of the prequalification session of {a}","Resultados de la sesión de precualificación del {a}","Ergebnisse der Präqualifikationssitzung vom {a}"],resN:["Résultats des séances de préqualification du {a} au {b}","Results of the prequalification sessions from {a} to {b}","Resultados de las sesiones de precualificación del {a} al {b}","Ergebnisse der Präqualifikationssitzungen vom {a} bis {b}"],pres:["Applicateurs présentés","Applicators presented","Aplicadores presentados","Vorgestellte Verarbeiter"],eauCert:["Certificat de l'eau","Water certificate","Certificado del agua","Wasserzertifikat"]};
 const apqL=(k,l)=>APQL[k][iLangue(l)];
+// v1.81 : le rapport suit la langue de l'appli (sélecteur FR / EN / ES / DE de l'en-tête)
+const apqLangue=m=>LANGUI.codes.includes(LANGUI.lang)?LANGUI.lang:((m&&m.langue)||langueMission());
 let APQ=null,APQ_M=null,APQ_T=null,APQ_CIBLE=null;const APQ_OUV=new Set();
-const apqVide=()=>({v:1,intro:"",perimetre:"",conditions:"",eau:"",labo:false,materiaux:[],sessions:[],resultats:""});
+const apqVide=()=>({v:1,intro:"",perimetre:"",conditions:"",eau:"",labo:false,personnes:[],materiaux:[],sessions:[],resultats:""});
 async function apqCharger(){const id=CFG.mission.id;if(APQ&&APQ_M===id) return APQ;let a=null;try{a=await kvGet("apq:"+id)}catch(e){}
-  APQ=a&&a.v?a:apqVide();APQ_M=id;return APQ}
+  APQ=a&&a.v?a:apqVide();APQ_M=id;
+  // v1.79 : inspecteur et certification API (repris du dernier rapport, sinon de la mission)
+  if(APQ.inspecteur==null){let d=null;try{d=await kvGet("apqInsp")}catch(e){}d=d||{};APQ.inspecteur=d.nom||CFG.mission.inspecteur||"";APQ.apiNo=d.no||"";APQ.apiType=d.type||"936"}
+  return APQ}
 function apqSauver(tout){clearTimeout(APQ_T);const go=async()=>{if(!APQ) return;APQ.modifieLe=new Date().toISOString();
-    try{await kvSet("apq:"+APQ_M,APQ)}catch(e){toast("Préqualification non enregistrée (mémoire pleine ?).",5000)}};
+    try{await kvSet("apq:"+APQ_M,APQ);await kvSet("apqInsp",{nom:APQ.inspecteur||"",no:APQ.apiNo||"",type:APQ.apiType||"936"})}catch(e){toast("Préqualification non enregistrée (mémoire pleine ?).",5000)}};
   if(tout) return go();APQ_T=setTimeout(go,400)}
 // petits constructeurs de formulaire (chaque saisie est enregistrée aussitôt)
 function apqE(tag,props,...kids){const e=document.createElement(tag);
@@ -2812,21 +2824,36 @@ function apqE(tag,props,...kids){const e=document.createElement(tag);
   for(const k of kids.flat()) if(k!=null&&k!==false) e.append(k);return e}
 function apqChamp(lbl,o,k,type,ph){const i=apqE("input",{type:type||"text",value:o[k]??"",placeholder:ph||null,autocomplete:"off"});
   if(type==="number"){i.inputMode="decimal";i.step="any"}i.oninput=()=>{o[k]=i.value;apqSauver()};return apqE("label",{},lbl,i)}
-function apqZone(lbl,o,k,ph){const t=apqE("textarea",{rows:"3",placeholder:ph||null});t.value=o[k]||"";t.oninput=()=>{o[k]=t.value;apqSauver()};return apqE("label",{},lbl,t)}
+// v1.81 : zones de texte avec mise en forme (gras, italique, souligné, listes), comme l'observation des constats ; texte stocké au même format (**gras**, « - » …)
+let APQ_NZ=0;
+function apqZone(lbl,o,k,ph){const id="apqz"+(++APQ_NZ),lid=id+"l";
+  const el=apqE("div",{class:"rte",id,contenteditable:"true",role:"textbox","aria-multiline":"true","aria-labelledby":lid,"data-ph":ph||""});
+  el.innerHTML=o[k]?versHtml(o[k]):"";
+  const bar=apqE("div",{class:"rtebar",role:"toolbar","aria-label":"Mise en forme"},
+    [["bold","Gras","<b>G</b>"],["italic","Italique","<i>I</i>"],["underline","Souligné","<u>S</u>"],["insertUnorderedList","Liste à puces","• Liste"],["insertOrderedList","Liste numérotée","1. Liste"],["outdent","Remonter d'un niveau","⇤"],["indent","Descendre d'un niveau","⇥"]]
+      .map(([c,a,h])=>{const b=apqE("button",{type:"button","data-cmd":c,"aria-label":a});b.innerHTML=h;b.onmousedown=e=>e.preventDefault();
+        b.onclick=()=>{el.focus();document.execCommand(c,false,null);majBarre();o[k]=versTexte(el);apqSauver()};return b}));
+  el.addEventListener("paste",e=>{e.preventDefault();document.execCommand("insertText",false,(e.clipboardData||window.clipboardData).getData("text/plain"))});
+  el.addEventListener("input",()=>{if(!el.textContent.trim()&&!el.querySelector("li")) el.innerHTML="";o[k]=versTexte(el);apqSauver()});
+  el.addEventListener("blur",()=>bar.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed","false")));
+  return apqE("div",{class:"rtewrap"},apqE("span",{class:"rtelab",id:lid},lbl),bar,el)}
 function apqChoix(lbl,o,k,liste,apres){const s=apqE("select",{},apqE("option",{value:"",text:"—"}),liste.map(v=>apqE("option",{value:v,text:v})));
   s.value=o[k]||"";s.onchange=()=>{o[k]=s.value;apqSauver();if(apres) apres()};return apqE("label",{},lbl,s)}
 function apqCoche(lbl,o,k){const c=apqE("input",{type:"checkbox"});c.checked=!!o[k];c.onchange=()=>{o[k]=c.checked;apqSauver()};return apqE("label",{class:"toggle"},c," "+lbl)}
 const apqId=()=>"a"+newId();
 function apqLibSession(s){return [s.methode||"Méthode ?",s.date?frDate(s.date):"date ?"].join(" – ")}
 // photos guidées : une case par vue attendue (+ « Autre ») ; toucher la case ajoute une ou plusieurs photos
-function apqPhotos(liste,slots){const g=apqE("div",{class:"apqgrid"});
-  for(const sl of [...slots,"Autre"]){const ph=liste.filter(x=>x.slot===sl);const box=apqE("div",{class:"apqslot"+(ph.length?" fait":"")});
-    box.append(apqE("button",{type:"button",onclick:()=>{APQ_CIBLE={liste,slot:sl};choisirFichier($("iApq"))}},(ph.length?"✓ ":"📷 ")+(sl==="Autre"?"Autre photo":sl)));
+function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
+  for(const sl of sansAutre?slots:[...slots,"Autre"]){const ph=liste.filter(x=>x.slot===sl);const box=apqE("div",{class:"apqslot"+(ph.length?" fait":"")});
+    const nomC=sl==="Autre"?"Autre photo":sl,ajout=()=>{APQ_CIBLE={liste,slot:sl};choisirFichier($("iApq"))};
+    // v1.76 : plusieurs photos par case (toucher à nouveau, ou en choisir plusieurs d'un coup)
+    box.append(apqE("button",{type:"button",title:"Ajouter une ou plusieurs photos",onclick:ajout},ph.length?apqE("span",{},"✓ ",nomC,apqE("span",{class:"apqn",text:` (${ph.length})`})):"📷 "+nomC));
     for(const x of ph){const im=apqE("img",{alt:""});getPhoto(x.pid).then(p=>{if(p) im.src=p.thumb});
       const lg=apqE("input",{type:"text",value:x.leg||"",placeholder:sl==="Autre"?"Légende":sl,"aria-label":"Légende de la photo"});lg.oninput=()=>{x.leg=lg.value;apqSauver()};
       const del=apqE("button",{type:"button",class:"ghost","aria-label":"Retirer la photo",onclick:async()=>{liste.splice(liste.indexOf(x),1);
         try{await tx("photos","readwrite",s=>s.delete(x.pid))}catch(e){}await apqSauver(true);renderApq()}},"✕");
       box.append(apqE("div",{class:"apqth"},im,lg,del))}
+    if(ph.length) box.append(apqE("button",{type:"button",class:"ghost apqplus",onclick:ajout},"＋ Ajouter"));
     g.append(box)}
   return g}
 async function apqAjouterPhotos(files){const c=APQ_CIBLE;APQ_CIBLE=null;if(!c||!files.length) return;busy("Ajout des photos…","",0);
@@ -2843,6 +2870,9 @@ function apqVerdict(p){const box=apqE("div",{class:"apqv"});
 function apqApplicateur(s,p){const d=apqE("details",{class:"apqs apqa"});d.open=APQ_OUV.has(p.id);d.ontoggle=()=>d.open?APQ_OUV.add(p.id):APQ_OUV.delete(p.id);
   const v=p.verdict&&APQ_V[p.verdict];
   d.append(apqE("summary",{},apqE("span",{"data-noi18n":true,text:p.nom||"Applicateur sans nom"}),v?apqE("span",{class:"st",style:`background:${v.c};color:#fff;border-color:transparent`},v.fr):null));
+  if((APQ.personnes||[]).length){const sel=apqE("select",{},apqE("option",{value:"",text:"—"}),APQ.personnes.map(q=>apqE("option",{value:q.id,text:apqNomPers(q)||"(sans nom)","data-noi18n":true})));
+    sel.value=p.personne||"";sel.onchange=async()=>{p.personne=sel.value;const q=APQ.personnes.find(x=>x.id===sel.value);if(q){p.nom=apqNomPers(q);p.societe=q.societe||p.societe||""}await apqSauver(true);renderApq()};
+    d.append(apqE("div",{class:"apqrow"},apqE("label",{},"Choisir dans les applicateurs présentés",sel)))}
   d.append(apqE("div",{class:"apqrow"},apqChamp("Nom",p,"nom"),apqChamp("Société",p,"societe"),apqChamp("Rôle (nozzleman…)",p,"role"),apqChamp("N° de panneau",p,"panneau")));
   p.ech=p.ech||{};p.ctl=p.ctl||{};p.essais=p.essais||{};
   d.append(apqE("p",{class:"apqst",text:"Échantillons"}),apqE("div",{class:"apqchk"},apqCoche("Envoi au laboratoire",p.ech,"labo")),
@@ -2856,6 +2886,43 @@ function apqApplicateur(s,p){const d=apqE("details",{class:"apqs apqa"});d.open=
     for(const x of p.photos) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
     s.applicateurs.splice(s.applicateurs.indexOf(p),1);await apqSauver(true);renderApq()}},"🗑 Retirer l'applicateur")));
   return d}
+
+// v1.77 : matériel de la session (plusieurs possibles) ; liste mémorisée sur l'appareil (kv « apqMateriels »), enrichie à chaque nouveau matériel
+const APQ_MAT_BASE=["Malaxeur type Hobart","Malaxeur à palettes","Bétonnière","Machine à gunite à rotor","Machine à gunite à chambre","Pompe à béton","Aiguille vibrante","Table vibrante","Pilon pneumatique","Balance","Éprouvette graduée","Thermomètre infrarouge"];
+let APQ_LMAT=null;
+async function apqListeMat(){if(APQ_LMAT) return APQ_LMAT;let l=null;try{l=await kvGet("apqMateriels")}catch(e){}APQ_LMAT=Array.isArray(l)?l:[...APQ_MAT_BASE];return APQ_LMAT}
+async function apqMemoMat(v){const l=await apqListeMat();if(!l.some(x=>x.toLowerCase()===v.toLowerCase())){l.push(v);l.sort((a,b)=>a.localeCompare(b,"fr"));try{await kvSet("apqMateriels",l)}catch(e){}}}
+function apqMateriels(s){if(!Array.isArray(s.materiels)){s.materiels=s.materiel?[s.materiel]:[];delete s.materiel}
+  const chips=apqE("div",{class:"apqchips"});
+  for(const v of s.materiels) chips.append(apqE("span",{class:"apqchip"},apqE("span",{"data-noi18n":true,text:v}),
+    apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce matériel",onclick:async()=>{s.materiels=s.materiels.filter(x=>x!==v);await apqSauver(true);renderApq()}},"✕")));
+  const id="dlm_"+s.id,dl=apqE("datalist",{id});for(const v of APQ_LMAT||[]) if(!s.materiels.includes(v)) dl.append(apqE("option",{value:v}));
+  const inp=apqE("input",{type:"text",list:id,placeholder:"Choisir dans la liste ou taper un nouveau matériel",autocomplete:"off","aria-label":"Matériel à ajouter"});
+  const ajouter=async()=>{const v=inp.value.trim();if(!v) return;if(!s.materiels.some(x=>x.toLowerCase()===v.toLowerCase())) s.materiels.push(v);await apqMemoMat(v);await apqSauver(true);renderApq()};
+  inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();ajouter()}};
+  inp.onchange=()=>{const v=inp.value.trim();if(v&&(APQ_LMAT||[]).includes(v)) ajouter()}; // choix dans la liste : ajouté tout de suite
+  return apqE("div",{},chips,apqE("div",{class:"apqmatadd"},inp,dl,apqE("button",{type:"button",onclick:ajouter},"＋ Ajouter")))}
+
+
+// v1.78 : documents de référence (référence, titre, révision), autant que nécessaire
+function apqDocs(a){a.docs=a.docs||[];const box=apqE("div",{},apqE("p",{class:"apqst",text:"Documents de référence"}));
+  for(const d of a.docs) box.append(apqE("div",{class:"apqdoc"},apqChamp("Référence",d,"ref",null,"ex. SPEC-REF-001"),apqChamp("Titre",d,"titre"),apqChamp("Rév.",d,"rev"),
+    apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce document",onclick:async()=>{a.docs.splice(a.docs.indexOf(d),1);await apqSauver(true);renderApq()}},"✕")));
+  box.append(apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:async()=>{a.docs.push({id:apqId(),ref:"",titre:"",rev:""});await apqSauver(true);renderApq()}},"＋ Document")));
+  return box}
+// v1.77 : galerie des applicateurs présentés (prénom, nom, société, portrait) ; une fiche par applicateur, autant que nécessaire
+const apqNomPers=q=>[q.prenom,(q.nom||"").toUpperCase()].filter(Boolean).join(" ");
+function apqGalerie(a){const box=apqE("div",{class:"apqpers"});a.personnes=a.personnes||[];
+  for(const q of a.personnes){q.photos=q.photos||[];
+    box.append(apqE("div",{class:"apqfiche"},apqPhotos(q.photos,["Portrait"],true),
+      apqE("div",{class:"apqrow"},apqChamp("Prénom",q,"prenom"),apqChamp("Nom",q,"nom"),apqChamp("Société",q,"societe")),
+      apqE("div",{class:"btns"},apqE("button",{type:"button",class:"ghost",onclick:async ev=>{const b=ev.currentTarget;
+        if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer : retirer";b.classList.add("danger");return}
+        for(const x of q.photos) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
+        a.personnes.splice(a.personnes.indexOf(q),1);for(const s of a.sessions) for(const p of s.applicateurs) if(p.personne===q.id) p.personne="";
+        await apqSauver(true);renderApq()}},"🗑 Retirer"))))}
+  box.append(apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:async()=>{a.personnes.push({id:apqId(),prenom:"",nom:"",societe:(a.personnes[a.personnes.length-1]||{}).societe||"",photos:[]});await apqSauver(true);renderApq()}},"＋ Applicateur présenté")));
+  return box}
 function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has(s.id);d.ontoggle=()=>d.open?APQ_OUV.add(s.id):APQ_OUV.delete(s.id);
   const n=s.applicateurs.length;
   d.append(apqE("summary",{},apqE("span",{text:apqLibSession(s)}),apqE("span",{class:"stat",text:`${n} applicateur${n>1?"s":""}`})));
@@ -2866,12 +2933,12 @@ function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has
       c.onchange=()=>{s.mats=c.checked?[...new Set([...s.mats,m.id])]:s.mats.filter(x=>x!==m.id);apqSauver()};
       box.append(apqE("label",{class:"toggle"},c," ",apqE("span",{"data-noi18n":true,text:m.produit||"(matériau sans nom)"})))}
     d.append(apqE("p",{class:"apqst",text:"Matériaux utilisés"}),box)}
-  d.append(apqE("div",{class:"apqrow"},apqChamp("Matériel (malaxeur, machine)",s,"materiel"),apqChamp("Panneau (dimensions)",s,"panneau",null,"ex. 500×500×100"),apqChoix("Position",s,"position",APQ_POS)));
+  d.append(apqE("p",{class:"apqst",text:"Matériel"}),apqMateriels(s),apqE("div",{class:"apqrow"},apqChamp("Panneau (dimensions)",s,"panneau",null,"ex. 500×500×100"),apqChoix("Position",s,"position",APQ_POS)));
   s.releves=s.releves||{};const r=s.releves;
   d.append(apqE("p",{class:"apqst",text:"Relevés (°C)"}),apqE("div",{class:"apqrow apqt"},apqChamp("Air",r,"tAir","number"),apqChamp("Support",r,"tSupport","number"),
     apqChamp("Matériau sec",r,"tSec","number"),apqChamp("Eau",r,"tEau","number"),apqChamp("Matériau gâché",r,"tGache","number")),
     apqE("div",{class:"apqrow"},apqChamp("Eau de gâchage",r,"eau",null,"ex. 4,5 L / sac de 25 kg")));
-  s.photos=s.photos||[];d.append(apqE("p",{class:"apqst",text:"Photos de la session"}),apqPhotos(s.photos,APQ_SLOTS_S),apqZone("Commentaire",s,"commentaire"));
+  s.photos=s.photos||[];d.append(apqE("p",{class:"apqst",text:"Photos de la session"}),apqE("p",{class:"hint",text:"Une case par vue attendue : touchez-la pour ajouter une ou plusieurs photos (plusieurs à la fois possible), puis « ＋ Ajouter » pour en mettre d'autres."}),apqPhotos(s.photos,APQ_SLOTS_S),apqZone("Commentaire",s,"commentaire"));
   d.append(apqE("p",{class:"apqst",text:"Contrôle des panneaux après prise"}),apqE("div",{class:"apqrow"},apqChamp("Délai",s,"ctrlDelai",null,"ex. 24 h"),apqChamp("Date du contrôle",s,"ctrlDate","date")));
   d.append(apqE("p",{class:"apqst",text:"Applicateurs"}),...s.applicateurs.map(p=>apqApplicateur(s,p)));
   d.append(apqE("div",{class:"btns"},
@@ -2881,15 +2948,19 @@ function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has
       for(const x of [...s.photos,...s.applicateurs.flatMap(p=>p.photos||[])]) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
       APQ.sessions.splice(APQ.sessions.indexOf(s),1);await apqSauver(true);renderApq()}},"🗑 Supprimer la session")));
   return d}
-async function renderApq(){const a=await apqCharger(),y=window.scrollY;
+async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqListeMat();
   $("apqMission").textContent=`${CFG.mission.no} · ${CFG.mission.client||""}`;
   const t=$("apqTete");t.innerHTML="";t.append(apqZone("Introduction",a,"intro","Qui, quand, quels matériaux ; applicateurs déjà qualifiés…"),
-    apqZone("Périmètre / limites",a,"perimetre","ex. - Démontrer la maîtrise du malaxage\n- Pas d'échantillons pour le laboratoire"),apqCoche("Échantillons envoyés au laboratoire",a,"labo"));
+    apqZone("Périmètre / limites",a,"perimetre","ex. - Démontrer la maîtrise du malaxage\n- Pas d'échantillons pour le laboratoire"),apqCoche("Échantillons envoyés au laboratoire",a,"labo"),
+    apqE("div",{class:"apqrow"},apqChamp("Inspecteur",a,"inspecteur"),apqChoix("Certification API",a,"apiType",["936","982"]),apqChamp("N° de certification",a,"apiNo",null,"ex. 95863")),
+    apqE("div",{class:"apqrow"},apqChamp("Spécification applicable",a,"spec",null,"ex. UOP 9-11-1 Rev. 12 / API 936")),apqDocs(a));
+  const ga=$("apqPers");ga.innerHTML="";ga.append(apqGalerie(a));
   const mt=$("apqMat");mt.innerHTML="";
   for(const m of a.materiaux){mt.append(apqE("div",{class:"apqmat"},apqChamp("Produit",m,"produit",null,"ex. ACTCHEM 85"),apqChoix("Utilisation",m,"role",APQ_ROLES),apqChamp("N° de lots",m,"lots"),
     apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce matériau",onclick:async()=>{a.materiaux.splice(a.materiaux.indexOf(m),1);for(const s of a.sessions) s.mats=(s.mats||[]).filter(x=>x!==m.id);await apqSauver(true);renderApq()}},"✕")))}
   mt.append(apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:async()=>{a.materiaux.push({id:apqId(),produit:"",role:"",lots:""});await apqSauver(true);renderApq()}},"＋ Matériau")));
-  const g=$("apqGen");g.innerHTML="";g.append(apqZone("Conditions (températures, humidité…)",a,"conditions"),apqE("div",{class:"apqrow"},apqChamp("Origine de l'eau",a,"eau",null,"ex. réseau d'eau potable du site")));
+  const g=$("apqGen");g.innerHTML="";g.append(apqZone("Conditions (températures, humidité…)",a,"conditions"),apqE("div",{class:"apqrow"},apqChamp("Origine de l'eau",a,"eau",null,"ex. réseau d'eau potable du site"),apqChamp("Certificat de l'eau (n°, laboratoire, date)",a,"eauCert",null,"ex. analyse n° 2026-118 du 03/11/2026")),
+    apqE("p",{class:"apqst",text:"Certificat de l'eau"}),apqPhotos(a.eauPhotos=a.eauPhotos||[],["Certificat de l'eau"],true));
   const se=$("apqSes");se.innerHTML="";for(const s of a.sessions) se.append(apqSession(s));
   se.append(apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:async()=>{const s={id:apqId(),methode:"",date:today(),mats:a.materiaux.map(m=>m.id),applicateurs:[],photos:[],releves:{}};
     a.sessions.push(s);APQ_OUV.add(s.id);await apqSauver(true);renderApq()}},"＋ Session (méthode et date)")));
@@ -2898,7 +2969,7 @@ async function renderApq(){const a=await apqCharger(),y=window.scrollY;
       ul.append(apqE("li",{},apqE("span",{"data-noi18n":true,text:`${p.nom||"?"} – ${apqLibSession(s)}`}),apqE("span",{class:"st",style:v?`background:${v.c};color:#fff;border-color:transparent`:null},v?v.fr:"sans verdict")))}
     rs.append(ul)}
   rs.append(apqZone("Résultats et remarques (temps de prise, conditions…)",a,"resultats"),
-    apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:()=>{const l=curMission().langue||langueMission();const t=apqTexteResultats(a,l);
+    apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:()=>{const l=apqLangue(curMission());const t=apqTexteResultats(a,l);
       a.resultats=a.resultats&&a.resultats.trim()?a.resultats.trim()+"\n\n"+t:t;apqSauver();renderApq()}},"Proposer le texte à partir des verdicts")));
   const n=tous.length,nv=tous.filter(x=>x.p.verdict).length;$("apqInfo").textContent=`${a.materiaux.length} matériau(x), ${a.sessions.length} session(s), ${n} applicateur(s) dont ${nv} avec verdict`;
   window.scrollTo(0,y)}
@@ -2931,9 +3002,9 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
         for(const ln of ll){let cx=xs[i]+pad;for(const m of ln){if(m.t!==" ") this.txt(cx,yy+s*0.95,m.t,m.f,s);cx+=m.w}yy+=lh}});
       this.cadre(M,this.y,L,h,"0.70 0.70 0.70",0.5);xs.slice(1).forEach(xx=>this.trait(xx,this.y,xx,this.y+h,"0.70 0.70 0.70",0.5));this.y+=h};
     ligne(cols.map(c=>c.t),true);for(const r of rows) ligne(r,false);this.y+=8}
-  grille(photos){const l=this.l,M=this.M,L=this.W-2*M,gap=12,cw=(L-gap)/2,maxH=220;
-    for(let i=0;i<photos.length;i+=2){const lot=photos.slice(i,i+2).map(p=>{let w=cw,h=cw*p.im.h/p.im.w;if(h>maxH){h=maxH;w=maxH*p.im.w/p.im.h}
-        const leg=`${pdfL("photo",l)} ${p.n}${p.leg?" – "+p.leg:""}`;return {...p,w,h,ll:this.lignes([{t:leg}],cw,8)}});
+  grille(photos,nc=2,maxH=220){const l=this.l,M=this.M,L=this.W-2*M,gap=12,cw=(L-gap*(nc-1))/nc;
+    for(let i=0;i<photos.length;i+=nc){const lot=photos.slice(i,i+nc).map(p=>{let w=cw,h=cw*p.im.h/p.im.w;if(h>maxH){h=maxH;w=maxH*p.im.w/p.im.h}
+        const leg=p.titre!=null?p.titre:`${pdfL("photo",l)} ${p.n}${p.leg?" – "+p.leg:""}`;return {...p,w,h,ll:this.lignes([{t:leg}],cw,8)}});
       const rowH=Math.max(...lot.map(p=>p.h+6+p.ll.length*10.6))+10;this.place(rowH);
       lot.forEach((p,j)=>{const x=M+j*(cw+gap)+(cw-p.w)/2;this.image(p.im,x,this.y,p.w,p.h);this.cadre(x,this.y,p.w,p.h,"0.75 0.75 0.75",0.5);
         let yy=this.y+p.h+5;for(const ln of p.ll){let cx=M+j*(cw+gap);for(const m of ln){if(m.t!==" ") this.txt(cx,yy+7.5,m.t,m.f,8,"0.30 0.30 0.30");cx+=m.w}yy+=10.6}});
@@ -2947,17 +3018,29 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
   async rapport(a){const l=this.l,M=this.M,L=this.W-2*M,T=k=>apqL(k,l),m=this.m;this.nouvellePage();
     this.paragraphe([{t:T("h1"),b:true}],M,L,14);this.y+=4;
     const dates=[...new Set(a.sessions.map(s=>s.date).filter(Boolean))].sort().map(frDate).join(", ");
-    this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],[T("labo"),a.labo?T("oui"):T("non")]]);
+    this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(m.inspecteur?[[pdfL("insp",l),m.inspecteur]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")]]);
     if(a.intro&&a.intro.trim()){this.texteBalise(a.intro,M,L,10);this.y+=4}
     if(a.perimetre&&a.perimetre.trim()){this.titreSection(T("perim"));this.texteBalise(a.perimetre,M,L,10)}
+    // v1.78 : documents de référence
+    const docs=(a.docs||[]).filter(d=>d.ref||d.titre);
+    if(docs.length){this.titreSection(T("docs"));this.tableau([{t:T("ref"),w:.3},{t:T("titreDoc"),w:.58},{t:T("rev"),w:.12}],docs.map(d=>[{t:d.ref||"–",b:true},d.titre||"–",d.rev||"–"]))}
+    // v1.77 : galerie des applicateurs présentés (portrait + prénom NOM – société)
+    if((a.personnes||[]).some(q=>q.nom||q.prenom)){this.titreSection(T("pres"));const g=[];
+      for(const q of a.personnes){if(!(q.nom||q.prenom)) continue;const t=[apqNomPers(q),q.societe].filter(Boolean).join(" – ");let im=null;
+        for(const x of q.photos||[]){const ph=await getPhoto(x.pid);if(ph&&ph.blob){try{im=this.ajouterImage(await jpegPdf(ph.blob,900));break}catch(e){}}}
+        g.push({im,titre:t})}
+      const avec=g.filter(x=>x.im);if(avec.length) this.grille(avec,3,170);
+      const sans=g.filter(x=>!x.im).map(x=>"- "+x.titre);if(sans.length) this.texteBalise(sans.join("\n"),M,L,10)}
     if(a.materiaux.length){this.titreSection("1. "+T("mat"));
       this.tableau([{t:T("produit"),w:.38},{t:T("role"),w:.24},{t:T("lots"),w:.38}],a.materiaux.map(x=>[{t:x.produit||"–",b:true},apqTr(x.role,l)||"–",x.lots||"–"]))}
-    if((a.conditions&&a.conditions.trim())||a.eau){this.titreSection("2. "+T("gen"));if(a.conditions) this.texteBalise(a.conditions,M,L,10);
-      if(a.eau){this.y+=2;this.paragraphe([{t:T("eau")+" : ",b:true},{t:a.eau}],M,L,10)}}
+    if((a.conditions&&a.conditions.trim())||a.eau||a.eauCert||(a.eauPhotos||[]).length){this.titreSection("2. "+T("gen"));if(a.conditions) this.texteBalise(a.conditions,M,L,10);
+      if(a.eau){this.y+=2;this.paragraphe([{t:T("eau")+" : ",b:true},{t:a.eau}],M,L,10)}
+      if(a.eauCert){this.y+=2;this.paragraphe([{t:T("eauCert")+" : ",b:true},{t:a.eauCert}],M,L,10)}
+      const pc=await this.photos((a.eauPhotos||[]).map(x=>({...x,leg:x.leg||T("eauCert")})),null);if(pc.length){this.y+=4;this.grille(pc)}}
     for(const s of a.sessions){this.titreSection([apqTr(s.methode,l),s.date&&frDate(s.date)].filter(Boolean).join(" – ")||T("methode"));
       const r=s.releves||{},bl=[];
       const mats=(s.mats||[]).map(id=>(a.materiaux.find(x=>x.id===id)||{}).produit).filter(Boolean).join(", ");if(mats) bl.push([T("mat"),mats]);
-      if(s.materiel) bl.push([T("materiel"),s.materiel]);
+      const mtl=(Array.isArray(s.materiels)?s.materiels:(s.materiel?[s.materiel]:[])).join(", ");if(mtl) bl.push([T("materiel"),mtl]);
       const pan=[s.panneau,apqTr(s.position,l)].filter(Boolean).join(" – ");if(pan) bl.push([T("panneau"),pan]);
       const tt=["tAir","tSupport","tSec","tEau","tGache"].filter(k=>r[k]!==""&&r[k]!=null).map(k=>`${T(k)} ${r[k]} °C`).join(" · ");if(tt) bl.push([T("releves"),tt]);
       if(r.eau) bl.push([T("eauG"),r.eau]);
@@ -2974,14 +3057,16 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
         for(const p of s.applicateurs){const ph2=await this.photos(p.photos,null);if(!(p.commentaire&&p.commentaire.trim())&&!ph2.length) continue;
           this.sousTitre(p.nom||T("appl"));if(p.commentaire&&p.commentaire.trim()){this.texteBalise(p.commentaire,M,L,10);this.y+=4}if(ph2.length) this.grille(ph2)}}}
     const tous=a.sessions.flatMap(s=>s.applicateurs.map(p=>({s,p})));
-    if(tous.length||(a.resultats&&a.resultats.trim())){this.titreSection("3. "+T("res"));
+    if(tous.length||(a.resultats&&a.resultats.trim())){{const ds=[...new Set(a.sessions.map(x=>x.date).filter(Boolean))].sort();
+        this.titreSection("3. "+(ds.length>1?T("resN").replace("{a}",frDate(ds[0])).replace("{b}",frDate(ds[ds.length-1])):ds.length?T("res1").replace("{a}",frDate(ds[0])):T("res")))}
       if(tous.length) this.tableau([{t:T("nom"),w:.32},{t:T("methode"),w:.3},{t:T("date"),w:.18},{t:T("verdict"),w:.2}],
         tous.map(({s,p})=>[{t:p.nom||"–",b:true},apqTr(s.methode,l)||"–",s.date?frDate(s.date):"–",p.verdict?{t:apqTr(APQ_V[p.verdict].fr,l),pill:APQ_V[p.verdict].pdf}:"–"]));
       if(a.resultats&&a.resultats.trim()) this.texteBalise(a.resultats,M,L,10)}}}}
 async function pdfApq(){if(PDF_EN_COURS) return;const a=await apqCharger();if(!a.sessions.length&&!a.materiaux.length){toast("Rien à mettre dans le rapport : ajoute au moins un matériau ou une session.");return}
   PDF_EN_COURS=true;busy("Création du PDF…","");await repos();
-  try{await apqSauver(true);const m=curMission()||CFG.mission,so=socMission(m),l=m.langue||langueMission();
-    const mk=new (PdfApqClasse())(l,so.societe,{...m,...so});await mk.rapport(a);
+  try{await apqSauver(true);const m=curMission()||CFG.mission,so=socMission(m),l=apqLangue(m);
+    const insp=[a.inspecteur||m.inspecteur,a.apiNo?`API ${a.apiType||"936"} N° ${a.apiNo}`:""].filter(Boolean).join(" – ");
+    const mk=new (PdfApqClasse())(l,so.societe,{...m,...so,inspecteur:insp});await mk.rapport(a);
     const dts=a.sessions.map(s=>s.date).filter(Boolean).sort();
     const nom=nomSur(`${m.no} - ${apqL("fichier",l)} - ${dts.length?dts[dts.length-1]:today()}`)+".pdf";
     const octets=await mk.octets();const f=new File([octets],nom,{type:"application/pdf"});busyFin();
@@ -3525,6 +3610,7 @@ const TRAD_UI=[
 ["Matériau gâché", "Mixed material", "Material amasado", "Angemischtes Material"],
 ["Eau de gâchage", "Mixing water", "Agua de amasado", "Anmachwasser"],
 ["Photos de la session", "Session photos", "Fotos de la sesión", "Fotos der Sitzung"],
+["Une case par vue attendue : touchez-la pour ajouter une ou plusieurs photos (plusieurs à la fois possible), puis « ＋ Ajouter » pour en mettre d'autres.", "One box per expected view: tap it to add one or more photos (several at once is possible), then “＋ Add” for more.", "Una casilla por vista prevista: tócala para añadir una o varias fotos (varias a la vez es posible) y luego «＋ Añadir» para más.", "Ein Feld je erwarteter Ansicht: antippen, um ein oder mehrere Fotos hinzuzufügen (mehrere gleichzeitig möglich), dann „＋ Hinzufügen“ für weitere."],
 ["Contrôle des panneaux après prise", "Panel check after setting", "Control de los paneles tras fraguado", "Prüfung der Paneele nach dem Abbinden"],
 ["Délai", "Delay", "Plazo", "Wartezeit"],
 ["Date du contrôle", "Check date", "Fecha del control", "Prüfdatum"],
@@ -3546,6 +3632,30 @@ const TRAD_UI=[
 ["Applicateur sans nom", "Unnamed applicator", "Aplicador sin nombre", "Verarbeiter ohne Namen"],
 ["Autre photo", "Other photo", "Otra foto", "Weiteres Foto"],
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
+["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
+["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["Certification API", "API certification", "Certificación API", "API-Zertifizierung"],
+["N° de certification", "Certification no.", "N.º de certificación", "Zertifizierungs-Nr."],
+["Spécification applicable", "Applicable specification", "Especificación aplicable", "Anwendbare Spezifikation"],
+["Documents de référence", "Reference documents", "Documentos de referencia", "Referenzdokumente"],
+["Référence", "Reference", "Referencia", "Referenz"],
+["Titre", "Title", "Título", "Titel"],
+["Rév.", "Rev.", "Rev.", "Rev."],
+["＋ Document", "＋ Document", "＋ Documento", "＋ Dokument"],
+["Retirer ce document", "Remove this document", "Quitar este documento", "Dieses Dokument entfernen"],
+["Applicateurs présentés", "Applicators presented", "Aplicadores presentados", "Vorgestellte Verarbeiter"],
+["Une fiche par applicateur présenté : portrait, prénom, nom, société. Ils se choisissent ensuite dans chaque session.", "One card per applicator presented: portrait, first name, surname, company. They are then picked in each session.", "Una ficha por aplicador presentado: retrato, nombre, apellido, empresa. Después se eligen en cada sesión.", "Eine Karte je vorgestelltem Verarbeiter: Porträt, Vorname, Name, Firma. Sie werden dann in jeder Sitzung ausgewählt."],
+["Prénom", "First name", "Nombre", "Vorname"],
+["＋ Applicateur présenté", "＋ Applicator presented", "＋ Aplicador presentado", "＋ Vorgestellter Verarbeiter"],
+["🗑 Retirer", "🗑 Remove", "🗑 Quitar", "🗑 Entfernen"],
+["Confirmer : retirer", "Confirm: remove", "Confirmar: quitar", "Bestätigen: entfernen"],
+["Choisir dans les applicateurs présentés", "Pick from the applicators presented", "Elegir entre los aplicadores presentados", "Aus den vorgestellten Verarbeitern wählen"],
+["(sans nom)", "(no name)", "(sin nombre)", "(ohne Namen)"],
+["Certificat de l'eau (n°, laboratoire, date)", "Water certificate (no., laboratory, date)", "Certificado del agua (n.º, laboratorio, fecha)", "Wasserzertifikat (Nr., Labor, Datum)"],
+["Choisir dans la liste ou taper un nouveau matériel", "Pick from the list or type new equipment", "Elegir en la lista o escribir un equipo nuevo", "Aus der Liste wählen oder neue Ausrüstung eingeben"],
+["Retirer ce matériel", "Remove this equipment", "Quitar este equipo", "Diese Ausrüstung entfernen"],
+["Matériel à ajouter", "Equipment to add", "Equipo que añadir", "Hinzuzufügende Ausrüstung"],
+["Ajouter une ou plusieurs photos", "Add one or more photos", "Añadir una o varias fotos", "Ein oder mehrere Fotos hinzufügen"],
 ["Légende de la photo", "Photo caption", "Leyenda de la foto", "Bildunterschrift"],
 ["Retirer la photo", "Remove the photo", "Quitar la foto", "Foto entfernen"],
 ["Retirer ce matériau", "Remove this material", "Quitar este material", "Dieses Material entfernen"],
@@ -3586,6 +3696,7 @@ const TRAD_UI=[
 ["Application", "Application", "Aplicación", "Verarbeitung"],
 ["Échantillonnage", "Sampling", "Muestreo", "Probenahme"],
 ["Feuille de relevé", "Data sheet", "Hoja de registro", "Messblatt"],
+["Certificat de l'eau", "Water certificate", "Certificado del agua", "Wasserzertifikat"],
 ["Portrait", "Portrait", "Retrato", "Porträt"],
 ["Face arrière", "Back side", "Cara posterior", "Rückseite"],
 ["Démontage", "Dismantling", "Desmontaje", "Ausbau"],
