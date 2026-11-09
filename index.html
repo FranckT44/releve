@@ -317,6 +317,13 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqpers{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-items:start}.apqfiche{border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface)}.apqfiche .apqgrid{grid-template-columns:1fr}.apqfiche .apqrow{grid-template-columns:1fr}.apqpers>.btns{grid-column:1/-1}
 .apqchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}.apqchip{display:inline-flex;align-items:center;gap:2px;padding:2px 2px 2px 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);font-size:14px}.apqchip button{min-height:32px;min-width:32px;padding:0;border:0}
 .apqmatadd{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}.apqn{color:var(--muted);font-weight:500}
+.apqtitre{font-size:13px;font-weight:600;text-align:center}
+.apqbt{display:grid;grid-template-columns:1fr 1fr;gap:4px}.apqbt button{min-height:40px;font-size:12px;padding:2px 4px}
+.apqgg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px}
+.apqgg figure{margin:0;cursor:pointer}.apqgg img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.apqgg figcaption{font-size:12px;text-align:center}
+.apqlb{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px}
+.apqlb img{max-width:100%;max-height:85vh;object-fit:contain}.apqlb p{color:#fff;font-size:13px;margin:8px 0 0;text-align:center}
 .apqslot{border:1px dashed var(--line);border-radius:8px;padding:6px;display:grid;gap:6px;align-content:start}
 .apqslot.fait{border-style:solid;border-color:var(--ok)}
 .apqslot>button{min-height:42px;font-size:13px;white-space:normal;padding:4px 6px}
@@ -488,7 +495,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <p class="stat" id="apqInfo"></p>
     <p class="hint">Un rapport par mission : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.</p>
     <div id="apqTete"></div>
-    <div class="btns"><button class="primary" id="bApqPdf" type="button">📄 Créer le PDF</button><button id="bApqSave" type="button">💾 Sauvegarder</button><button id="bApqRest" type="button">📂 Restaurer</button></div>
+    <div class="btns"><button class="primary" id="bApqPdf" type="button">📄 Créer le PDF</button><button id="bApqSave" type="button">💾 Sauvegarder</button><button id="bApqRest" type="button">📂 Restaurer</button><button id="bApqPh" type="button">⬇️ Photos</button></div>
     <p class="hint" id="apqSauveInfo"></p>
     <div id="apqRecup" class="card confirm" hidden></div>
     <p class="hint">Sur PC : glissez des photos depuis l'explorateur directement sur une case photo.</p>
@@ -502,6 +509,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <div class="card c-violet"><h2>Sessions (méthode et date)</h2><div id="apqSes"></div></div>
   <div class="card c-jaune"><h2>3. Résultats</h2><div id="apqRes"></div></div>
   <input type="file" id="iApq" accept="image/*" multiple hidden>
+  <input type="file" id="iApqCam" accept="image/*" capture="environment" hidden>
 </section>
 
 <!-- ============ CONSTATS (v1.70 : visualisation) ============ -->
@@ -792,7 +800,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="1.86";
+const APP_VERSION="1.89";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1937,7 +1945,7 @@ function renderGalerie(){
   GAL.vis=GAL.items.filter(i=>(!fe||i.e.equipement.code===fe)&&(!fd||i.e.date===fd));
   const nInc=GAL.vis.filter(i=>i.inc).length;
   $("gInfo").textContent=GAL.items.length?`${GAL.vis.length} photo(s) affichée(s), dont ${nInc} dans le rapport.`:"";
-  const g=$("galerie");g.innerHTML="";
+  const g=$("galerie");g.innerHTML="";apqSectionGalerie(g);
   if(!GAL.items.length){g.innerHTML=`<div class="card"><p class="hint">Aucune photo enregistrée pour la mission ${esc(CFG.mission.no)}. Les photos des constats enregistrés (onglet Saisie) apparaissent ici, jusqu'à ce qu'ils soient supprimés du téléphone.</p></div>`;return}
   let carte=null,grille=null,eid=null;
   GAL.vis.forEach((it,i)=>{
@@ -2060,7 +2068,8 @@ async function renderJournal(){
     const cj=c.querySelector(".selJour"),majJour=()=>{const n=cases.filter(x=>x[1].checked).length;cj.checked=n===cases.length;cj.indeterminate=n>0&&n<cases.length};
     cj.onchange=()=>{for(const [e,cb,r] of cases){cb.checked=cj.checked;cj.checked?JSEL.add(e.id):JSEL.delete(e.id);r.classList.toggle("coche",cb.checked)}majJour();majSelection(en)};majJour();
     j.append(c)}
-  if(!en.length) j.innerHTML=`<div class="card"><p class="hint">Aucun constat pour l'instant. Les constats enregistrés depuis l'onglet Saisie apparaissent ici, classés par jour.</p></div>`;
+  await apqCarteJournal(j);
+  if(!en.length) j.insertAdjacentHTML("beforeend",`<div class="card"><p class="hint">Aucun constat pour l'instant. Les constats enregistrés depuis l'onglet Saisie apparaissent ici, classés par jour.</p></div>`);
   try{const est=await navigator.storage.estimate();const per=navigator.storage.persisted?await navigator.storage.persisted():false;
     $("storeInfo").textContent=`${en.length} constat(s) · ${(est.usage/1048576).toFixed(1)} Mo utilisés sur ${(est.quota/1073741824).toFixed(1)} Go · stockage ${per?"protégé":"non protégé"}`}catch(e){$("storeInfo").textContent=`${en.length} constat(s)`}
 }
@@ -2789,7 +2798,7 @@ const APQ_TR={"Gunning":["Gunning","Gunning","Gunitado","Torkretieren"],"Coulage
   "T° eau":["T° eau","Water T°","T° agua","T° Wasser"],"T° matériau gâché":["T° matériau gâché","Mixed material T°","T° material amasado","T° angemischtes Material"],
   "Test « boule en main »":["Test « boule en main »","“Ball in hand” test","Prueba de «bola en mano»","„Ball in der Hand“-Test"],
   "Application":["Application","Application","Aplicación","Verarbeitung"],"Échantillonnage":["Échantillonnage","Sampling","Muestreo","Probenahme"],
-  "Feuille de relevé":["Feuille de relevé","Data sheet","Hoja de registro","Messblatt"],"Certificat de l'eau":["Certificat de l'eau","Water certificate","Certificado del agua","Wasserzertifikat"],"Portrait":["Portrait","Portrait","Retrato","Porträt"],"Sac / étiquette du lot":["Sac / étiquette du lot","Bag / batch label","Saco / etiqueta del lote","Sack / Chargenetikett"],"Certificat / preshipment test":["Certificat / preshipment test","Certificate / preshipment test","Certificado / ensayo previo al envío","Zertifikat / Vorversandprüfung"],
+  "Feuille de relevé":["Feuille de relevé","Data sheet","Hoja de registro","Messblatt"],"Certificat de l'eau":["Certificat de l'eau","Water certificate","Certificado del agua","Wasserzertifikat"],"Portrait":["Portrait","Portrait","Retrato","Porträt"],"Logo":["Logo","Logo","Logotipo","Logo"],"Sac / étiquette du lot":["Sac / étiquette du lot","Bag / batch label","Saco / etiqueta del lote","Sack / Chargenetikett"],"Certificat / preshipment test":["Certificat / preshipment test","Certificate / preshipment test","Certificado / ensayo previo al envío","Zertifikat / Vorversandprüfung"],
   "Face arrière":["Face arrière","Back side","Cara posterior","Rückseite"],"Démontage":["Démontage","Dismantling","Desmontaje","Ausbau"],
   "Demi-coupe":["Demi-coupe","Half-cut","Corte por la mitad","Halbschnitt"],"Casse au marteau":["Casse au marteau","Hammer break","Rotura con martillo","Hammerbruch"],
   "Densité":["Densité","Density","Densidad","Dichte"],"Abrasion":["Abrasion","Abrasion","Abrasión","Abrieb"],
@@ -2858,6 +2867,7 @@ function apqCoche(lbl,o,k){const c=apqE("input",{type:"checkbox"});c.checked=!!o
 const apqId=()=>"a"+newId();
 function apqLibSession(s){return [s.methode||"Méthode ?",s.date?frDate(s.date):"date ?"].join(" – ")}
 // photos guidées : une case par vue attendue (+ « Autre ») ; toucher la case ajoute une ou plusieurs photos
+const APQ_MOBILE=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
   for(const sl of sansAutre?slots:[...slots,"Autre"]){const ph=liste.filter(x=>x.slot===sl);const box=apqE("div",{class:"apqslot"+(ph.length?" fait":"")});
     const nomC=sl==="Autre"?"Autre photo":sl,ajout=()=>{APQ_CIBLE={liste,slot:sl};choisirFichier($("iApq"))};
@@ -2870,14 +2880,17 @@ function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
         x.slot=sl;liste.push(x);apqSauver(true).then(renderApq);return}
       const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])].filter(f=>f.type.startsWith("image/"));if(fs.length){APQ_CIBLE={liste,slot:sl};apqAjouterPhotos(fs)}};
     // v1.76 : plusieurs photos par case (toucher à nouveau, ou en choisir plusieurs d'un coup)
-    box.append(apqE("button",{type:"button",title:"Ajouter une ou plusieurs photos",onclick:ajout},ph.length?apqE("span",{},"✓ ",nomC,apqE("span",{class:"apqn",text:` (${ph.length})`})):"📷 "+nomC));
+    // v1.89 : sur téléphone / tablette, deux boutons comme les constats : 📷 (appareil photo) et 🖼️ (galerie, avec le réglage du sélecteur)
+    const cam=()=>{APQ_CIBLE={liste,slot:sl};choisirFichier($("iApqCam"))};
+    if(APQ_MOBILE){box.append(apqE("div",{class:"apqtitre",text:ph.length?`✓ ${nomC} (${ph.length})`:nomC}),apqE("div",{class:"apqbt"},apqE("button",{type:"button",onclick:cam},"📷 Photo"),apqE("button",{type:"button",onclick:ajout},"🖼️ Galerie")))}
+    else box.append(apqE("button",{type:"button",title:"Ajouter une ou plusieurs photos",onclick:ajout},ph.length?apqE("span",{},"✓ ",nomC,apqE("span",{class:"apqn",text:` (${ph.length})`})):"📷 "+nomC));
     for(const x of ph){const im=apqE("img",{alt:"",draggable:"true",title:"Glisser vers une autre case pour déplacer la photo"});getPhoto(x.pid).then(p=>{if(p) im.src=p.thumb});
       APQ_SRC.set(x.pid,liste);im.ondragstart=e=>{e.dataTransfer.setData("text/x-apq-photo",x.pid);e.dataTransfer.effectAllowed="move"};
       const lg=apqE("input",{type:"text",value:x.leg||"",placeholder:sl==="Autre"?"Légende":sl,"aria-label":"Légende de la photo"});lg.oninput=()=>{x.leg=lg.value;apqSauver()};
       const del=apqE("button",{type:"button",class:"ghost","aria-label":"Retirer la photo",onclick:async()=>{liste.splice(liste.indexOf(x),1);
         try{await tx("photos","readwrite",s=>s.delete(x.pid))}catch(e){}await apqSauver(true);renderApq()}},"✕");
       box.append(apqE("div",{class:"apqth"},im,lg,del))}
-    if(ph.length) box.append(apqE("button",{type:"button",class:"ghost apqplus",onclick:ajout},"＋ Ajouter"));
+    if(ph.length&&!APQ_MOBILE) box.append(apqE("button",{type:"button",class:"ghost apqplus",onclick:ajout},"＋ Ajouter"));
     g.append(box)}
   return g}
 async function apqAjouterPhotos(files){const c=APQ_CIBLE;APQ_CIBLE=null;if(!c||!files.length) return;busy("Ajout des photos…","",0);
@@ -2928,6 +2941,13 @@ function apqMateriels(s){if(!Array.isArray(s.materiels)){s.materiels=s.materiel?
   return apqE("div",{},chips,apqE("div",{class:"apqmatadd"},inp,dl,apqE("button",{type:"button",onclick:ajouter},"＋ Ajouter")))}
 
 
+// v1.87 : logo du rapport (société de la mission, QUARTIS, Franck TALLEUX / FTA, ou image choisie)
+const APQ_LOGOS=[["","Société de la mission"],["QUARTIS","QUARTIS"],["FTA","Franck TALLEUX (FTA)"],["perso","Image choisie…"]];
+function apqLogo(a){const sel=apqE("select",{},APQ_LOGOS.map(([v,t])=>apqE("option",{value:v,text:t})));sel.value=a.logo||"";
+  sel.onchange=async()=>{a.logo=sel.value;await apqSauver(true);renderApq()};
+  const box=apqE("div",{},apqE("div",{class:"apqrow"},apqE("label",{},"Logo du rapport",sel)));
+  if(a.logo==="perso"){a.logoPhotos=a.logoPhotos||[];box.append(apqPhotos(a.logoPhotos,["Logo"],true))}
+  return box}
 // v1.78 : documents de référence (référence, titre, révision), autant que nécessaire
 function apqDocs(a){a.docs=a.docs||[];const box=apqE("div",{},apqE("p",{class:"apqst",text:"Documents de référence"}));
   for(const d of a.docs) box.append(apqE("div",{class:"apqdoc"},apqChamp("Référence",d,"ref",null,"ex. SPEC-REF-001"),apqChamp("Titre",d,"titre"),apqChamp("Rév.",d,"rev"),
@@ -2973,15 +2993,21 @@ function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has
       APQ.sessions.splice(APQ.sessions.indexOf(s),1);await apqSauver(true);renderApq()}},"🗑 Supprimer la session")));
   return d}
 let APQ_RECUP_FAIT=null;
+// v1.87 : photos de préqualification présentes dans l'appli mais rattachées à aucun rapport (toutes missions) -> « Photos retrouvées » du rapport ouvert
+let APQ_DIAG=null;
 async function apqRecuperer(a){if(APQ_RECUP_FAIT===APQ_M) return;APQ_RECUP_FAIT=APQ_M;
-  let l=[];try{l=await tx("photos","readonly",s=>s.getAll(IDBKeyRange.bound("apq_","apq_\uffff")))}catch(e){return}
-  const vus=new Set(apqPids(a)),orph=(l||[]).filter(p=>p.entry==="apq:"+APQ_M&&!vus.has(p.id)).sort((x,y)=>(x.prise||"").localeCompare(y.prise||""));
-  if(!orph.length) return;a.recup=a.recup||[];for(const p of orph) a.recup.push({pid:p.id,slot:"Photos retrouvées",leg:""});
-  await apqSauver(true);toast(`${orph.length} photo(s) de ce rapport n'étaient plus rattachées à une case : elles sont dans « Photos retrouvées » (en haut). Glissez-les vers leur case.`,12000)}
+  let l=[],cles=[];try{l=await tx("photos","readonly",s=>s.getAll(IDBKeyRange.bound("apq_","apq_￿")));cles=await tx("kv","readonly",s=>s.getAllKeys())}catch(e){return}
+  const refs=new Set(apqPids(a));
+  for(const k of cles||[]) if(typeof k==="string"&&k.startsWith("apq:")&&k!=="apq:"+APQ_M){try{const r=await kvGet(k);for(const id of apqPids(r||{})) refs.add(id)}catch(e){}}
+  const orph=(l||[]).filter(p=>!refs.has(p.id)).sort((x,y)=>(x.prise||"").localeCompare(y.prise||""));
+  APQ_DIAG={total:(l||[]).length,orph:orph.length};
+  if(!orph.length) return;a.recup=a.recup||[];
+  for(const p of orph){a.recup.push({pid:p.id,slot:"Photos retrouvées",leg:""});if(p.entry!=="apq:"+APQ_M){p.entry="apq:"+APQ_M;try{await tx("photos","readwrite",st=>st.put(p))}catch(e){}}}
+  await apqSauver(true);toast(`${orph.length} photo(s) n'étaient plus rattachées à une case : elles sont dans « Photos retrouvées » (en haut). Glissez-les vers leur case.`,12000)}
 async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqRecuperer(a);await apqListeMat();
   $("apqMission").textContent=`${CFG.mission.no} · ${CFG.mission.client||""}`;
   const t=$("apqTete");t.innerHTML="";t.append(apqZone("Introduction",a,"intro","Qui, quand, quels matériaux ; applicateurs déjà qualifiés…"),
-    apqZone("Périmètre / limites",a,"perimetre","ex. - Démontrer la maîtrise du malaxage\n- Pas d'échantillons pour le laboratoire"),apqCoche("Échantillons envoyés au laboratoire",a,"labo"),
+    apqZone("Périmètre / limites",a,"perimetre","ex. - Démontrer la maîtrise du malaxage\n- Pas d'échantillons pour le laboratoire"),apqCoche("Échantillons envoyés au laboratoire",a,"labo"),apqLogo(a),
     apqE("div",{class:"apqrow"},apqChamp("Inspecteur",a,"inspecteur"),apqChoix("Certification API",a,"apiType",["936","982"]),apqChamp("N° de certification",a,"apiNo",null,"ex. 95863")),
     apqE("div",{class:"apqrow"},apqChamp("Spécification applicable",a,"spec",null,"ex. UOP 9-11-1 Rev. 12 / API 936")),apqDocs(a));
   const rc=$("apqRecup");rc.innerHTML="";rc.hidden=!(a.recup&&a.recup.length);
@@ -3003,24 +3029,30 @@ async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apq
   if(tous.length){const ul=apqE("ul",{class:"apqbilan"});for(const {s,p} of tous){const v=p.verdict&&APQ_V[p.verdict];
       ul.append(apqE("li",{},apqE("span",{"data-noi18n":true,text:`${p.nom||"?"} – ${apqLibSession(s)}`}),apqE("span",{class:"st",style:v?`background:${v.c};color:#fff;border-color:transparent`:null},v?v.fr:"sans verdict")))}
     rs.append(ul)}
-  rs.append(apqZone("Résultats et remarques (temps de prise, conditions…)",a,"resultats"),
-    apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:()=>{const l=apqLangue(curMission());const t=apqTexteResultats(a,l);
-      a.resultats=a.resultats&&a.resultats.trim()?a.resultats.trim()+"\n\n"+t:t;apqSauver();renderApq()}},"Proposer le texte à partir des verdicts")));
+  // v1.89 : plus de texte proposé à partir des verdicts (il répétait le tableau) ; les lignes déjà proposées sont retirées
+  {const r=apqSansRedite(a);if(r!==(a.resultats||"").trim()){a.resultats=r;apqSauver(true)}}
+  rs.append(apqZone("Résultats et remarques (temps de prise, conditions…)",a,"resultats"));
   const n=tous.length,nv=tous.filter(x=>x.p.verdict).length;$("apqInfo").textContent=`${a.materiaux.length} matériau(x), ${a.sessions.length} session(s), ${n} applicateur(s) dont ${nv} avec verdict`;
   apqInfoSauve();window.scrollTo(0,y)}
+function apqSansRedite(a){const auto=new Set(["fr","en","es","de"].flatMap(x=>apqTexteResultats(a,x).split("\n")).map(z=>z.trim()).filter(Boolean));
+  return (a.resultats||"").split("\n").filter(z=>!auto.has(z.trim())).join("\n").replace(/\n{3,}/g,"\n\n").trim()}
 function apqTexteResultats(a,l){const out=[];
   for(const s of a.sessions){if(!s.applicateurs.length) continue;
     const t=[apqTr(s.methode,l),s.date&&frDate(s.date)].filter(Boolean).join(", ");
     out.push(`- **${t}** : `+s.applicateurs.map(p=>`${p.nom||"?"} – ${p.verdict?apqTr(APQ_V[p.verdict].fr,l):"…"}`).join(" ; "))}
   return out.join("\n")}
 function initApq(){$("iApq").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.target.files];e.target.value="";if(fs.length) apqAjouterPhotos(fs);else busyFin()};
-  $("iApq").addEventListener("cancel",busyFin);$("bApqPdf").onclick=pdfApq;initApqSauve();
+  $("iApq").addEventListener("cancel",busyFin);
+  $("iApqCam").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.target.files];e.target.value="";if(fs.length) apqAjouterPhotos(fs);else busyFin()};$("iApqCam").addEventListener("cancel",busyFin);
+  // le bouton 🖼️ suit le réglage « Sélecteur de photos » des constats
+  const pk=v=>{const c={"1":["image/*",true],"2":["image/*",false],"3":["image/jpeg,image/heic,image/heif,image/png",true],"4":["*/*",true]}[v]||["image/*",true];$("iApq").setAttribute("accept",c[0]);$("iApq").multiple=c[1]};
+  kvGet("picker").then(v=>pk(v||"1")).catch(()=>{});$("cPicker").addEventListener("change",e=>pk(e.target.value));$("bApqPh").onclick=apqExporterPhotos;$("bApqPdf").onclick=pdfApq;initApqSauve();
   document.addEventListener("visibilitychange",()=>{if(document.hidden&&APQ&&APQ_SALE) apqSauver(true)})}
 /* ---------- v1.84 : sauvegarde / restauration du rapport APQ (avec les photos) ----------
    Fichier image « Sauvegarde APQ <N°> - AAAA-MM-JJ HHhMM.jpg » : carte lisible + commentaires JPEG
    « RELEVE-FICHIER: » (nom), « RELEVE-APQ: » (en-tête JSON, morceaux de 65 000 octets), « RELEVE-ADATA: » (photos à la suite). */
 function apqPids(a){const l=[];const ph=x=>{for(const p of x||[]) l.push(p.pid)};
-  ph(a.eauPhotos);ph(a.recup);for(const q of a.personnes||[]) ph(q.photos);for(const m of a.materiaux||[]) ph(m.photos);
+  ph(a.eauPhotos);ph(a.recup);ph(a.logoPhotos);for(const q of a.personnes||[]) ph(q.photos);for(const m of a.materiaux||[]) ph(m.photos);
   for(const s of a.sessions||[]){ph(s.photos);for(const p of s.applicateurs||[]) ph(p.photos)}return [...new Set(l)]}
 async function apqSauvegarder(){const a=await apqCharger();await apqSauver(true);const m=curMission()||CFG.mission;
   busy("Sauvegarde du rapport…","",0);await repos();
@@ -3077,11 +3109,55 @@ async function apqRestaurer(){const h=APQ_REST;APQ_REST=null;$("apqRestCard").hi
     APQ={...apqVide(),...h.apq};APQ_M=id;APQ.modifieLe=new Date().toISOString();await kvSet("apq:"+id,APQ);APQ_REF=APQ.modifieLe;APQ_CONFLIT=false;toast(`Rapport restauré : ${(APQ.sessions||[]).length} session(s), ${ph.length} photo(s).`,6000)}
   catch(e){toast("Restauration impossible : "+(e&&e.message||e),8000)}finally{busyFin();renderApq()}}
 async function apqInfoSauve(){const el=$("apqSauveInfo");if(!el) return;let d=null;try{d=await kvGet("apqSauveLe:"+CFG.mission.id)}catch(e){}
-  el.textContent=d?`Dernière sauvegarde (fichier) : ${fmtDT(d)}.`:"Aucune sauvegarde en fichier pour ce rapport : pensez à « 💾 Sauvegarder » régulièrement."}
+  el.textContent=(d?`Dernière sauvegarde (fichier) : ${fmtDT(d)}.`:"Aucune sauvegarde en fichier pour ce rapport : pensez à « 💾 Sauvegarder » régulièrement.")
+    +(APQ_DIAG?` Photos de préqualification dans l'appli : ${APQ_DIAG.total}.`:"")}
 function initApqSauve(){$("bApqSave").onclick=apqSauvegarder;$("bApqRest").onclick=()=>choisirFichier($("iApqRest"));
   $("iApqRest").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];e.target.value="";if(f) apqChoisirSauvegarde(f);else busyFin()};
   $("iApqRest").addEventListener("cancel",busyFin);$("bApqRestOk").onclick=apqRestaurer;$("bApqRestNo").onclick=()=>{APQ_REST=null;$("apqRestCard").hidden=true}}
 
+
+// v1.88 : le rapport de préqualification de la mission apparaît en tête du Journal (ouvrir pour le compléter, PDF)
+async function apqCarteJournal(j){let a=null;try{a=await apqCharger()}catch(e){return}
+  if(!a||!((a.sessions||[]).length||(a.materiaux||[]).length||(a.personnes||[]).length||(a.intro||"").trim())) return;
+  const tous=(a.sessions||[]).flatMap(s=>s.applicateurs||[]),nv=tous.filter(p=>p.verdict).length;
+  const ds=[...new Set((a.sessions||[]).map(s=>s.date).filter(Boolean))].sort().map(frDate);
+  const c=apqE("div",{class:"card c-jaune apqj"},
+    apqE("div",{class:"dayhead"},apqE("h3",{text:"🧪 Préqualification des applicateurs"}),apqE("span",{class:"stat",text:ds.join(", ")})),
+    apqE("p",{class:"hint",text:`${(a.sessions||[]).length} session(s), ${tous.length} applicateur(s) dont ${nv} avec verdict`+(a.modifieLe?` – modifié le ${fmtDT(a.modifieLe)}`:"")}),
+    apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:()=>showView("apq")},"Ouvrir / compléter"),apqE("button",{type:"button",onclick:pdfApq},"📄 PDF")));
+  j.prepend(c)}
+
+// v1.89 : toutes les photos du rapport, avec leur groupe et leur case, et un nom de fichier lisible
+function apqNomFichier(t){return String(t||"").replace(/[\\/:*?"<>|\r\n]+/g," ").replace(/\s+/g," ").trim()}
+function apqListePhotos(a){const l=[];const ajout=(groupe,liste,court)=>{const n={};for(const x of liste||[]){const sl=x.slot||"Photo";n[sl]=(n[sl]||0)+1;l.push({pid:x.pid,leg:x.leg||"",groupe,slot:sl,k:n[sl],court})}};
+  for(const q of a.personnes||[]) ajout("Applicateur "+(apqNomPers(q)||"(sans nom)"),q.photos,"Applicateur "+(apqNomPers(q)||""));
+  for(const m of a.materiaux||[]) ajout("Matériau "+(m.produit||"(sans nom)"),m.photos,"Matériau "+(m.produit||""));
+  ajout("Certificat de l'eau",a.eauPhotos,"Eau");
+  (a.sessions||[]).forEach((s,i)=>{const t=`S${i+1}`;ajout(`Session ${i+1}`+(s.date?` – ${frDate(s.date)}`:""),s.photos,t);
+    for(const p of s.applicateurs||[]) ajout(`Session ${i+1} – ${p.nom||"applicateur sans nom"}`,p.photos,`${t} ${p.nom||""}`)});
+  ajout("Logo",a.logoPhotos,"Logo");ajout("Photos retrouvées",a.recup,"Retrouvée");
+  const no=(curMission()||CFG.mission).no||"";
+  for(const x of l) x.fichier=apqNomFichier(`${no} APQ ${x.court} - ${x.slot==="Autre"&&x.leg?x.leg:x.slot} ${x.k}`)+".jpg";
+  return l}
+async function apqExporterPhotos(){const a=await apqCharger();const l=apqListePhotos(a);if(!l.length){toast("Aucune photo dans ce rapport.");return}
+  busy("Préparation des photos…","",0);const files=[],vus=new Set();
+  try{let k=0;for(const x of l){k++;busyMaj(`Photo ${k} / ${l.length}`,Math.round(k/l.length*100));const p=await getPhoto(x.pid);if(!p||!p.blob) continue;
+      let blob=p.blob;if((blob.type||p.type||"").toLowerCase()!=="image/jpeg"){const j=await versJpeg(blob);if(j) blob=j}
+      let nom=x.fichier,i=2;while(vus.has(nom)) nom=x.fichier.replace(/\.jpg$/,` (${i++}).jpg`);vus.add(nom);files.push(new File([blob],nom,{type:"image/jpeg"}))}}
+  finally{busyFin()}
+  if(!files.length){toast("Aucune photo trouvée.");return}await proposerFichiers(files,"photos")}
+// v1.89 : section « Préqualification » en bas de l'onglet Galerie (sans filtre équipement / date)
+async function apqSectionGalerie(g){let a=null;try{a=await apqCharger()}catch(e){return}
+  g.querySelectorAll(".apqgal").forEach(x=>x.remove());if($("gEq").value||$("gDate").value) return;const l=apqListePhotos(a);if(!l.length) return;
+  const c=apqE("div",{class:"card c-jaune apqgal"},apqE("div",{class:"dayhead"},apqE("h3",{text:"🧪 Préqualification des applicateurs"}),apqE("span",{class:"stat",text:`${l.length} photo(s)`})));
+  let gr=null,box=null;
+  for(const x of l){if(x.groupe!==gr){gr=x.groupe;c.append(apqE("p",{class:"apqst","data-noi18n":true,text:gr}));box=apqE("div",{class:"apqgg"});c.append(box)}
+    const im=apqE("img",{alt:""});getPhoto(x.pid).then(p=>{if(p) im.src=p.thumb});
+    box.append(apqE("figure",{title:x.fichier,onclick:()=>apqVoir(x)},im,apqE("figcaption",{"data-noi18n":true,text:x.slot==="Autre"?(x.leg||"Autre"):x.slot+(x.leg?" – "+x.leg:"")})))}
+  c.append(apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:()=>showView("apq")},"Ouvrir / compléter"),apqE("button",{type:"button",onclick:apqExporterPhotos},`⬇️ Exporter les photos (${l.length})`)));
+  g.append(c)}
+async function apqVoir(x){const p=await getPhoto(x.pid);if(!p) return;const u=URL.createObjectURL(p.blob);
+  const ov=apqE("div",{class:"apqlb",onclick:()=>{ov.remove();URL.revokeObjectURL(u)}},apqE("img",{src:u,alt:""}),apqE("p",{"data-noi18n":true,text:x.fichier}));document.body.append(ov)}
 // ---------- PDF ----------
 // la classe est créée à la demande : PdfRapide est défini plus loin dans la page
 function PdfApqClasse(){return class PdfApq extends PdfRapide{
@@ -3103,13 +3179,16 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
         for(const ln of ll){let cx=xs[i]+pad;for(const m of ln){if(m.t!==" ") this.txt(cx,yy+s*0.95,m.t,m.f,s);cx+=m.w}yy+=lh}});
       this.cadre(M,this.y,L,h,"0.70 0.70 0.70",0.5);xs.slice(1).forEach(xx=>this.trait(xx,this.y,xx,this.y+h,"0.70 0.70 0.70",0.5));this.y+=h};
     ligne(cols.map(c=>c.t),true);for(const r of rows) ligne(r,false);this.y+=8}
-  grille(photos,nc=2,maxH=220){const l=this.l,M=this.M,L=this.W-2*M,gap=12,cw=(L-gap*(nc-1))/nc;
-    for(let i=0;i<photos.length;i+=nc){const lot=photos.slice(i,i+nc).map(p=>{let w=cw,h=cw*p.im.h/p.im.w;if(h>maxH){h=maxH;w=maxH*p.im.w/p.im.h}
-        const leg=p.titre!=null?p.titre:`${pdfL("photo",l)} ${p.n}${p.leg?" – "+p.leg:""}`;return {...p,w,h,ll:this.lignes([{t:leg}],cw,8)}});
-      const rowH=Math.max(...lot.map(p=>p.h+6+p.ll.length*10.6))+10;this.place(rowH);
-      lot.forEach((p,j)=>{const x=M+j*(cw+gap)+(cw-p.w)/2;this.image(p.im,x,this.y,p.w,p.h);this.cadre(x,this.y,p.w,p.h,"0.75 0.75 0.75",0.5);
-        let yy=this.y+p.h+5;for(const ln of p.ll){let cx=M+j*(cw+gap);for(const m of ln){if(m.t!==" ") this.txt(cx,yy+7.5,m.t,m.f,8,"0.30 0.30 0.30");cx+=m.w}yy+=10.6}});
-      this.y+=rowH}}
+  // v1.87 : chaque photo et sa légende dans un cadre (comme les tableaux photo des rapports)
+  grille(photos,nc=2,maxH=220){const l=this.l,M=this.M,L=this.W-2*M,gap=8,pad=6,cw=(L-gap*(nc-1))/nc,iw=cw-2*pad;
+    for(let i=0;i<photos.length;i+=nc){const lot=photos.slice(i,i+nc).map(p=>{let w=iw,h=iw*p.im.h/p.im.w;if(h>maxH){h=maxH;w=maxH*p.im.w/p.im.h}
+        const leg=p.titre!=null?p.titre:`${pdfL("photo",l)} ${p.n}${p.leg?" – "+p.leg:""}`;return {...p,w,h,ll:this.lignes([{t:leg}],iw,8)}});
+      const rowH=Math.max(...lot.map(p=>p.h+2*pad+4+p.ll.length*10.6));this.place(rowH+gap);
+      lot.forEach((p,j)=>{const x0=M+j*(cw+gap);this.cadre(x0,this.y,cw,rowH,"0.55 0.55 0.55",0.7);
+        this.image(p.im,x0+pad+(iw-p.w)/2,this.y+pad,p.w,p.h);
+        let yy=this.y+pad+p.h+4;for(const ln of p.ll){const lw=ln.reduce((t,m)=>t+m.w,0);let cx=x0+pad+Math.max(0,(iw-lw)/2);
+          for(const m of ln){if(m.t!==" ") this.txt(cx,yy+7.5,m.t,m.f,8,"0.25 0.25 0.25");cx+=m.w}yy+=10.6}});
+      this.y+=rowH+gap}}
   async photos(liste,releves){const out=[],l=this.l;
     for(const x of liste||[]){const p=await getPhoto(x.pid);if(!p||!p.blob) continue;
       let leg=x.leg&&x.leg.trim()?x.leg.trim():(x.slot==="Autre"?"":apqTr(x.slot,l));
@@ -3160,16 +3239,18 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
         for(const p of s.applicateurs){const ph2=await this.photos(p.photos,null);if(!(p.commentaire&&p.commentaire.trim())&&!ph2.length) continue;
           this.sousTitre(p.nom||T("appl"));if(p.commentaire&&p.commentaire.trim()){this.texteBalise(p.commentaire,M,L,10);this.y+=4}if(ph2.length) this.grille(ph2)}}}
     const tous=a.sessions.flatMap(s=>s.applicateurs.map(p=>({s,p})));
-    if(tous.length||(a.resultats&&a.resultats.trim())){{const ds=[...new Set(a.sessions.map(x=>x.date).filter(Boolean))].sort();
+    if(tous.length||apqSansRedite(a)){{const ds=[...new Set(a.sessions.map(x=>x.date).filter(Boolean))].sort();
         this.titreSection("3. "+(ds.length>1?T("resN").replace("{a}",frDate(ds[0])).replace("{b}",frDate(ds[ds.length-1])):ds.length?T("res1").replace("{a}",frDate(ds[0])):T("res")))}
       if(tous.length) this.tableau([{t:T("nom"),w:.32},{t:T("methode"),w:.3},{t:T("date"),w:.18},{t:T("verdict"),w:.2}],
         tous.map(({s,p})=>[{t:p.nom||"–",b:true},apqTr(s.methode,l)||"–",s.date?frDate(s.date):"–",p.verdict?{t:apqTr(APQ_V[p.verdict].fr,l),pill:APQ_V[p.verdict].pdf}:"–"]));
-      if(a.resultats&&a.resultats.trim()) this.texteBalise(a.resultats,M,L,10)}}}}
+      const rt=apqSansRedite(a);if(rt){this.y+=4;this.texteBalise(rt,M,L,10)}}}}}
 async function pdfApq(){if(PDF_EN_COURS) return;const a=await apqCharger();if(!a.sessions.length&&!a.materiaux.length){toast("Rien à mettre dans le rapport : ajoute au moins un matériau ou une session.");return}
   PDF_EN_COURS=true;busy("Création du PDF…","");await repos();
-  try{await apqSauver(true);const m=curMission()||CFG.mission,so=socMission(m),l=apqLangue(m);
+  try{await apqSauver(true);const m=curMission()||CFG.mission,l=apqLangue(m);let so=socMission(m);
+    if(a.logo==="QUARTIS"||a.logo==="FTA") so=socMission({...m,societe:a.logo});
     const insp=[a.inspecteur||m.inspecteur,a.apiNo?`API ${a.apiType||"936"} N° ${a.apiNo}`:""].filter(Boolean).join(" – ");
-    const mk=new (PdfApqClasse())(l,so.societe,{...m,...so,inspecteur:insp});await mk.rapport(a);
+    const mk=new (PdfApqClasse())(l,so.societe,{...m,...so,inspecteur:insp});
+    if(a.logo==="perso"&&(a.logoPhotos||[]).length){const ph=await getPhoto(a.logoPhotos[0].pid);if(ph&&ph.blob){try{mk.logoPerso=await jpegPdf(ph.blob,600)}catch(e){}}}await mk.rapport(a);
     const dts=a.sessions.map(s=>s.date).filter(Boolean).sort();
     const nom=nomSur(`${m.no} - ${apqL("fichier",l)} - ${dts.length?dts[dts.length-1]:today()}`)+".pdf";
     const octets=await mk.octets();const f=new File([octets],nom,{type:"application/pdf"});busyFin();
@@ -3379,7 +3460,7 @@ class PdfRapide{
           let yy=this.y+p.h+5;for(const ln of p.ll){let cx=M+j*(cw+gap);for(const m of ln){if(m.t!==" ") this.txt(cx,yy+7.5,m.t,m.f,8,"0.30 0.30 0.30");cx+=m.w}yy+=10.6}});
         this.y+=rowH}}}
   // en-têtes et pieds de page (une seule fois : servent à l'aperçu puis au fichier)
-  async miseEnPage(){if(this.mep) return;this.mep=true;const l=this.l,M=this.M,W=this.W,N=this.pages.length,logo=await logoPdf(this.soc);if(logo) this.ajouterImage(logo);
+  async miseEnPage(){if(this.mep) return;this.mep=true;const l=this.l,M=this.M,W=this.W,N=this.pages.length,logo=this.logoPerso||await logoPdf(this.soc);if(logo) this.ajouterImage(logo);
     const nomSoc=this.soc==="FTA"?(this.m.inspecteur||"Franck TALLEUX"):"QUARTIS LIMITED",actSoc=this.soc==="FTA"?(this.m.activiteSociete||"API 936 Consultancy"):"REFRACTORY INSPECTION";
     const quand=new Date(),gen=pdfL("gen",l).replace("{a}",`${frDate(today())} ${pad(quand.getHours())}:${pad(quand.getMinutes())}`);
     this.pages.forEach((pg,i)=>{const ops=pg.ops,dd=pg.d;pg.ops=[];pg.d=[];this.page=pg;
@@ -3739,6 +3820,21 @@ const TRAD_UI=[
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
 ["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
 ["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["⬇️ Photos", "⬇️ Photos", "⬇️ Fotos", "⬇️ Fotos"],
+["📷 Photo", "📷 Photo", "📷 Foto", "📷 Foto"],
+["🖼️ Galerie", "🖼️ Gallery", "🖼️ Galería", "🖼️ Galerie"],
+["⬇️ Exporter les photos ({a})", "⬇️ Export photos ({a})", "⬇️ Exportar fotos ({a})", "⬇️ Fotos exportieren ({a})"],
+["{a} photo(s)", "{a} photo(s)", "{a} foto(s)", "{a} Foto(s)"],
+["Aucune photo dans ce rapport.", "No photos in this report.", "No hay fotos en este informe.", "Keine Fotos in diesem Bericht."],
+["Préparation des photos…", "Preparing photos…", "Preparando fotos…", "Fotos werden vorbereitet…"],
+["🧪 Préqualification des applicateurs", "🧪 Applicator prequalification", "🧪 Precualificación de aplicadores", "🧪 Präqualifikation der Verarbeiter"],
+["Ouvrir / compléter", "Open / complete", "Abrir / completar", "Öffnen / ergänzen"],
+["{a} session(s), {b} applicateur(s) dont {c} avec verdict", "{a} session(s), {b} applicator(s), {c} with a result", "{a} sesión(es), {b} aplicador(es), {c} con resultado", "{a} Sitzung(en), {b} Verarbeiter, {c} mit Ergebnis"],
+["{a} session(s), {b} applicateur(s) dont {c} avec verdict – modifié le {d}", "{a} session(s), {b} applicator(s), {c} with a result – changed on {d}", "{a} sesión(es), {b} aplicador(es), {c} con resultado – modificado el {d}", "{a} Sitzung(en), {b} Verarbeiter, {c} mit Ergebnis – geändert am {d}"],
+["Logo du rapport", "Report logo", "Logotipo del informe", "Berichtslogo"],
+["Société de la mission", "Job company", "Empresa de la misión", "Firma des Auftrags"],
+["Image choisie…", "Chosen image…", "Imagen elegida…", "Gewähltes Bild…"],
+["{a} photo(s) n'étaient plus rattachées à une case : elles sont dans « Photos retrouvées » (en haut). Glissez-les vers leur case.", "{a} photo(s) were no longer attached to a box: they are in “Recovered photos” (at the top). Drag them to their box.", "{a} foto(s) ya no estaban en ninguna casilla: están en «Fotos recuperadas» (arriba). Arrástralas a su casilla.", "{a} Foto(s) waren keinem Feld mehr zugeordnet: Sie sind unter „Wiedergefundene Fotos“ (oben). Auf ihr Feld ziehen."],
 ["Photos retrouvées", "Recovered photos", "Fotos recuperadas", "Wiedergefundene Fotos"],
 ["Photos retrouvées ({a})", "Recovered photos ({a})", "Fotos recuperadas ({a})", "Wiedergefundene Fotos ({a})"],
 ["Ces photos de ce rapport n'étaient plus rattachées à une case. Glissez chacune vers sa case (sur PC), ou retirez-la avec ✕.", "These photos of this report were no longer attached to a box. Drag each one to its box (on a PC), or remove it with ✕.", "Estas fotos del informe ya no estaban en ninguna casilla. Arrastra cada una a su casilla (en PC) o quítala con ✕.", "Diese Fotos des Berichts waren keinem Feld mehr zugeordnet. Jedes auf sein Feld ziehen (am PC) oder mit ✕ entfernen."],
@@ -3818,6 +3914,7 @@ const TRAD_UI=[
 ["Feuille de relevé", "Data sheet", "Hoja de registro", "Messblatt"],
 ["Certificat de l'eau", "Water certificate", "Certificado del agua", "Wasserzertifikat"],
 ["Portrait", "Portrait", "Retrato", "Porträt"],
+["Logo", "Logo", "Logotipo", "Logo"],
 ["Sac / étiquette du lot", "Bag / batch label", "Saco / etiqueta del lote", "Sack / Chargenetikett"],
 ["Certificat / preshipment test", "Certificate / preshipment test", "Certificado / ensayo previo al envío", "Zertifikat / Vorversandprüfung"],
 ["Face arrière", "Back side", "Cara posterior", "Rückseite"],
