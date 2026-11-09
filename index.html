@@ -324,6 +324,9 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqgg figcaption{font-size:12px;text-align:center}
 .apqlb{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px}
 .apqlb img{max-width:100%;max-height:85vh;object-fit:contain}.apqlb p{color:#fff;font-size:13px;margin:8px 0 0;text-align:center}
+.apqeq{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.apqeq button{min-height:40px}.apqeq button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:transparent;font-weight:700}
+.apqlabo{display:grid;gap:6px;margin:6px 0}
+.apqtds{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}.apqtds button{min-height:40px}.apqtdsn{font-weight:600;font-size:14px;word-break:break-all}
 .apqslot{border:1px dashed var(--line);border-radius:8px;padding:6px;display:grid;gap:6px;align-content:start}
 .apqslot.fait{border-style:solid;border-color:var(--ok)}
 .apqslot>button{min-height:42px;font-size:13px;white-space:normal;padding:4px 6px}
@@ -503,12 +506,14 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
       <div class="btns"><button class="primary" id="bApqRestOk" type="button">Remplacer</button><button id="bApqRestNo" type="button">Annuler</button></div></div>
     <input type="file" id="iApqRest" accept="image/jpeg,.jpg" hidden>
   </div>
+  <div class="card c-violet"><h2>Équipement(s) concerné(s)</h2><div id="apqEq"></div></div>
   <div class="card c-vert"><h2>Applicateurs présentés</h2><p class="hint">Une fiche par applicateur présenté : portrait, prénom, nom, société. Ils se choisissent ensuite dans chaque session.</p><div id="apqPers"></div></div>
   <div class="card c-ambre"><h2>1. Matériaux</h2><div id="apqMat"></div></div>
   <div class="card c-vert"><h2>2. Conditions générales</h2><div id="apqGen"></div></div>
   <div class="card c-violet"><h2>Sessions (méthode et date)</h2><div id="apqSes"></div></div>
   <div class="card c-jaune"><h2>3. Résultats</h2><div id="apqRes"></div></div>
   <input type="file" id="iApq" accept="image/*" multiple hidden>
+  <input type="file" id="iApqTds" accept="application/pdf,.pdf" hidden>
   <input type="file" id="iApqCam" accept="image/*" capture="environment" hidden>
 </section>
 
@@ -800,7 +805,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="1.89";
+const APP_VERSION="1.91";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2787,7 +2792,8 @@ const APQ_ESSAIS=["CCS","CMOR","PLC","Densité","Abrasion"];
 const APQ_V={ok:{fr:"OK",c:"var(--ok)",pdf:"0.18 0.49 0.31"},acc:{fr:"Acceptable",c:"var(--minor)",pdf:"0.66 0.50 0.00"},
   ref:{fr:"Refusé",c:"var(--crit)",pdf:"0.70 0.15 0.12"},rep:{fr:"À repasser",c:"var(--repair)",pdf:"0.76 0.34 0.11"}};
 // valeurs des listes -> langue du rapport [fr, en, es, de]
-const APQ_TR={"Gunning":["Gunning","Gunning","Gunitado","Torkretieren"],"Coulage":["Coulage","Casting","Colado","Gießen"],
+const APQ_PSH=["Conforme","Non conforme","En attente","Non requis"],APQ_DEBUT=["Autorisé","Non autorisé"];
+const APQ_TR={"Conforme":["Conforme","Compliant","Conforme","Konform"],"Non conforme":["Non conforme","Non-compliant","No conforme","Nicht konform"],"En attente":["En attente","Pending","Pendiente","Ausstehend"],"Non requis":["Non requis","Not required","No requerido","Nicht erforderlich"],"Autorisé":["Autorisé","Authorised","Autorizado","Freigegeben"],"Non autorisé":["Non autorisé","Not authorised","No autorizado","Nicht freigegeben"],"Gunning":["Gunning","Gunning","Gunitado","Torkretieren"],"Coulage":["Coulage","Casting","Colado","Gießen"],
   "Free flow / Selflow":["Free flow / Selflow","Free flow / Selflow","Autonivelante (free flow)","Fließmasse (free flow)"],
   "Hand packing":["Hand packing","Hand packing","Apisonado manual","Handstampfen"],"Damage (ramming)":["Damage (ramming)","Ramming","Apisonado","Stampfen"],
   "Vibrocoulage":["Vibrocoulage","Vibrocasting","Vibrocolado","Vibrogießen"],"Autre":["Autre","Other","Otro","Andere"],
@@ -2806,7 +2812,7 @@ const APQ_TR={"Gunning":["Gunning","Gunning","Gunitado","Torkretieren"],"Coulage
 const apqTr=(v,l)=>v?(APQ_TR[v]?APQ_TR[v][iLangue(l)]:v):"";
 const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION SESSION REPORT","INFORME DE SESIÓN DE PRECUALIFICACIÓN","BERICHT ZUR PRÄQUALIFIKATIONSSITZUNG"],
   h1:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht zur Präqualifikationssitzung"],
-  dates:["Dates","Dates","Fechas","Daten"],labo:["Échantillons pour laboratoire","Samples for laboratory","Muestras para laboratorio","Proben für Labor"],
+  dates:["Dates","Dates","Fechas","Daten"],tds:["Fiche technique","Technical data sheet","Ficha técnica","Technisches Datenblatt"],annexes:["Annexes","Appendices","Anexos","Anlagen"],docA:["Document","Document","Documento","Dokument"],fichA:["Fichier","File","Archivo","Datei"],pagesA:["Pages","Pages","Páginas","Seiten"],nonInseree:["non insérée (PDF protégé ou illisible)","not inserted (protected or unreadable PDF)","no insertada (PDF protegido o ilegible)","nicht eingefügt (geschütztes oder unlesbares PDF)"],equip:["Équipement(s) concerné(s)","Equipment concerned","Equipo(s) afectado(s)","Betroffene Ausrüstung"],laboDebut:["Travaux avant résultats labo","Works before lab results","Trabajos antes de resultados","Arbeiten vor Laborergebnis"],psh:["Preshipment test","Preshipment test","Ensayo previo al envío","Preshipment-Test"],labo:["Échantillons pour laboratoire","Samples for laboratory","Muestras para laboratorio","Proben für Labor"],
   oui:["Oui","Yes","Sí","Ja"],non:["Non","No","No","Nein"],perim:["Périmètre","Scope","Alcance","Umfang"],
   mat:["Matériaux","Materials","Materiales","Materialien"],produit:["Produit","Product","Producto","Produkt"],role:["Utilisation","Use","Uso","Verwendung"],
   lots:["N° de lots","Batch no.","N.º de lote","Chargen-Nr."],gen:["Observations générales","General observations","Observaciones generales","Allgemeine Beobachtungen"],
@@ -3004,10 +3010,26 @@ async function apqRecuperer(a){if(APQ_RECUP_FAIT===APQ_M) return;APQ_RECUP_FAIT=
   if(!orph.length) return;a.recup=a.recup||[];
   for(const p of orph){a.recup.push({pid:p.id,slot:"Photos retrouvées",leg:""});if(p.entry!=="apq:"+APQ_M){p.entry="apq:"+APQ_M;try{await tx("photos","readwrite",st=>st.put(p))}catch(e){}}}
   await apqSauver(true);toast(`${orph.length} photo(s) n'étaient plus rattachées à une case : elles sont dans « Photos retrouvées » (en haut). Glissez-les vers leur case.`,12000)}
-async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqRecuperer(a);await apqListeMat();
+
+// v1.90 : équipement(s) concerné(s) — choisis dans la liste des équipements de la mission, + précision libre
+function apqEquip(a){const box=$("apqEq");box.innerHTML="";a.equip=a.equip||[];
+  const l=(EQ||[]);if(l.length){const g=apqE("div",{class:"apqeq"});
+    for(const e of l){const b=apqE("button",{type:"button","aria-pressed":String(a.equip.includes(e.code)),"data-noi18n":true,title:e.code},e.nom);
+      b.onclick=()=>{const i=a.equip.indexOf(e.code);if(i<0) a.equip.push(e.code);else a.equip.splice(i,1);b.setAttribute("aria-pressed",String(i<0));apqSauver()};g.append(b)}
+    box.append(g)}
+  else box.append(apqE("p",{class:"hint",text:"Aucun équipement dans la mission active (Réglages) : précisez-le ci-dessous."}));
+  box.append(apqE("div",{class:"apqrow"},apqChamp("Précision / autre équipement",a,"equipAutre",null,"ex. Riser R-101, cyclones 1er étage")))}
+function apqEquipTexte(a){const n=(a.equip||[]).map(c=>{const e=(EQ||[]).find(x=>x.code===c);return e?e.nom:c});if(a.equipAutre&&a.equipAutre.trim()) n.push(a.equipAutre.trim());return n.join(", ")}
+// v1.90 : si échantillons au laboratoire, début des travaux autorisé ou non en attente des résultats
+function apqLabo(a){const c=apqE("input",{type:"checkbox"});c.checked=!!a.labo;const box=apqE("div",{class:"apqlabo"});
+  const maj=()=>{box.innerHTML="";box.append(apqE("label",{class:"toggle"},c," Échantillons envoyés au laboratoire"));
+    if(a.labo) box.append(apqChoix("Début des travaux en attente des résultats",a,"laboDebut",APQ_DEBUT))};
+  c.onchange=()=>{a.labo=c.checked;apqSauver();maj()};maj();return box}
+async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqTdsMem();await apqRecuperer(a);await apqListeMat();
   $("apqMission").textContent=`${CFG.mission.no} · ${CFG.mission.client||""}`;
+  apqEquip(a);
   const t=$("apqTete");t.innerHTML="";t.append(apqZone("Introduction",a,"intro","Qui, quand, quels matériaux ; applicateurs déjà qualifiés…"),
-    apqZone("Périmètre / limites",a,"perimetre","ex. - Démontrer la maîtrise du malaxage\n- Pas d'échantillons pour le laboratoire"),apqCoche("Échantillons envoyés au laboratoire",a,"labo"),apqLogo(a),
+    apqZone("Périmètre / limites",a,"perimetre","ex. - Démontrer la maîtrise du malaxage\n- Pas d'échantillons pour le laboratoire"),apqLabo(a),apqLogo(a),
     apqE("div",{class:"apqrow"},apqChamp("Inspecteur",a,"inspecteur"),apqChoix("Certification API",a,"apiType",["936","982"]),apqChamp("N° de certification",a,"apiNo",null,"ex. 95863")),
     apqE("div",{class:"apqrow"},apqChamp("Spécification applicable",a,"spec",null,"ex. UOP 9-11-1 Rev. 12 / API 936")),apqDocs(a));
   const rc=$("apqRecup");rc.innerHTML="";rc.hidden=!(a.recup&&a.recup.length);
@@ -3018,6 +3040,7 @@ async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apq
   for(const m of a.materiaux){m.photos=m.photos||[];mt.append(apqE("div",{class:"apqmatb"},apqE("div",{class:"apqmat"},apqChamp("Produit",m,"produit",null,"ex. ACTCHEM 85"),apqChoix("Utilisation",m,"role",APQ_ROLES),apqChamp("N° de lots",m,"lots"),
     apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce matériau",onclick:async()=>{for(const x of m.photos) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
       a.materiaux.splice(a.materiaux.indexOf(m),1);for(const s of a.sessions) s.mats=(s.mats||[]).filter(x=>x!==m.id);await apqSauver(true);renderApq()}},"✕")),
+    apqE("div",{class:"apqrow"},apqChoix("Preshipment test",m,"psh",APQ_PSH),apqChamp("Réf. du rapport de preshipment test",m,"pshRef",null,"ex. PST-2408-112")),apqTdsBloc(m),
     apqPhotos(m.photos,APQ_SLOTS_M)))}
   mt.append(apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:async()=>{a.materiaux.push({id:apqId(),produit:"",role:"",lots:""});await apqSauver(true);renderApq()}},"＋ Matériau")));
   const g=$("apqGen");g.innerHTML="";g.append(apqZone("Conditions (températures, humidité…)",a,"conditions"),apqE("div",{class:"apqrow"},apqChamp("Origine de l'eau",a,"eau",null,"ex. réseau d'eau potable du site"),apqChamp("Certificat de l'eau (n°, laboratoire, date)",a,"eauCert",null,"ex. analyse n° 2026-118 du 03/11/2026")),
@@ -3043,6 +3066,7 @@ function apqTexteResultats(a,l){const out=[];
   return out.join("\n")}
 function initApq(){$("iApq").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.target.files];e.target.value="";if(fs.length) apqAjouterPhotos(fs);else busyFin()};
   $("iApq").addEventListener("cancel",busyFin);
+  $("iApqTds").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];e.target.value="";if(f) apqTdsAjouter(f);else busyFin()};$("iApqTds").addEventListener("cancel",busyFin);
   $("iApqCam").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.target.files];e.target.value="";if(fs.length) apqAjouterPhotos(fs);else busyFin()};$("iApqCam").addEventListener("cancel",busyFin);
   // le bouton 🖼️ suit le réglage « Sélecteur de photos » des constats
   const pk=v=>{const c={"1":["image/*",true],"2":["image/*",false],"3":["image/jpeg,image/heic,image/heif,image/png",true],"4":["*/*",true]}[v]||["image/*",true];$("iApq").setAttribute("accept",c[0]);$("iApq").multiple=c[1]};
@@ -3052,7 +3076,7 @@ function initApq(){$("iApq").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.ta
    Fichier image « Sauvegarde APQ <N°> - AAAA-MM-JJ HHhMM.jpg » : carte lisible + commentaires JPEG
    « RELEVE-FICHIER: » (nom), « RELEVE-APQ: » (en-tête JSON, morceaux de 65 000 octets), « RELEVE-ADATA: » (photos à la suite). */
 function apqPids(a){const l=[];const ph=x=>{for(const p of x||[]) l.push(p.pid)};
-  ph(a.eauPhotos);ph(a.recup);ph(a.logoPhotos);for(const q of a.personnes||[]) ph(q.photos);for(const m of a.materiaux||[]) ph(m.photos);
+  ph(a.eauPhotos);ph(a.recup);ph(a.logoPhotos);for(const q of a.personnes||[]) ph(q.photos);for(const m of a.materiaux||[]){ph(m.photos);if(m.tds&&m.tds.id) l.push(m.tds.id)}
   for(const s of a.sessions||[]){ph(s.photos);for(const p of s.applicateurs||[]) ph(p.photos)}return [...new Set(l)]}
 async function apqSauvegarder(){const a=await apqCharger();await apqSauver(true);const m=curMission()||CFG.mission;
   busy("Sauvegarde du rapport…","",0);await repos();
@@ -3158,6 +3182,61 @@ async function apqSectionGalerie(g){let a=null;try{a=await apqCharger()}catch(e)
   g.append(c)}
 async function apqVoir(x){const p=await getPhoto(x.pid);if(!p) return;const u=URL.createObjectURL(p.blob);
   const ov=apqE("div",{class:"apqlb",onclick:()=>{ov.remove();URL.revokeObjectURL(u)}},apqE("img",{src:u,alt:""}),apqE("p",{"data-noi18n":true,text:x.fichier}));document.body.append(ov)}
+
+// v1.91 : fiche technique (TDS, PDF) par matériau, mémorisée par produit (toutes missions), annexée au PDF du rapport
+let APQ_TDSMEM=null,APQ_TDS_CIBLE=null;
+const apqTdsCle=p=>String(p||"").trim().toLowerCase();
+async function apqTdsMem(){if(APQ_TDSMEM) return APQ_TDSMEM;let v=null;try{v=await kvGet("apqTds")}catch(e){}APQ_TDSMEM=v&&typeof v==="object"?v:{};return APQ_TDSMEM}
+function apqTdsBloc(m){const box=apqE("div",{class:"apqtds"});const mem=APQ_TDSMEM||{};
+  const choisir=()=>{APQ_TDS_CIBLE=m;choisirFichier($("iApqTds"))};
+  if(m.tds){const c=apqE("input",{type:"checkbox"});c.checked=m.tdsAnnexe!==false;c.onchange=()=>{m.tdsAnnexe=c.checked;apqSauver()};
+    box.append(apqE("span",{class:"apqtdsn","data-noi18n":true,text:`📄 ${m.tds.nom} (${taille(m.tds.taille||0)})`}),
+      apqE("label",{class:"toggle"},c," Annexer au rapport"),
+      apqE("button",{type:"button",class:"ghost",onclick:()=>apqTdsVoir(m.tds)},"Voir"),
+      apqE("button",{type:"button",class:"ghost",onclick:choisir},"Changer"),
+      apqE("button",{type:"button",class:"ghost","aria-label":"Retirer la fiche technique",onclick:()=>{delete m.tds;apqSauver(true);renderApq()}},"✕"))}
+  else{box.append(apqE("button",{type:"button",onclick:choisir},"📎 Fiche technique (PDF)"));
+    const k=mem[apqTdsCle(m.produit)];
+    if(k&&k.id) box.append(apqE("button",{type:"button",class:"primary",onclick:()=>{m.tds={...k};m.tdsAnnexe=true;apqSauver(true);renderApq()}},`📄 Reprendre la fiche connue : `,apqE("span",{"data-noi18n":true,text:k.nom})))
+    else box.append(apqE("span",{class:"hint",text:"Sur PC : _BIBLIOTHEQUE › Matériaux › <Fabricant> - <Produit> › TDS…pdf"}))}
+  return box}
+async function apqTdsVoir(t){const p=await getPhoto(t.id);if(!p||!p.blob){toast("Fiche introuvable dans l'appli : choisissez-la à nouveau.",6000);return}
+  const u=URL.createObjectURL(p.blob);const w=window.open(u,"_blank");if(!w) toast("Ouverture bloquée par le navigateur.");setTimeout(()=>URL.revokeObjectURL(u),120000)}
+async function apqTdsAjouter(f){const m=APQ_TDS_CIBLE;APQ_TDS_CIBLE=null;if(!m||!f) return;
+  if(!/pdf$/i.test(f.type||"")&&!/\.pdf$/i.test(f.name||"")){toast("Choisissez un fichier PDF.",5000);return}
+  busy("Ajout de la fiche technique…",f.name);
+  try{const id="apqdoc_"+newId();await tx("photos","readwrite",s=>s.put({id,entry:"apqtds",type:"application/pdf",prise:null,blob:f,thumb:""}));
+    m.tds={id,nom:f.name,taille:f.size};m.tdsAnnexe=true;
+    const mem=await apqTdsMem();if(apqTdsCle(m.produit)){mem[apqTdsCle(m.produit)]={...m.tds};try{await kvSet("apqTds",mem)}catch(e){}}
+    await apqSauver(true);toast(`Fiche technique ajoutée${m.produit?" pour "+m.produit:""} : elle sera reproposée pour ce produit dans les autres missions.`,6000)}
+  catch(e){toast("Fiche non ajoutée : "+(e&&e.message||e),6000)}finally{busyFin();renderApq()}}
+// module d'assemblage des PDF (chargé seulement si besoin, gardé hors connexion par le service worker)
+async function apqPdfLib(){if(window.PDFLib) return window.PDFLib;
+  await new Promise((ok,ko)=>{const s=document.createElement("script");s.src="pdf-lib.min.js";s.onload=ok;s.onerror=()=>ko(new Error("module d'assemblage PDF indisponible"));document.head.append(s)});
+  return window.PDFLib}
+// v1.91 : PDF protégés (fréquent pour les fiches des fabricants) : pages rendues en images avec pdf.js (chargé seulement si besoin)
+let APQ_PDFJS=null;
+async function apqPdfJs(){if(APQ_PDFJS) return APQ_PDFJS;const m=await import(new URL("pdfjs.min.mjs",location.href).href);
+  m.GlobalWorkerOptions.workerSrc=new URL("pdfjs.worker.min.mjs",location.href).href;APQ_PDFJS=m;return m}
+async function apqAnnexes(a,l){const out=[];
+  for(const m of a.materiaux||[]){if(!m.tds||m.tdsAnnexe===false) continue;const p=await getPhoto(m.tds.id);
+    const x={titre:`${apqL("tds",l)} – ${m.produit||"?"}`,nom:m.tds.nom,octets:null,pages:0};
+    if(p&&p.blob){try{x.octets=new Uint8Array(await p.blob.arrayBuffer());const L=await apqPdfLib();const d=await L.PDFDocument.load(x.octets,{ignoreEncryption:true});x.pages=d.getPageCount();x.img=!!d.isEncrypted}catch(e){x.pages=0;x.img=true}
+      if(x.img){try{const J=await apqPdfJs();const tk=J.getDocument({data:x.octets.slice()});const doc=await tk.promise;x.pages=doc.numPages;try{await tk.destroy()}catch(e){}}catch(e){x.pages=0;x.err=String(e&&e.stack||e)}}}
+    out.push(x)}
+  return out}
+async function apqFusion(octets,ann){const L=await apqPdfLib();const doc=await L.PDFDocument.load(octets);
+  for(const x of ann){if(!x.pages||!x.octets) continue;
+    if(x.img){try{const J=await apqPdfJs();const tk=J.getDocument({data:x.octets.slice()});const src=await tk.promise;
+        for(let i=1;i<=src.numPages;i++){busyMaj(`${x.nom} : page ${i} / ${src.numPages}`,Math.round(i/src.numPages*100));
+          const pg=await src.getPage(i),v1=pg.getViewport({scale:1}),v=pg.getViewport({scale:2});const c=document.createElement("canvas");c.width=Math.ceil(v.width);c.height=Math.ceil(v.height);
+          const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);await pg.render({canvasContext:g,canvas:c,viewport:v}).promise;
+          const jb=new Uint8Array(await (await new Promise(r=>c.toBlob(r,"image/jpeg",0.85))).arrayBuffer());const im=await doc.embedJpg(jb);
+          const np=doc.addPage([v1.width,v1.height]);np.drawImage(im,{x:0,y:0,width:v1.width,height:v1.height});pg.cleanup()}
+        try{await tk.destroy()}catch(e){}}catch(e){toast("Fiche non insérée : "+x.nom,6000)}
+      continue}
+    try{const src=await L.PDFDocument.load(x.octets,{ignoreEncryption:true});const pg=await doc.copyPages(src,src.getPageIndices());for(const p of pg) doc.addPage(p)}catch(e){x.pages=0}}
+  return await doc.save()}
 // ---------- PDF ----------
 // la classe est créée à la demande : PdfRapide est défini plus loin dans la page
 function PdfApqClasse(){return class PdfApq extends PdfRapide{
@@ -3195,10 +3274,10 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const k=APQ_SLOT_T[x.slot];if(!(x.leg&&x.leg.trim())&&k&&releves&&releves[k]!==""&&releves[k]!=null) leg+=` : ${releves[k]} °C`;
       try{out.push({im:this.ajouterImage(await jpegPdf(p.blob,1600)),n:++this.nPh,leg})}catch(e){}}
     return out}
-  async rapport(a){const l=this.l,M=this.M,L=this.W-2*M,T=k=>apqL(k,l),m=this.m;this.nouvellePage();
+  async rapport(a,ann){const l=this.l,M=this.M,L=this.W-2*M,T=k=>apqL(k,l),m=this.m;this.nouvellePage();
     this.paragraphe([{t:T("h1"),b:true}],M,L,14);this.y+=4;
     const dates=[...new Set(a.sessions.map(s=>s.date).filter(Boolean))].sort().map(frDate).join(", ");
-    this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(m.inspecteur?[[pdfL("insp",l),m.inspecteur]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")]]);
+    this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(m.inspecteur?[[pdfL("insp",l),m.inspecteur]]:[]),...(apqEquipTexte(a)?[[T("equip"),apqEquipTexte(a)]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")],...(a.labo&&a.laboDebut?[[T("laboDebut"),apqTr(a.laboDebut,l)]]:[])]);
     if(a.intro&&a.intro.trim()){this.texteBalise(a.intro,M,L,10);this.y+=4}
     if(a.perimetre&&a.perimetre.trim()){this.titreSection(T("perim"));this.texteBalise(a.perimetre,M,L,10)}
     // v1.78 : documents de référence
@@ -3212,7 +3291,9 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const avec=g.filter(x=>x.im);if(avec.length) this.grille(avec,3,170);
       const sans=g.filter(x=>!x.im).map(x=>"- "+x.titre);if(sans.length) this.texteBalise(sans.join("\n"),M,L,10)}
     if(a.materiaux.length){this.titreSection("1. "+T("mat"));
-      this.tableau([{t:T("produit"),w:.38},{t:T("role"),w:.24},{t:T("lots"),w:.38}],a.materiaux.map(x=>[{t:x.produit||"–",b:true},apqTr(x.role,l)||"–",x.lots||"–"]));
+      const avecPsh=a.materiaux.some(x=>x.psh||x.pshRef);
+      if(avecPsh) this.tableau([{t:T("produit"),w:.28},{t:T("role"),w:.18},{t:T("lots"),w:.28},{t:T("psh"),w:.26}],a.materiaux.map(x=>[{t:x.produit||"–",b:true},apqTr(x.role,l)||"–",x.lots||"–",[apqTr(x.psh,l),x.pshRef].filter(Boolean).join(" – ")||"–"]));
+      else this.tableau([{t:T("produit"),w:.38},{t:T("role"),w:.24},{t:T("lots"),w:.38}],a.materiaux.map(x=>[{t:x.produit||"–",b:true},apqTr(x.role,l)||"–",x.lots||"–"]));
       const pm=[];for(const x of a.materiaux) pm.push(...await this.photos((x.photos||[]).map(y=>({...y,leg:y.leg||[x.produit,y.slot==="Autre"?"":apqTr(y.slot,l)].filter(Boolean).join(" – ")})),null));
       if(pm.length) this.grille(pm)}
     if((a.conditions&&a.conditions.trim())||a.eau||a.eauCert||(a.eauPhotos||[]).length){this.titreSection("2. "+T("gen"));if(a.conditions) this.texteBalise(a.conditions,M,L,10);
@@ -3221,7 +3302,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const pc=await this.photos((a.eauPhotos||[]).map(x=>({...x,leg:x.leg||T("eauCert")})),null);if(pc.length){this.y+=4;this.grille(pc)}}
     for(const s of a.sessions){this.titreSection([apqTr(s.methode,l),s.date&&frDate(s.date)].filter(Boolean).join(" – ")||T("methode"));
       const r=s.releves||{},bl=[];
-      const mats=(s.mats||[]).map(id=>(a.materiaux.find(x=>x.id===id)||{}).produit).filter(Boolean).join(", ");if(mats) bl.push([T("mat"),mats]);
+      const mats=(s.mats||[]).map(id=>(a.materiaux.find(x=>x.id===id)||{}).produit).filter(Boolean).join(", ");if(mats&&a.materiaux.length>1) bl.push([T("mat"),mats]);
       const mtl=(Array.isArray(s.materiels)?s.materiels:(s.materiel?[s.materiel]:[])).join(", ");if(mtl) bl.push([T("materiel"),mtl]);
       const pan=[s.panneau,apqTr(s.position,l)].filter(Boolean).join(" – ");if(pan) bl.push([T("panneau"),pan]);
       const tt=["tAir","tSupport","tSec","tEau","tGache"].filter(k=>r[k]!==""&&r[k]!=null).map(k=>`${T(k)} ${r[k]} °C`).join(" · ");if(tt) bl.push([T("releves"),tt]);
@@ -3243,17 +3324,20 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
         this.titreSection("3. "+(ds.length>1?T("resN").replace("{a}",frDate(ds[0])).replace("{b}",frDate(ds[ds.length-1])):ds.length?T("res1").replace("{a}",frDate(ds[0])):T("res")))}
       if(tous.length) this.tableau([{t:T("nom"),w:.32},{t:T("methode"),w:.3},{t:T("date"),w:.18},{t:T("verdict"),w:.2}],
         tous.map(({s,p})=>[{t:p.nom||"–",b:true},apqTr(s.methode,l)||"–",s.date?frDate(s.date):"–",p.verdict?{t:apqTr(APQ_V[p.verdict].fr,l),pill:APQ_V[p.verdict].pdf}:"–"]));
-      const rt=apqSansRedite(a);if(rt){this.y+=4;this.texteBalise(rt,M,L,10)}}}}}
+      const rt=apqSansRedite(a);if(rt){this.y+=4;this.texteBalise(rt,M,L,10)}}
+    if(ann&&ann.length){this.titreSection(T("annexes"));
+      this.tableau([{t:"N°",w:.08},{t:T("docA"),w:.38},{t:T("fichA"),w:.4},{t:T("pagesA"),w:.14}],ann.map((x,i)=>[{t:String(i+1),b:true},x.titre,x.nom,x.pages?String(x.pages):T("nonInseree")]))}}}}
 async function pdfApq(){if(PDF_EN_COURS) return;const a=await apqCharger();if(!a.sessions.length&&!a.materiaux.length){toast("Rien à mettre dans le rapport : ajoute au moins un matériau ou une session.");return}
   PDF_EN_COURS=true;busy("Création du PDF…","");await repos();
   try{await apqSauver(true);const m=curMission()||CFG.mission,l=apqLangue(m);let so=socMission(m);
     if(a.logo==="QUARTIS"||a.logo==="FTA") so=socMission({...m,societe:a.logo});
     const insp=[a.inspecteur||m.inspecteur,a.apiNo?`API ${a.apiType||"936"} N° ${a.apiNo}`:""].filter(Boolean).join(" – ");
     const mk=new (PdfApqClasse())(l,so.societe,{...m,...so,inspecteur:insp});
-    if(a.logo==="perso"&&(a.logoPhotos||[]).length){const ph=await getPhoto(a.logoPhotos[0].pid);if(ph&&ph.blob){try{mk.logoPerso=await jpegPdf(ph.blob,600)}catch(e){}}}await mk.rapport(a);
+    if(a.logo==="perso"&&(a.logoPhotos||[]).length){const ph=await getPhoto(a.logoPhotos[0].pid);if(ph&&ph.blob){try{mk.logoPerso=await jpegPdf(ph.blob,600)}catch(e){}}}const ann=await apqAnnexes(a,l);await mk.rapport(a,ann);
     const dts=a.sessions.map(s=>s.date).filter(Boolean).sort();
     const nom=nomSur(`${m.no} - ${apqL("fichier",l)} - ${dts.length?dts[dts.length-1]:today()}`)+".pdf";
-    const octets=await mk.octets();const f=new File([octets],nom,{type:"application/pdf"});busyFin();
+    let octets=await mk.octets();if(ann.some(x=>x.pages)){busy("Ajout des annexes…","");await repos();try{octets=await apqFusion(octets,ann)}catch(e){toast("Annexes non ajoutées : "+(e&&e.message||e),8000)}}
+    const f=new File([octets],nom,{type:"application/pdf"});busyFin();
     if(!await apercuPdf(mk,nom)){toast("PDF annulé.");return}
     const garde=tx("pdfs","readwrite",s=>s.put({id:newId(),nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:so.societe,
       constats:[],titres:[apqL("h1",l)],taille:octets.length,blob:f})).catch(()=>{});
@@ -3820,6 +3904,20 @@ const TRAD_UI=[
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
 ["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
 ["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["📎 Fiche technique (PDF)", "📎 Technical data sheet (PDF)", "📎 Ficha técnica (PDF)", "📎 Technisches Datenblatt (PDF)"],
+[" Annexer au rapport", " Append to report", " Anexar al informe", " Dem Bericht anhängen"],
+["Voir", "View", "Ver", "Ansehen"],
+["Changer", "Change", "Cambiar", "Ändern"],
+["📄 Reprendre la fiche connue : ", "📄 Use the known sheet: ", "📄 Usar la ficha conocida: ", "📄 Bekanntes Datenblatt verwenden: "],
+["Sur PC : _BIBLIOTHEQUE › Matériaux › <Fabricant> - <Produit> › TDS…pdf", "On PC: _BIBLIOTHEQUE › Matériaux › <Manufacturer> - <Product> › TDS…pdf", "En PC: _BIBLIOTHEQUE › Matériaux › <Fabricante> - <Producto> › TDS…pdf", "Am PC: _BIBLIOTHEQUE › Matériaux › <Hersteller> - <Produkt> › TDS…pdf"],
+["Ajout des annexes…", "Adding appendices…", "Añadiendo anexos…", "Anlagen werden hinzugefügt…"],
+["Ajout de la fiche technique…", "Adding the data sheet…", "Añadiendo la ficha técnica…", "Datenblatt wird hinzugefügt…"],
+["Équipement(s) concerné(s)", "Equipment concerned", "Equipo(s) afectado(s)", "Betroffene Ausrüstung"],
+["Précision / autre équipement", "Details / other equipment", "Detalle / otro equipo", "Präzisierung / andere Ausrüstung"],
+["Aucun équipement dans la mission active (Réglages) : précisez-le ci-dessous.", "No equipment in the active mission (Settings): specify it below.", "Ningún equipo en la misión activa (Ajustes): indíquelo abajo.", "Keine Ausrüstung in der aktiven Mission (Einstellungen): unten angeben."],
+[" Échantillons envoyés au laboratoire", " Samples sent to laboratory", " Muestras enviadas al laboratorio", " Proben an das Labor gesendet"],
+["Début des travaux en attente des résultats", "Start of works pending results", "Inicio de trabajos a la espera de resultados", "Arbeitsbeginn vor Vorliegen der Ergebnisse"],
+["Réf. du rapport de preshipment test", "Preshipment test report ref.", "Ref. del informe de preshipment test", "Ref. Preshipment-Testbericht"],
 ["⬇️ Photos", "⬇️ Photos", "⬇️ Fotos", "⬇️ Fotos"],
 ["📷 Photo", "📷 Photo", "📷 Foto", "📷 Foto"],
 ["🖼️ Galerie", "🖼️ Gallery", "🖼️ Galería", "🖼️ Galerie"],
@@ -3889,6 +3987,12 @@ const TRAD_UI=[
 ["Applicateur sans nom", "Unnamed applicator", "Aplicador sin nombre", "Verarbeiter ohne Namen"],
 ["Méthode ?", "Method?", "¿Método?", "Verfahren?"],
 ["date ?", "date?", "¿fecha?", "Datum?"],
+["Conforme", "Compliant", "Conforme", "Konform"],
+["Non conforme", "Non-compliant", "No conforme", "Nicht konform"],
+["En attente", "Pending", "Pendiente", "Ausstehend"],
+["Non requis", "Not required", "No requerido", "Nicht erforderlich"],
+["Autorisé", "Authorised", "Autorizado", "Freigegeben"],
+["Non autorisé", "Not authorised", "No autorizado", "Nicht freigegeben"],
 ["Gunning", "Gunning", "Gunitado", "Torkretieren"],
 ["Coulage", "Casting", "Colado", "Gießen"],
 ["Free flow / Selflow", "Free flow / Selflow", "Autonivelante (free flow)", "Fließmasse (free flow)"],
