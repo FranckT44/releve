@@ -480,7 +480,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
     <label>Client / site<input type="text" id="cClient"></label>
     <div class="row2"><label>Rapports émis au nom de<select id="cSoc"><option value="QUARTIS">QUARTIS (consultant)</option><option value="FTA">Mon entreprise (compte propre)</option></select></label>
       <label id="lActSoc" hidden>Activité affichée dans l'en-tête<select id="cActSoc"><option value="API 936 Consultancy">API 936 Consultancy</option><option value="API 982 Consultancy">API 982 Consultancy</option></select></label></div>
-    <p class="hint">Change le logo et l'en-tête des IPR / IR générés sur le PC pour cette mission (dossier _OUTILS\Sociétés).</p>
+    <p class="hint">Change le logo et l'en-tête des IPR / IR générés sur le PC pour cette mission (dossier 982 Toolbox\Sociétés).</p>
     <label>Dossier de la mission sur le PC<input type="text" id="cDir"></label>
     <label>Langue des listes (équipements, activités)<select id="cLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
     <p class="hint" id="dicoInfo"></p>
@@ -527,6 +527,11 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
       <strong id="impTxt"></strong>
       <div class="btns"><button class="primary" id="bImpOk" type="button">Remplacer</button><button id="bImpCancel" type="button">Garder celle de cet appareil</button></div>
     </div>
+    <div id="progCard" class="card confirm" hidden>
+      <strong>Programme d'arrêt</strong>
+      <div id="progTxt" class="path"></div>
+      <div class="btns"><button class="primary" id="bProgOk" type="button">Charger le programme</button><button id="bProgCancel" type="button">Annuler</button></div>
+    </div>
     <div class="btns">
       <button id="bCfgExport" type="button">Envoyer cette mission</button>
       <button id="bCfgImport" type="button">Charger une mission</button>
@@ -534,6 +539,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
     <input type="file" id="iCfg" accept="image/jpeg,.jpg,.txt,.json,text/plain,application/json" hidden>
     <p class="hint" id="appVer"></p>
     <p class="hint">Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
+    <p class="hint">« Charger une mission » accepte aussi l'image « programme-N°.jpg » préparée sur le PC (Préparer l'arrêt) : elle crée les constats prévus de l'arrêt.</p>
   </div>
   <div class="card">
     <h2>Réglage de ce téléphone</h2>
@@ -637,7 +643,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.66";
+const APP_VERSION="1.67";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2164,7 +2170,8 @@ async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new
   if(!ok){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();
     toast(`« ${f.name} » est dans Téléchargements : glisse-le dans la fenêtre Quick Share, ou clic droit > Envoyer avec Quick Share. Sur le téléphone : Missions > Charger une mission.`,9000)}
   m.envoyeLe=new Date().toISOString();await saveMissions();renderSync()}
-async function importCfg(file){let j;try{j=/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)?await lireImageMission(file):JSON.parse(await file.text())}catch(e){j=null}
+async function importCfg(file){if(/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)){const pr=await lireImageProgramme(file).catch(()=>null);if(pr){afficherProgramme(pr);return}}
+  let j;try{j=/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)?await lireImageMission(file):JSON.parse(await file.text())}catch(e){j=null}
   if(!j||!j.equipements||!j.activites){toast("Ce fichier n'est pas un fichier de mission valide.");return}
   const d=j.schema==="reglages-releve/1"?{...j.mission,equipements:j.equipements,activites:j.activites}:j; // ancien format accepté
   if(!d.no){toast("Ce fichier ne contient pas de n° de mission.");return}
@@ -2179,6 +2186,58 @@ async function appliquerImport(d){$("impCard").hidden=true;IMPORT_EN_ATTENTE=nul
   const v=d.modifieLe||new Date().toISOString();
   Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",societe:d.societe||"QUARTIS",activiteSociete:d.activiteSociete||"",equipements:d.equipements,activites:d.activites,dico:Array.isArray(d.dico)?d.dico:(m.dico||[]),archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
   await saveMissions();await switchMission(m.id);toast(maj?`Mission ${m.no} mise à jour`:`Mission ${m.no} ajoutée`)}
+/* ---------- v1.67 : programme d'arrêt préparé sur le PC (« Préparer l'arrêt », 982 Toolbox) ----------
+   image programme-<N°>.jpg : JSON {schema:"releve-programme/1", id, mission:{no}, lignes:[{eq:{nom,code}, sub, act, lining, rem}]}
+   dans des commentaires JPEG « RELEVE-PROGRAMME:<base64> ». Lignes déjà triées dans l'ordre du parcours. */
+async function lireImageProgramme(file){const b=new Uint8Array(await file.arrayBuffer());if(b[0]!==0xFF||b[1]!==0xD8) return null;
+  let pos=2,data="";const dec=new TextDecoder();
+  while(pos+4<b.length&&b[pos]===0xFF){const m=b[pos+1],L=b[pos+2]<<8|b[pos+3];
+    if(m===0xFE){const t=dec.decode(b.subarray(pos+4,pos+2+L));if(t.startsWith("RELEVE-PROGRAMME:")) data+=t.slice(17)}
+    if(m===0xDA) break;pos+=2+L}
+  if(!data) return null;try{const j=JSON.parse(deb64(data));return j&&j.schema==="releve-programme/1"?j:null}catch(e){return null}}
+const normNom=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+function texteArbre(arbre){return arbre.map(e=>`${e.nom} [${e.code}]`+e.enfants.map(c=>"\n- "+c.nom+(c.code!==slug(c.nom)?` [${c.code}]`:"")).join("")).join("\n")}
+function preparerProgramme(j,m){ // calcule les listes complétées et les lignes, sans rien enregistrer
+  const arbre=parseTree(m.equipements).map(e=>({nom:e.nom,code:e.code,enfants:e.enfants.map(c=>({nom:c.nom,code:c.code}))}));
+  const acts=parseTree(m.activites);const codes=new Set(arbre.map(e=>e.code));let nEq=0,nSub=0;const inc=new Set(),lignes=[];
+  if(!acts.length) return {arbre,lignes,nEq,nSub,actInc:[],defaut:null};
+  for(const l of (j.lignes||[])){const nomEq=String(l.eq&&l.eq.nom||"").trim();if(!nomEq) continue;const codeEq=String(l.eq.code||"").trim();
+    let e=(codeEq&&arbre.find(x=>x.code===codeEq))||arbre.find(x=>normNom(x.nom)===normNom(nomEq));
+    if(!e){let c=(codeEq||slug(nomEq).toUpperCase().slice(0,8)),k=2;const base=c;while(codes.has(c)) c=base+k++;e={nom:nomEq,code:c,enfants:[]};arbre.push(e);codes.add(c);nEq++}
+    let sub="";const nomSub=String(l.sub||"").trim();
+    if(nomSub){let c=e.enfants.find(x=>normNom(x.nom)===normNom(nomSub));
+      if(!c){let code=slug(nomSub),k=2;while(e.enfants.some(x=>x.code===code)) code=slug(nomSub).slice(0,25)+"-"+k++;c={nom:nomSub,code};e.enfants.push(c);nSub++}
+      sub=c.code}
+    let a=null,sa=null;const na=normNom(l.act);
+    if(na) for(const x of acts){if(normNom(x.nom)===na){a=x;break}const y=x.enfants.find(c=>normNom(c.nom)===na);if(y){a=x;sa=y;break}}
+    if(!a){a=acts[0];if(String(l.act||"").trim()) inc.add(String(l.act).trim())}
+    lignes.push({e,sub,a,sa,l})}
+  return {arbre,lignes,nEq,nSub,actInc:[...inc],defaut:acts[0].nom}}
+function visitesProgramme(lignes){const g=[];for(const x of lignes){const k=x.e.code+"|"+x.a.code+"|"+(x.sa?x.sa.code:"");let v=g.find(y=>y.k===k);if(!v){v={k,e:x.e,a:x.a,sa:x.sa,items:[]};g.push(v)}v.items.push(x)}return g}
+let PROG_EN_ATTENTE=null;
+function afficherProgramme(j){const no=String(j.mission&&j.mission.no||"");const m=MISSIONS.find(x=>x.no===no);
+  if(!m){toast(`Programme de la mission ${no||"?"} : cette mission n'est pas sur cet appareil. Charge-la ou crée-la d'abord (même n°), puis recharge le programme.`,9000);return}
+  const p=preparerProgramme(j,m);if(!p.lignes.length){toast("Ce programme ne contient aucune zone prévue (colonne Prévu).",6000);return}
+  const vs=visitesProgramme(p.lignes),anciens=PREVUS.filter(x=>x.mission===m.id&&x.prog).length;
+  const t=[`Programme d'arrêt ${m.no} : ${p.lignes.length} constats prévus en ${vs.length} visites.`];
+  if(p.nEq||p.nSub) t.push(`Ajouté aux listes de la mission : ${p.nEq} équipement(s), ${p.nSub} sous-équipement(s).`);
+  if(anciens) t.push(`Les ${anciens} constats prévus du programme précédent, pas encore faits, seront remplacés.`);
+  if(p.actInc.length) t.push(`Activité inconnue (${p.actInc.join(", ")}) : remplacée par « ${p.defaut} ».`);
+  const box=$("progTxt");box.innerHTML="";for(const x of t){const d=document.createElement("div");d.textContent=x;box.append(d)}
+  PROG_EN_ATTENTE={j,mid:m.id};$("progCard").hidden=false;$("progCard").scrollIntoView({behavior:"smooth",block:"center"})}
+async function appliquerProgramme(){const P=PROG_EN_ATTENTE;$("progCard").hidden=true;PROG_EN_ATTENTE=null;if(!P) return;
+  const m=MISSIONS.find(x=>x.id===P.mid);if(!m) return;const p=preparerProgramme(P.j,m);if(!p.lignes.length) return;
+  if(!PREVUS_OK) await chargerPrevusFusion();
+  const now=new Date().toISOString(),pid=String(P.j.id||newId());
+  m.equipements=texteArbre(p.arbre);m.modifieLe=now;m.programme={id:pid,charge:now,n:p.lignes.length};
+  PREVUS=PREVUS.filter(x=>!(x.mission===m.id&&x.prog));
+  visitesProgramme(p.lignes).forEach(v=>{const vid=newId(),lib=[v.e.nom,v.sa?v.sa.nom:v.a.nom].join(" · ");
+    v.items.forEach((x,k)=>{const det=[x.l.lining,x.l.rem].map(z=>String(z||"").trim()).filter(Boolean).join(" · ");
+      PREVUS.push({id:newId(),mission:m.id,eq:v.e.code,sub:x.sub,act:v.a.code,subact:v.sa?v.sa.code:"",repere:"",
+        note:`Visite ${lib} – ${k+1} / ${v.items.length}`+(det?` · ${det}`:""),sur:true,visite:{id:vid,total:v.items.length,lib},ordre:k,prog:pid,creeLe:now})})});
+  await saveMissions();await sauverPrevus();
+  if(m.id!==CFG.mission.id) await switchMission(m.id);else{setActive(m);refreshSelects();renderCfg();renderHeader();renderPrevus()}
+  toast(`Programme chargé : ${p.lignes.length} constats prévus. Saisie > Constats prévus > Commencer.`,7000)}
 /* ---------- import depuis Excel (copier-coller) ---------- */
 let COLLAGE=null;
 function lireCollage(txt){
@@ -2685,6 +2744,16 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
    Les listes de la mission (équipements, activités, accès, dégâts courants) gardent la langue de la mission.
    {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
 const TRAD_UI=[
+["Programme d'arrêt","Turnaround programme","Programa de parada","Stillstandsprogramm"],
+["Charger le programme","Load the programme","Cargar el programa","Programm laden"],
+["Programme d'arrêt {a} : {b} constats prévus en {c} visites.","Turnaround programme {a}: {b} planned findings in {c} visits.","Programa de parada {a}: {b} constataciones previstas en {c} visitas.","Stillstandsprogramm {a}: {b} geplante Befunde in {c} Begehungen."],
+["Ajouté aux listes de la mission : {a} équipement(s), {b} sous-équipement(s).","Added to the job lists: {a} equipment item(s), {b} sub-item(s).","Añadido a las listas de la misión: {a} equipo(s), {b} subequipo(s).","Zu den Auftragslisten hinzugefügt: {a} Ausrüstung(en), {b} Unterbereich(e)."],
+["Les {a} constats prévus du programme précédent, pas encore faits, seront remplacés.","The {a} planned findings of the previous programme not yet done will be replaced.","Las {a} constataciones previstas del programa anterior aún no hechas se sustituirán.","Die {a} noch nicht erledigten geplanten Befunde des vorherigen Programms werden ersetzt."],
+["Activité inconnue ({a}) : remplacée par « {b} ».","Unknown activity ({a}): replaced by “{b}”.","Actividad desconocida ({a}): sustituida por «{b}».","Unbekannte Tätigkeit ({a}): ersetzt durch „{b}“."],
+["Programme chargé : {a} constats prévus. Saisie > Constats prévus > Commencer.","Programme loaded: {a} planned findings. Entry > Planned findings > Start.","Programa cargado: {a} constataciones previstas. Registro > Constataciones previstas > Empezar.","Programm geladen: {a} geplante Befunde. Erfassung > Geplante Befunde > Starten."],
+["Programme de la mission {a} : cette mission n'est pas sur cet appareil. Charge-la ou crée-la d'abord (même n°), puis recharge le programme.","Programme for job {a}: this job is not on this device. Load or create it first (same no.), then load the programme again.","Programa de la misión {a}: esta misión no está en este dispositivo. Cárgala o créala primero (mismo n.º) y vuelve a cargar el programa.","Programm für Auftrag {a}: Dieser Auftrag ist nicht auf diesem Gerät. Zuerst laden oder anlegen (gleiche Nr.), dann das Programm erneut laden."],
+["Ce programme ne contient aucune zone prévue (colonne Prévu).","This programme contains no planned area (Prévu column).","Este programa no contiene ninguna zona prevista (columna Prévu).","Dieses Programm enthält keinen geplanten Bereich (Spalte Prévu)."],
+["« Charger une mission » accepte aussi l'image « programme-N°.jpg » préparée sur le PC (Préparer l'arrêt) : elle crée les constats prévus de l'arrêt.","“Load a job” also accepts the “programme-No.jpg” image prepared on the PC (Prepare the turnaround): it creates the planned findings of the turnaround.","«Cargar una misión» también acepta la imagen «programme-N.º.jpg» preparada en el PC (Preparar la parada): crea las constataciones previstas de la parada.","„Auftrag laden“ akzeptiert auch das auf dem PC erstellte Bild „programme-Nr.jpg“ (Stillstand vorbereiten): Es legt die geplanten Befunde des Stillstands an."],
 // en-tête, navigation, accueil
 ["Mission active","Active job","Misión activa","Aktiver Auftrag"],
 ["Nouveau constat","New finding","Nuevo hallazgo","Neuer Befund"],
@@ -3211,7 +3280,7 @@ const TRAD_UI=[
 ["Mon entreprise (compte propre)","My company (own account)","Mi empresa (cuenta propia)","Mein Unternehmen (eigene Rechnung)"],
 ["Activité affichée","Activity shown","Actividad mostrada","Angezeigte Tätigkeit"],
 ["Activité affichée dans l'en-tête","Activity shown in the header","Actividad mostrada en el encabezado","Tätigkeit in der Kopfzeile"],
-["Change le logo et l'en-tête des IPR / IR générés sur le PC pour cette mission (dossier _OUTILS\\Sociétés).","Changes the logo and header of the IPR / IR generated on the PC for this job (_OUTILS\\Sociétés folder).","Cambia el logotipo y el encabezado de los IPR / IR generados en el PC para esta misión (carpeta _OUTILS\\Sociétés).","Ändert Logo und Kopfzeile der auf dem PC erzeugten IPR / IR für diesen Auftrag (Ordner _OUTILS\\Sociétés)."],
+["Change le logo et l'en-tête des IPR / IR générés sur le PC pour cette mission (dossier 982 Toolbox\\Sociétés).","Changes the logo and header of the IPR / IR generated on the PC for this job (982 Toolbox\\Sociétés folder).","Cambia el logotipo y el encabezado de los IPR / IR generados en el PC para esta misión (carpeta 982 Toolbox\\Sociétés).","Ändert Logo und Kopfzeile der auf dem PC erzeugten IPR / IR für diesen Auftrag (Ordner 982 Toolbox\\Sociétés)."],
 ["Créer la mission","Create job","Crear la misión","Auftrag anlegen"],
 ["Informations de la mission","Job information","Información de la misión","Auftragsinformationen"],
 ["Inspecteur","Inspector","Inspector","Inspektor"],
@@ -3371,7 +3440,7 @@ async function start(){
   $("cLang").onchange=e=>changerLangue(e.target.value);
   $("bRenAll").onclick=()=>finirRenommage(true);$("bRenOnly").onclick=()=>finirRenommage(false);$("bRenCancel").onclick=()=>{$("renCard").hidden=true;REN_EN_ATTENTE=null};
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
-  $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
+  $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bProgOk").onclick=appliquerProgramme;$("bProgCancel").onclick=()=>{$("progCard").hidden=true;PROG_EN_ATTENTE=null};$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>$("iCfg").click();$("iCfg").onchange=e=>{if(e.target.files[0]) importCfg(e.target.files[0]);e.target.value=""};
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
   initTrad();initAccueil();initEnvoi();initBrouillon();showView("accueil");
   initMaj();
