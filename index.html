@@ -812,7 +812,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.07";
+const APP_VERSION="2.09";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2836,7 +2836,7 @@ const APQ_TR={"Conforme":["Conforme","Compliant","Conforme","Konform"],"Non conf
 const apqTr=(v,l)=>v?(APQ_TR[v]?APQ_TR[v][iLangue(l)]:v):"";
 const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION SESSION REPORT","INFORME DE SESIÓN DE PRECUALIFICACIÓN","BERICHT ZUR PRÄQUALIFIKATIONSSITZUNG"],
   h1:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht zur Präqualifikationssitzung"],
-  dates:["Dates","Dates","Fechas","Daten"],etabli:["Rapport établi par","Report prepared by","Informe elaborado por","Bericht erstellt von"],lieu:["Lieu de réalisation","Location","Lugar de realización","Durchführungsort"],tds:["Fiche technique","Technical data sheet","Ficha técnica","Technisches Datenblatt"],annexes:["Annexes","Appendices","Anexos","Anlagen"],docA:["Document","Document","Documento","Dokument"],fichA:["Fichier","File","Archivo","Datei"],pagesA:["Pages","Pages","Páginas","Seiten"],nonInseree:["non insérée (PDF protégé ou illisible)","not inserted (protected or unreadable PDF)","no insertada (PDF protegido o ilegible)","nicht eingefügt (geschütztes oder unlesbares PDF)"],equip:["Équipement(s) concerné(s)","Equipment concerned","Equipo(s) afectado(s)","Betroffene Ausrüstung"],laboDebut:["Travaux avant résultats labo","Works before lab results","Trabajos antes de resultados","Arbeiten vor Laborergebnis"],psh:["Preshipment test","Preshipment test","Ensayo previo al envío","Preshipment-Test"],labo:["Échantillons pour laboratoire","Samples for laboratory","Muestras para laboratorio","Proben für Labor"],
+  dates:["Dates","Dates","Fechas","Daten"],comment:["Commentaires généraux de la session","General session comments","Comentarios generales de la sesión","Allgemeine Bemerkungen zur Sitzung"],etabli:["Rapport établi par","Report prepared by","Informe elaborado por","Bericht erstellt von"],lieu:["Lieu de réalisation","Location","Lugar de realización","Durchführungsort"],tds:["Fiche technique","Technical data sheet","Ficha técnica","Technisches Datenblatt"],annexes:["Annexes","Appendices","Anexos","Anlagen"],docA:["Document","Document","Documento","Dokument"],fichA:["Fichier","File","Archivo","Datei"],pagesA:["Pages","Pages","Páginas","Seiten"],nonInseree:["non insérée (PDF protégé ou illisible)","not inserted (protected or unreadable PDF)","no insertada (PDF protegido o ilegible)","nicht eingefügt (geschütztes oder unlesbares PDF)"],equip:["Équipement(s) concerné(s)","Equipment concerned","Equipo(s) afectado(s)","Betroffene Ausrüstung"],laboDebut:["Travaux avant résultats labo","Works before lab results","Trabajos antes de resultados","Arbeiten vor Laborergebnis"],psh:["Preshipment test","Preshipment test","Ensayo previo al envío","Preshipment-Test"],labo:["Échantillons pour laboratoire","Samples for laboratory","Muestras para laboratorio","Proben für Labor"],
   oui:["Oui","Yes","Sí","Ja"],non:["Non","No","No","Nein"],perim:["Périmètre","Scope","Alcance","Umfang"],
   mat:["Matériaux","Materials","Materiales","Materialien"],produit:["Produit","Product","Producto","Produkt"],role:["Utilisation","Use","Uso","Verwendung"],
   lots:["N° de lots","Batch no.","N.º de lote","Chargen-Nr."],gen:["Observations générales","General observations","Observaciones generales","Allgemeine Beobachtungen"],
@@ -3044,13 +3044,16 @@ function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has
     c.onchange=()=>{o.on=c.checked;di.disabled=!c.checked;apqSauver();if(c.checked) di.focus()};di.oninput=()=>{o.dim=di.value;apqSauver()};
     eb.append(apqE("label",{class:"toggle"},c," "+t),di)}
   d.append(apqE("p",{class:"apqst",text:"Échantillonnage"}),eb,apqPhotos(s.photos,APQ_SL_ECH,true));
-  d.append(apqE("p",{class:"apqst",text:"Autres photos de la session"}),apqPhotos(s.photos,APQ_SL_DIV),apqZone("Commentaire",s,"commentaire"));
+  d.append(apqE("p",{class:"apqst",text:"Autres photos de la session"}),apqPhotos(s.photos,APQ_SL_DIV));
   s.ctrlPhotos=s.ctrlPhotos||[];
   d.append(apqE("p",{class:"apqst",text:"Contrôle des panneaux après prise"}),apqE("div",{class:"apqrow"},apqChamp("Délai",s,"ctrlDelai",null,"ex. 24 h"),apqChamp("Date du contrôle",s,"ctrlDate","date")),
     apqPhotos(s.ctrlPhotos,APQ_SLOTS_C));
   d.append(apqE("p",{class:"apqst",text:"Applicateurs"}),...s.applicateurs.map(p=>apqApplicateur(s,p)));
+  const bAp=apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:async()=>{const p={id:apqId(),nom:"",photos:[]};s.applicateurs.push(p);APQ_OUV.add(p.id);await apqSauver(true);renderApq()}},"＋ Applicateur"));d.append(bAp);
+  // v2.09 : commentaires généraux / finaux de la session, en fin de session
+  d.append(apqE("p",{class:"apqst",text:"Commentaires généraux de la session"}),apqZone("Commentaires généraux / conclusion de la session",s,"commentaire"));
   d.append(apqE("div",{class:"btns"},
-    apqE("button",{type:"button",class:"primary",onclick:async()=>{const p={id:apqId(),nom:"",photos:[]};s.applicateurs.push(p);APQ_OUV.add(p.id);await apqSauver(true);renderApq()}},"＋ Applicateur"),
+
     apqE("button",{type:"button",class:"ghost",onclick:async ev=>{const b=ev.currentTarget;
       if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer : supprimer la session";b.classList.add("danger");return}
       for(const x of [...s.photos,...(s.ctrlPhotos||[]),...s.applicateurs.flatMap(p=>p.photos||[])]) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
@@ -3319,6 +3322,9 @@ async function apqFusion(octets,ann){const L=await apqPdfLib();const doc=await L
 function PdfApqClasse(){return class PdfApq extends PdfRapide{
   constructor(l,soc,m){super(l,soc,m);this.titre1=apqL("titre",l);this.nPh=0}
   sousTitre(t,suite){this.place(22+(suite??70));this.y+=4;this.txt(this.M,this.y+10,t,"B",10.5,"0.20 0.20 0.20");this.y+=16}
+  hBoite(lg){if(!lg.length) return 0;const L=this.W-2*this.M,s=9.5,lh=12.5;return lg.reduce((t,[k,v])=>t+Math.max(1,this.lignes([{t:String(v)}],L-170,s).length)*lh+3,0)+6+4}
+  hRangee(photos,nc=2,maxH=220){if(!photos.length) return 0;const L=this.W-2*this.M,gap=8,pad=6,cw=(L-gap*(nc-1))/nc,iw=cw-2*pad;
+    return Math.max(...photos.slice(0,nc).map(p=>{let w=iw,h=iw*p.im.h/p.im.w;if(h>maxH) h=maxH;return h+2*pad+4+2*10.6}))+gap}
   boite(lg,cadre){const M=this.M,L=this.W-2*M,s=9.5,lh=12.5;const rows=lg.map(([k,v])=>({k,ll:this.lignes([{t:String(v)}],L-170,s)}));
     const h=rows.reduce((t,r)=>t+Math.max(1,r.ll.length)*lh+3,0)+6;this.place(h);const y0=this.y;this.rect(M,y0,L,h,"0.96 0.96 0.95");if(cadre) this.cadre(M,y0,L,h,"0.42 0.16 0.08",0.9);this.y+=4;
     for(const r of rows){this.txt(M+8,this.y+10,r.k,"B",8.5,"0.40 0.40 0.40");let yy=this.y;
@@ -3385,7 +3391,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       // v2.06 : chaque pavé suivi de ses photos (matériel, panneau/maquette, températures, échantillonnage, autres)
       const r=s.releves||{};let bl=[];const vider=()=>{if(bl.length){this.boite(bl);bl=[]}};
       const deSlots=sl=>(s.photos||[]).filter(x=>sl.includes(x.slot));
-      const bloc=async(rows,liste,apres)=>{bl.push(...rows);const ph=await this.photos(liste,r);if(ph.length||apres){vider();if(apres) apres();if(ph.length) this.grille(ph)}};
+      const bloc=async(rows,liste,apres)=>{bl.push(...rows);const ph=await this.photos(liste,r);if(ph.length&&!apres) this.place(this.hBoite(bl)+this.hRangee(ph)+6);if(ph.length||apres){vider();if(apres) apres();if(ph.length) this.grille(ph)}};
       const r1=[];const mats=(s.mats||[]).map(id=>(a.materiaux.find(x=>x.id===id)||{}).produit).filter(Boolean).join(", ");if(mats&&a.materiaux.length>1) r1.push([T("mat"),mats]);
       const mtl=(Array.isArray(s.materiels)?s.materiels:(s.materiel?[s.materiel]:[])).join(", ");if(mtl) r1.push([T("materiel"),mtl]);
       await bloc(r1,deSlots(APQ_SL_MAT));
@@ -3400,7 +3406,6 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const ec=APQ_ECH.filter(t=>s.echant&&s.echant[t]&&s.echant[t].on).map(t=>[apqTr(t,l),s.echant[t].dim].filter(Boolean).join(" ")).join(" · ");
       await bloc(ec?[[T("echS"),ec]]:[],deSlots(APQ_SL_ECH));vider();
       const ct=[s.ctrlDelai&&T("apres").replace("{a}",String(s.ctrlDelai).trim().replace(/^(\d+(?:[.,]\d+)?)(?![\d.,])(?!\s*(?:h\b|j\b|d\b|heure|hour|jour|day|min|stund|tag|hora|día|dia))/i,"$1 h")),s.ctrlDate&&frDate(s.ctrlDate)].filter(Boolean).join(" – ");
-      if(s.commentaire&&s.commentaire.trim()){this.y+=2;this.texteBalise(s.commentaire,M,L,10);this.y+=4}
       const connus=[...APQ_SL_MAT,"Panneau","Maquette",...APQ_SL_TEMP,...APQ_SL_ECH];const rg=x=>{const k=APQ_ORDRE_PH.indexOf(x.slot);return k<0?99:k};
       const ph=await this.photos((s.photos||[]).filter(x=>!connus.includes(x.slot)).sort((x,y)=>rg(x)-rg(y)),r);if(ph.length) this.grille(ph);
       if(s.applicateurs.length){this.sousTitre(T("appl"));
@@ -3411,7 +3416,8 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
             return [{t:p.nom||"–",b:true},[p.societe,p.role].filter(Boolean).join(" / ")||"–",p.panneau||"–",ech,ctl,p.verdict?{t:apqVTxt(p,l),pill:APQ_V[p.verdict].pdf}:"–"]}));
         for(const p of s.applicateurs){const ph2=await this.photos(p.photos,null);if(!(p.commentaire&&p.commentaire.trim())&&!ph2.length) continue;
           this.sousTitre(p.nom||T("appl"),ph2.length&&!(p.commentaire&&p.commentaire.trim())?200:50);if(p.commentaire&&p.commentaire.trim()){this.texteBalise(p.commentaire,M,L,10);this.y+=4}if(ph2.length) this.grille(ph2)}}
-      const pc=await this.photos(s.ctrlPhotos||[],null);if(pc.length){this.sousTitre([T("ctrl"),ct].filter(Boolean).join(" – "),200);this.grille(pc)}else if(ct){this.y+=4;this.boite([[T("ctrl"),ct]])}}
+      const pc=await this.photos(s.ctrlPhotos||[],null);if(pc.length){this.sousTitre([T("ctrl"),ct].filter(Boolean).join(" – "),200);this.grille(pc)}else if(ct){this.y+=4;this.boite([[T("ctrl"),ct]])}
+      if(s.commentaire&&s.commentaire.trim()){this.sousTitre(T("comment"),40);this.texteBalise(s.commentaire,M,L,10);this.y+=4}}
     const tous=a.sessions.flatMap(s=>s.applicateurs.map(p=>({s,p})));
     if(tous.length||apqSansRedite(a)){{const ds=[...new Set(a.sessions.map(x=>x.date).filter(Boolean))].sort();
         this.titreSection("3. "+(ds.length>1?T("resN").replace("{a}",frDate(ds[0])).replace("{b}",frDate(ds[ds.length-1])):ds.length?T("res1").replace("{a}",frDate(ds[0])):T("res")))}
@@ -4003,6 +4009,8 @@ const TRAD_UI=[
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
 ["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
 ["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["Commentaires généraux de la session", "General session comments", "Comentarios generales de la sesión", "Allgemeine Bemerkungen zur Sitzung"],
+["Commentaires généraux / conclusion de la session", "General comments / session conclusion", "Comentarios generales / conclusión de la sesión", "Allgemeine Bemerkungen / Fazit der Sitzung"],
 ["Maquette", "Mock-up", "Maqueta", "Modell"],
 ["Descriptif de la maquette", "Mock-up description", "Descripción de la maqueta", "Beschreibung des Modells"],
 ["Échantillonnage", "Sampling", "Muestreo", "Probenahme"],
