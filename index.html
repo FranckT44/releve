@@ -298,7 +298,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 /* v1.75 : préqualification des applicateurs */
 #v-apq textarea{min-height:72px}
 .apqrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-items:end;margin:4px 0}
-.apqt{grid-template-columns:repeat(auto-fit,minmax(92px,1fr))}
+.apqt{grid-template-columns:repeat(auto-fit,minmax(92px,1fr))}.apqt input{min-height:40px;padding:4px 8px;box-sizing:border-box;width:100%}
 .apqmat{display:grid;grid-template-columns:1.3fr 1fr 1.3fr auto;gap:8px;align-items:end;padding:6px 0;border-bottom:1px solid var(--line)}
 @media (max-width:560px){.apqmat{grid-template-columns:1fr 1fr}.apqmat>button{justify-self:start}}
 .apqst{margin:12px 0 4px;font-weight:650;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
@@ -328,6 +328,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqlabo{display:grid;gap:6px;margin:6px 0}
 .apqtds{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}.apqtds button{min-height:40px}.apqtdsn{font-weight:600;font-size:14px;word-break:break-all}
 .apqsumd{display:flex;align-items:center;gap:8px}.apqdel{min-height:34px;min-width:40px;padding:0 8px;font-size:15px}
+.apqt6{grid-template-columns:1.1fr repeat(5,1fr) auto!important;align-items:end}@media (max-width:560px){.apqt6{grid-template-columns:1fr 1fr 1fr!important}}
 .apqslot{border:1px dashed var(--line);border-radius:8px;padding:6px;display:grid;gap:6px;align-content:start}
 .apqslot.fait{border-style:solid;border-color:var(--ok)}
 .apqslot>button{min-height:42px;font-size:13px;white-space:normal;padding:4px 6px}
@@ -499,13 +500,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <p class="stat" id="apqInfo"></p>
     <p class="hint">Un rapport par mission : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.</p>
     <div id="apqTete"></div>
-    <div class="btns"><button class="primary" id="bApqPdf" type="button">📄 Créer le PDF</button><button id="bApqSave" type="button">💾 Sauvegarder</button><button id="bApqRest" type="button">📂 Restaurer</button><button id="bApqPh" type="button">⬇️ Photos</button></div>
-    <p class="hint" id="apqSauveInfo"></p>
     <div id="apqRecup" class="card confirm" hidden></div>
-    <p class="hint">Sur PC : glissez des photos depuis l'explorateur directement sur une case photo.</p>
-    <div id="apqRestCard" class="card confirm" hidden><strong>Restaurer une sauvegarde</strong><div id="apqRestTxt" class="path"></div>
-      <div class="btns"><button class="primary" id="bApqRestOk" type="button">Remplacer</button><button id="bApqRestNo" type="button">Annuler</button></div></div>
-    <input type="file" id="iApqRest" accept="image/jpeg,.jpg" hidden>
   </div>
   <div class="card c-violet"><h2>Équipement(s) concerné(s)</h2><div id="apqEq"></div></div>
   <div class="card c-vert"><h2>Applicateurs présentés</h2><p class="hint">Une fiche par applicateur présenté : portrait, prénom, nom, société. Ils se choisissent ensuite dans chaque session.</p><div id="apqPers"></div></div>
@@ -513,6 +508,14 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <div class="card c-vert"><h2>2. Conditions générales</h2><div id="apqGen"></div></div>
   <div class="card c-violet"><h2>Sessions (méthode et date)</h2><div id="apqSes"></div></div>
   <div class="card c-jaune"><h2>3. Résultats</h2><div id="apqRes"></div></div>
+  <div class="card c-bleu" id="apqFin">
+    <div class="btns"><button class="primary" id="bApqPdf" type="button">📄 Créer le PDF</button><button id="bApqSave" type="button">💾 Sauvegarder</button><button id="bApqRest" type="button">📂 Restaurer</button><button id="bApqPh" type="button">⬇️ Photos</button></div>
+    <p class="hint" id="apqSauveInfo"></p>
+    <p class="hint">Sur PC : glissez des photos depuis l'explorateur directement sur une case photo.</p>
+    <div id="apqRestCard" class="card confirm" hidden><strong>Restaurer une sauvegarde</strong><div id="apqRestTxt" class="path"></div>
+      <div class="btns"><button class="primary" id="bApqRestOk" type="button">Remplacer</button><button id="bApqRestNo" type="button">Annuler</button></div></div>
+    <input type="file" id="iApqRest" accept="image/jpeg,.jpg" hidden>
+  </div>
   <input type="file" id="iApq" accept="image/*" multiple hidden>
   <input type="file" id="iApqTds" accept="application/pdf,.pdf" hidden>
   <input type="file" id="iApqCam" accept="image/*" capture="environment" hidden>
@@ -806,7 +809,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="1.95";
+const APP_VERSION="1.97";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2783,7 +2786,8 @@ async function chargerNavette(file){const info=`${file.name} · ${taille(file.si
    Photos dans le magasin « photos » (id « apq_… », entry « apq:<id mission> »). PDF sur le téléphone (générateur du PDF rapide). */
 const APQ_METHODES=["Gunning","Coulage","Free flow / Selflow","Hand packing","Damage (ramming)","Vibrocoulage","Autre"];
 const APQ_ROLES=["Anti-érosion","Isolant","Dense","Autre"];
-const APQ_POS=["Vertical","Plafond","Sol"];
+const APQ_POS=["Vertical","Plafond","Plafond à 45°","Sol"];
+const APQ_SLOTS_C=["Panneaux après prise","Face arrière","Démontage","Demi-coupe","Casse au marteau"];
 const APQ_SLOTS_S=["Panneau","Malaxeur / machine","T° matériau sec","Mesure de l'eau","T° eau","T° matériau gâché","Test « boule en main »","Application","Échantillonnage","Feuille de relevé"];
 const APQ_SLOTS_M=["Sac / étiquette du lot","Certificat / preshipment test"];
 const APQ_SLOTS_A=["Portrait","Application","Face arrière","Demi-coupe","Casse au marteau"];
@@ -2799,7 +2803,7 @@ const APQ_TR={"Conforme":["Conforme","Compliant","Conforme","Konform"],"Non conf
   "Hand packing":["Hand packing","Hand packing","Apisonado manual","Handstampfen"],"Damage (ramming)":["Damage (ramming)","Ramming","Apisonado","Stampfen"],
   "Vibrocoulage":["Vibrocoulage","Vibrocasting","Vibrocolado","Vibrogießen"],"Autre":["Autre","Other","Otro","Andere"],
   "Anti-érosion":["Anti-érosion","Erosion resistant","Antierosión","Erosionsbeständig"],"Isolant":["Isolant","Insulating","Aislante","Isolierend"],"Dense":["Dense","Dense","Denso","Dicht"],
-  "Vertical":["Vertical","Vertical","Vertical","Senkrecht"],"Plafond":["Plafond","Overhead","Techo","Überkopf"],"Sol":["Sol","Floor","Suelo","Boden"],
+  "Vertical":["Vertical","Vertical","Vertical","Senkrecht"],"Plafond":["Plafond","Overhead","Techo","Überkopf"],"Plafond à 45°":["Plafond à 45°","Overhead at 45°","Techo a 45°","Überkopf 45°"],"Panneaux après prise":["Panneaux après prise","Panels after setting","Paneles tras fraguado","Platten nach dem Abbinden"],"Démontage":["Démontage","Removal","Desmontaje","Ausbau"],"Sol":["Sol","Floor","Suelo","Boden"],
   "Panneau":["Panneau","Test panel","Panel de prueba","Prüfpaneel"],"Malaxeur / machine":["Malaxeur / machine","Mixer / machine","Mezcladora / máquina","Mischer / Maschine"],
   "T° matériau sec":["T° matériau sec","Dry material T°","T° material seco","T° Trockenmaterial"],"Mesure de l'eau":["Mesure de l'eau","Water measurement","Medición del agua","Wassermessung"],
   "T° eau":["T° eau","Water T°","T° agua","T° Wasser"],"T° matériau gâché":["T° matériau gâché","Mixed material T°","T° material amasado","T° angemischtes Material"],
@@ -2819,7 +2823,7 @@ const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION S
   lots:["N° de lots","Batch no.","N.º de lote","Chargen-Nr."],gen:["Observations générales","General observations","Observaciones generales","Allgemeine Beobachtungen"],
   eau:["Origine de l'eau","Water origin","Origen del agua","Herkunft des Wassers"],materiel:["Matériel","Equipment","Equipo","Ausrüstung"],
   panneau:["Panneau","Test panel","Panel de prueba","Prüfpaneel"],releves:["Températures","Temperatures","Temperaturas","Temperaturen"],
-  tAir:["air","air","aire","Luft"],tSupport:["support","substrate","soporte","Untergrund"],tSec:["matériau sec","dry material","material seco","Trockenmaterial"],
+  tAir:["air","air","aire","Luft"],heure:["Heure","Time","Hora","Uhrzeit"],tAirC:["Air","Air","Aire","Luft"],tSupportC:["Support","Substrate","Soporte","Untergrund"],tSecC:["Mat. sec","Dry mat.","Mat. seco","Trockenmat."],tEauC:["Eau","Water","Agua","Wasser"],tGacheC:["Mat. gâché","Mixed mat.","Mat. amasado","Angemischt"],tSupport:["support","substrate","soporte","Untergrund"],tSec:["matériau sec","dry material","material seco","Trockenmaterial"],
   tEau:["eau","water","agua","Wasser"],tGache:["matériau gâché","mixed material","material amasado","angemischtes Material"],
   eauG:["Eau de gâchage","Mixing water","Agua de amasado","Anmachwasser"],ctrl:["Contrôle après prise","Check after setting","Control tras fraguado","Prüfung nach dem Abbinden"],
   apres:["après {a}","after {a}","tras {a}","nach {a}"],appl:["Applicateurs","Applicators","Aplicadores","Verarbeiter"],nom:["Nom","Name","Nombre","Name"],
@@ -2828,7 +2832,7 @@ const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION S
   res:["Résultats de la préqualification","Prequalification results","Resultados de la precualificación","Ergebnisse der Präqualifikation"],
   methode:["Méthode","Method","Método","Verfahren"],date:["Date","Date","Fecha","Datum"],
   fichier:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht Präqualifikationssitzung"],
-  laboC:["labo","lab","lab.","Labor"],spec:["Spécification applicable","Applicable specification","Especificación aplicable","Anwendbare Spezifikation"],docs:["Documents de référence","Reference documents","Documentos de referencia","Referenzdokumente"],ref:["Référence","Reference","Referencia","Referenz"],titreDoc:["Titre","Title","Título","Titel"],rev:["Rév.","Rev.","Rev.","Rev."],res1:["Résultats de la séance de préqualification du {a}","Results of the prequalification session of {a}","Resultados de la sesión de precualificación del {a}","Ergebnisse der Präqualifikationssitzung vom {a}"],resN:["Résultats des séances de préqualification du {a} au {b}","Results of the prequalification sessions from {a} to {b}","Resultados de las sesiones de precualificación del {a} al {b}","Ergebnisse der Präqualifikationssitzungen vom {a} bis {b}"],pres:["Applicateurs présentés","Applicators presented","Aplicadores presentados","Vorgestellte Verarbeiter"],eauCert:["Certificat de l'eau","Water certificate","Certificado del agua","Wasserzertifikat"]};
+  laboC:["labo","lab","lab.","Labor"],spec:["Spécification applicable","Applicable specification","Especificación aplicable","Anwendbare Spezifikation"],docs:["Documents de référence","Reference documents","Documentos de referencia","Referenzdokumente"],ref:["Référence","Reference","Referencia","Referenz"],titreDoc:["Titre","Title","Título","Titel"],rev:["Rév.","Rev.","Rev.","Rev."],res1:["Résultats de la séance de préqualification du {a}","Results of the prequalification session of {a}","Resultados de la sesión de precualificación del {a}","Ergebnisse der Präqualifikationssitzung vom {a}"],resN:["Résultats des séances de préqualification du {a} au {b}","Results of the prequalification sessions from {a} to {b}","Resultados de las sesiones de precualificación del {a} al {b}","Ergebnisse der Präqualifikationssitzungen vom {a} bis {b}"],pres:["Applicateurs présentés","Applicators presented","Aplicadores presentados","Vorgestellte Verarbeiter"],eauCert:["Certificat de l'eau","Water certificate","Certificado del agua","Wasserzertifikat"],conformeM:["conforme","compliant","conforme","konform"]};
 const apqL=(k,l)=>APQL[k][iLangue(l)];
 // v1.81 : le rapport suit la langue de l'appli (sélecteur FR / EN / ES / DE de l'en-tête)
 const apqLangue=m=>LANGUI.codes.includes(LANGUI.lang)?LANGUI.lang:((m&&m.langue)||langueMission());
@@ -2990,9 +2994,9 @@ function apqPoubelle(vide,quoi,suppr){const b=apqE("button",{type:"button",class
     await suppr()};return b}
 function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has(s.id);d.ontoggle=()=>d.open?APQ_OUV.add(s.id):APQ_OUV.delete(s.id);
   const n=s.applicateurs.length;
-  const supS=async()=>{for(const x of [...(s.photos||[]),...s.applicateurs.flatMap(p=>p.photos||[])]) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
+  const supS=async()=>{for(const x of [...(s.photos||[]),...(s.ctrlPhotos||[]),...s.applicateurs.flatMap(p=>p.photos||[])]) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
     APQ.sessions.splice(APQ.sessions.indexOf(s),1);await apqSauver(true);renderApq();toast("Session supprimée.")};
-  const videS=()=>!s.methode&&!n&&!(s.photos||[]).length&&!(s.commentaire||"").trim();
+  const videS=()=>!s.methode&&!n&&!(s.photos||[]).length&&!(s.ctrlPhotos||[]).length&&!(s.commentaire||"").trim();
   d.append(apqE("summary",{},apqE("span",{text:apqLibSession(s)}),apqE("span",{class:"apqsumd"},apqE("span",{class:"stat",text:`${n} applicateur${n>1?"s":""}`}),apqPoubelle(videS,"la session",supS))));
   d.append(apqE("div",{class:"apqrow"},apqChoix("Méthode",s,"methode",APQ_METHODES,renderApq),apqChamp("Date",s,"date","date")));
   // matériaux de la session (cochés dans la liste des matériaux)
@@ -3002,18 +3006,25 @@ function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has
       box.append(apqE("label",{class:"toggle"},c," ",apqE("span",{"data-noi18n":true,text:m.produit||"(matériau sans nom)"})))}
     d.append(apqE("p",{class:"apqst",text:"Matériaux utilisés"}),box)}
   d.append(apqE("p",{class:"apqst",text:"Matériel"}),apqMateriels(s),apqE("div",{class:"apqrow"},apqChamp("Panneau (dimensions)",s,"panneau",null,"ex. 500×500×100"),apqChoix("Position",s,"position",APQ_POS)));
-  s.releves=s.releves||{};const r=s.releves;
-  d.append(apqE("p",{class:"apqst",text:"Relevés (°C)"}),apqE("div",{class:"apqrow apqt"},apqChamp("Air",r,"tAir","number"),apqChamp("Support",r,"tSupport","number"),
-    apqChamp("Matériau sec",r,"tSec","number"),apqChamp("Eau",r,"tEau","number"),apqChamp("Matériau gâché",r,"tGache","number")),
+  s.releves=s.releves||{};const r=s.releves;s.relevesSup=s.relevesSup||[];
+  // v1.97 : plusieurs relevés de températures, chacun avec son heure en tête
+  const ligneT=(o,suppr)=>apqE("div",{class:"apqrow apqt apqt6"},apqChamp("Heure",o,"heure","time"),apqChamp("Air",o,"tAir","number"),apqChamp("Support",o,"tSupport","number"),
+    apqChamp("Matériau sec",o,"tSec","number"),apqChamp("Eau",o,"tEau","number"),apqChamp("Matériau gâché",o,"tGache","number"),
+    suppr?apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce relevé",onclick:suppr},"✕"):null);
+  d.append(apqE("p",{class:"apqst",text:"Relevés (°C)"}),ligneT(r),
+    ...s.relevesSup.map(o=>ligneT(o,async()=>{s.relevesSup.splice(s.relevesSup.indexOf(o),1);await apqSauver(true);renderApq()})),
+    apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:async()=>{s.relevesSup.push({id:apqId(),heure:"",tAir:"",tSupport:"",tSec:"",tEau:"",tGache:""});await apqSauver(true);renderApq()}},"＋ Autre relevé de températures")),
     apqE("div",{class:"apqrow"},apqChamp("Eau de gâchage",r,"eau",null,"ex. 4,5 L / sac de 25 kg")));
   s.photos=s.photos||[];d.append(apqE("p",{class:"apqst",text:"Photos de la session"}),apqE("p",{class:"hint",text:"Une case par vue attendue : touchez-la pour ajouter une ou plusieurs photos (plusieurs à la fois possible), puis « ＋ Ajouter » pour en mettre d'autres."}),apqPhotos(s.photos,APQ_SLOTS_S),apqZone("Commentaire",s,"commentaire"));
-  d.append(apqE("p",{class:"apqst",text:"Contrôle des panneaux après prise"}),apqE("div",{class:"apqrow"},apqChamp("Délai",s,"ctrlDelai",null,"ex. 24 h"),apqChamp("Date du contrôle",s,"ctrlDate","date")));
+  s.ctrlPhotos=s.ctrlPhotos||[];
+  d.append(apqE("p",{class:"apqst",text:"Contrôle des panneaux après prise"}),apqE("div",{class:"apqrow"},apqChamp("Délai",s,"ctrlDelai",null,"ex. 24 h"),apqChamp("Date du contrôle",s,"ctrlDate","date")),
+    apqPhotos(s.ctrlPhotos,APQ_SLOTS_C));
   d.append(apqE("p",{class:"apqst",text:"Applicateurs"}),...s.applicateurs.map(p=>apqApplicateur(s,p)));
   d.append(apqE("div",{class:"btns"},
     apqE("button",{type:"button",class:"primary",onclick:async()=>{const p={id:apqId(),nom:"",photos:[]};s.applicateurs.push(p);APQ_OUV.add(p.id);await apqSauver(true);renderApq()}},"＋ Applicateur"),
     apqE("button",{type:"button",class:"ghost",onclick:async ev=>{const b=ev.currentTarget;
       if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer : supprimer la session";b.classList.add("danger");return}
-      for(const x of [...s.photos,...s.applicateurs.flatMap(p=>p.photos||[])]) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
+      for(const x of [...s.photos,...(s.ctrlPhotos||[]),...s.applicateurs.flatMap(p=>p.photos||[])]) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
       APQ.sessions.splice(APQ.sessions.indexOf(s),1);await apqSauver(true);renderApq()}},"🗑 Supprimer la session")));
   return d}
 let APQ_RECUP_FAIT=null;
@@ -3062,7 +3073,7 @@ async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apq
     apqE("div",{class:"apqrow"},apqChoix("Preshipment test",m,"psh",APQ_PSH),apqChamp("Réf. du rapport de preshipment test",m,"pshRef",null,"ex. PST-2408-112")),apqTdsBloc(m),
     apqPhotos(m.photos,APQ_SLOTS_M)))}
   mt.append(apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:async()=>{a.materiaux.push({id:apqId(),produit:"",role:"",lots:""});await apqSauver(true);renderApq()}},"＋ Matériau")));
-  const g=$("apqGen");g.innerHTML="";g.append(apqZone("Conditions (températures, humidité…)",a,"conditions"),apqE("div",{class:"apqrow"},apqChamp("Origine de l'eau",a,"eau",null,"ex. réseau d'eau potable du site"),apqChamp("Certificat de l'eau (n°, laboratoire, date)",a,"eauCert",null,"ex. analyse n° 2026-118 du 03/11/2026")),
+  const g=$("apqGen");g.innerHTML="";g.append(apqZone("Conditions (températures, humidité…)",a,"conditions"),apqE("div",{class:"apqrow"},apqChamp("Origine de l'eau",a,"eau",null,"ex. réseau d'eau potable du site"),apqChamp("Certificat de l'eau (n°, laboratoire, date)",a,"eauCert",null,"ex. analyse n° 2026-118 du 03/11/2026")),apqCoche("Certificat de l'eau conforme",a,"eauConf"),
     apqE("p",{class:"apqst",text:"Certificat de l'eau"}),apqPhotos(a.eauPhotos=a.eauPhotos||[],["Certificat de l'eau"],true));
   const se=$("apqSes");se.innerHTML="";for(const s of a.sessions) se.append(apqSession(s));
   se.append(apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:async()=>{const s={id:apqId(),methode:"",date:today(),mats:a.materiaux.map(m=>m.id),applicateurs:[],photos:[],releves:{}};
@@ -3096,7 +3107,7 @@ function initApq(){$("iApq").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.ta
    « RELEVE-FICHIER: » (nom), « RELEVE-APQ: » (en-tête JSON, morceaux de 65 000 octets), « RELEVE-ADATA: » (photos à la suite). */
 function apqPids(a){const l=[];const ph=x=>{for(const p of x||[]) l.push(p.pid)};
   ph(a.eauPhotos);ph(a.recup);ph(a.logoPhotos);for(const q of a.personnes||[]) ph(q.photos);for(const m of a.materiaux||[]){ph(m.photos);if(m.tds&&m.tds.id) l.push(m.tds.id)}
-  for(const s of a.sessions||[]){ph(s.photos);for(const p of s.applicateurs||[]) ph(p.photos)}return [...new Set(l)]}
+  for(const s of a.sessions||[]){ph(s.photos);ph(s.ctrlPhotos);for(const p of s.applicateurs||[]) ph(p.photos)}return [...new Set(l)]}
 async function apqSauvegarder(){const a=await apqCharger();await apqSauver(true);const m=curMission()||CFG.mission;
   busy("Sauvegarde du rapport…","",0);await repos();
   try{const pids=apqPids(a),photos=[],blobs=[];let off=0,k=0;
@@ -3177,6 +3188,7 @@ function apqListePhotos(a){const l=[];const ajout=(groupe,liste,court)=>{const n
   for(const m of a.materiaux||[]) ajout("Matériau "+(m.produit||"(sans nom)"),m.photos,"Matériau "+(m.produit||""));
   ajout("Certificat de l'eau",a.eauPhotos,"Eau");
   (a.sessions||[]).forEach((s,i)=>{const t=`S${i+1}`;ajout(`Session ${i+1}`+(s.date?` – ${frDate(s.date)}`:""),s.photos,t);
+    ajout(`Session ${i+1} – contrôle après prise`,s.ctrlPhotos,`${t} contrôle`);
     for(const p of s.applicateurs||[]) ajout(`Session ${i+1} – ${p.nom||"applicateur sans nom"}`,p.photos,`${t} ${p.nom||""}`)});
   ajout("Logo",a.logoPhotos,"Logo");ajout("Photos retrouvées",a.recup,"Retrouvée");
   const no=(curMission()||CFG.mission).no||"";
@@ -3296,7 +3308,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
   async rapport(a,ann){const l=this.l,M=this.M,L=this.W-2*M,T=k=>apqL(k,l),m=this.m;this.nouvellePage();
     // v1.92 : matériaux et sessions vides (créés puis non remplis) laissés hors du PDF
     a={...a,materiaux:(a.materiaux||[]).filter(x=>(x.produit||"").trim()||(x.lots||"").trim()||(x.photos||[]).length||x.tds),
-      sessions:(a.sessions||[]).filter(s=>s.methode||(s.applicateurs||[]).length||(s.photos||[]).length||(s.commentaire||"").trim())};
+      sessions:(a.sessions||[]).filter(s=>s.methode||(s.applicateurs||[]).length||(s.photos||[]).length||(s.ctrlPhotos||[]).length||(s.commentaire||"").trim())};
     this.paragraphe([{t:T("h1"),b:true}],M,L,14);this.y+=4;
     const dates=[...new Set(a.sessions.map(s=>s.date).filter(Boolean))].sort().map(frDate).join(", ");
     this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(a.lieu&&a.lieu.trim()?[[T("lieu"),a.lieu.trim()]]:[]),...(m.inspecteur?[[pdfL("insp",l),m.inspecteur]]:[]),...(apqEquipTexte(a)?[[T("equip"),apqEquipTexte(a)]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")],...(a.labo&&a.laboDebut?[[T("laboDebut"),apqTr(a.laboDebut,l)]]:[])]);
@@ -3318,19 +3330,23 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       else this.tableau([{t:T("produit"),w:.38},{t:T("role"),w:.24},{t:T("lots"),w:.38}],a.materiaux.map(x=>[{t:x.produit||"–",b:true},apqTr(x.role,l)||"–",x.lots||"–"]));
       const pm=[];for(const x of a.materiaux) pm.push(...await this.photos((x.photos||[]).map(y=>({...y,leg:y.leg||[x.produit,y.slot==="Autre"?"":apqTr(y.slot,l)].filter(Boolean).join(" – ")})),null));
       if(pm.length) this.grille(pm)}
-    if((a.conditions&&a.conditions.trim())||a.eau||a.eauCert||(a.eauPhotos||[]).length){this.titreSection("2. "+T("gen"));if(a.conditions) this.texteBalise(a.conditions,M,L,10);
+    if((a.conditions&&a.conditions.trim())||a.eau||a.eauCert||a.eauConf||(a.eauPhotos||[]).length){this.titreSection("2. "+T("gen"));if(a.conditions) this.texteBalise(a.conditions,M,L,10);
       if(a.eau){this.y+=2;this.paragraphe([{t:T("eau")+" : ",b:true},{t:a.eau}],M,L,10)}
-      if(a.eauCert){this.y+=2;this.paragraphe([{t:T("eauCert")+" : ",b:true},{t:a.eauCert}],M,L,10)}
+      if(a.eauCert||a.eauConf){this.y+=2;this.paragraphe([{t:T("eauCert")+" : ",b:true},{t:[a.eauCert,a.eauConf?T("conformeM"):""].filter(Boolean).join(" – ")}],M,L,10)}
       const pc=await this.photos((a.eauPhotos||[]).map(x=>({...x,leg:x.leg||T("eauCert")})),null);if(pc.length){this.y+=4;this.grille(pc)}}
     for(const s of a.sessions){this.titreSection([apqTr(s.methode,l),s.date&&frDate(s.date)].filter(Boolean).join(" – ")||T("methode"));
       const r=s.releves||{},bl=[];
       const mats=(s.mats||[]).map(id=>(a.materiaux.find(x=>x.id===id)||{}).produit).filter(Boolean).join(", ");if(mats&&a.materiaux.length>1) bl.push([T("mat"),mats]);
       const mtl=(Array.isArray(s.materiels)?s.materiels:(s.materiel?[s.materiel]:[])).join(", ");if(mtl) bl.push([T("materiel"),mtl]);
       const pan=[s.panneau,apqTr(s.position,l)].filter(Boolean).join(" – ");if(pan) bl.push([T("panneau"),pan]);
-      const tt=["tAir","tSupport","tSec","tEau","tGache"].filter(k=>r[k]!==""&&r[k]!=null).map(k=>`${T(k)} ${r[k]} °C`).join(" · ");if(tt) bl.push([T("releves"),tt]);
+      const TK=["tAir","tSupport","tSec","tEau","tGache"],aT=o=>o&&(o.heure||TK.some(k=>o[k]!==""&&o[k]!=null));
+      const rel=[r,...(s.relevesSup||[])].filter(aT);const tabT=rel.length>1||rel.some(o=>o.heure);
+      if(!tabT){const tt=TK.filter(k=>r[k]!==""&&r[k]!=null).map(k=>`${T(k)} ${r[k]} °C`).join(" · ");if(tt) bl.push([T("releves"),tt])}
       if(r.eau) bl.push([T("eauG"),r.eau]);
       const ct=[s.ctrlDelai&&T("apres").replace("{a}",String(s.ctrlDelai).trim().replace(/^(\d+(?:[.,]\d+)?)(?![\d.,])(?!\s*(?:h\b|j\b|d\b|heure|hour|jour|day|min|stund|tag|hora|día|dia))/i,"$1 h")),s.ctrlDate&&frDate(s.ctrlDate)].filter(Boolean).join(" – ");if(ct) bl.push([T("ctrl"),ct]);
       if(bl.length) this.boite(bl);
+      if(tabT){this.sousTitre(T("releves")+" (°C)");const tri=[...rel].sort((x,y)=>(x.heure||"99").localeCompare(y.heure||"99"));
+        this.tableau([{t:T("heure"),w:.15},...TK.map(k=>({t:T(k+"C"),w:.17}))],tri.map(o=>[{t:o.heure||"–",b:true},...TK.map(k=>o[k]!==""&&o[k]!=null?String(o[k]):"–")]));this.y+=4}
       if(s.commentaire&&s.commentaire.trim()){this.texteBalise(s.commentaire,M,L,10);this.y+=4}
       const ph=await this.photos(s.photos,r);if(ph.length) this.grille(ph);
       if(s.applicateurs.length){this.sousTitre(T("appl"));
@@ -3340,7 +3356,8 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
             const ctl=APQ_CTL.filter(([k])=>(p.ctl||{})[k]).map(([k,t])=>apqTr(t,l)).join(", ")||"–";
             return [{t:p.nom||"–",b:true},[p.societe,p.role].filter(Boolean).join(" / ")||"–",p.panneau||"–",ech,ctl,p.verdict?{t:apqVTxt(p,l),pill:APQ_V[p.verdict].pdf}:"–"]}));
         for(const p of s.applicateurs){const ph2=await this.photos(p.photos,null);if(!(p.commentaire&&p.commentaire.trim())&&!ph2.length) continue;
-          this.sousTitre(p.nom||T("appl"));if(p.commentaire&&p.commentaire.trim()){this.texteBalise(p.commentaire,M,L,10);this.y+=4}if(ph2.length) this.grille(ph2)}}}
+          this.sousTitre(p.nom||T("appl"));if(p.commentaire&&p.commentaire.trim()){this.texteBalise(p.commentaire,M,L,10);this.y+=4}if(ph2.length) this.grille(ph2)}}
+      const pc=await this.photos(s.ctrlPhotos||[],null);if(pc.length){this.sousTitre([T("ctrl"),ct].filter(Boolean).join(" – "));this.grille(pc)}}
     const tous=a.sessions.flatMap(s=>s.applicateurs.map(p=>({s,p})));
     if(tous.length||apqSansRedite(a)){{const ds=[...new Set(a.sessions.map(x=>x.date).filter(Boolean))].sort();
         this.titreSection("3. "+(ds.length>1?T("resN").replace("{a}",frDate(ds[0])).replace("{b}",frDate(ds[ds.length-1])):ds.length?T("res1").replace("{a}",frDate(ds[0])):T("res")))}
@@ -3926,6 +3943,9 @@ const TRAD_UI=[
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
 ["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
 ["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["Heure", "Time", "Hora", "Uhrzeit"],
+["＋ Autre relevé de températures", "＋ Another temperature reading", "＋ Otra lectura de temperaturas", "＋ Weitere Temperaturmessung"],
+[" Certificat de l'eau conforme", " Water certificate compliant", " Certificado del agua conforme", " Wasserzertifikat konform"],
 ["« Refusé » et « À repasser » peuvent être cochés ensemble.", "“Rejected” and “To be re-tested” can be selected together.", "«Rechazado» y «A repetir» pueden marcarse juntos.", "„Abgelehnt“ und „Zu wiederholen“ können zusammen gewählt werden."],
 ["Refusé – à repasser", "Rejected – to be re-tested", "Rechazado – a repetir", "Abgelehnt – zu wiederholen"],
 ["Supprimer ?", "Delete?", "¿Eliminar?", "Löschen?"],
@@ -4033,6 +4053,9 @@ const TRAD_UI=[
 ["Dense", "Dense", "Denso", "Dicht"],
 ["Vertical", "Vertical", "Vertical", "Senkrecht"],
 ["Plafond", "Overhead", "Techo", "Überkopf"],
+["Plafond à 45°", "Overhead at 45°", "Techo a 45°", "Überkopf 45°"],
+["Panneaux après prise", "Panels after setting", "Paneles tras fraguado", "Platten nach dem Abbinden"],
+["Démontage", "Removal", "Desmontaje", "Ausbau"],
 ["Sol", "Floor", "Suelo", "Boden"],
 ["Panneau", "Test panel", "Panel de prueba", "Prüfpaneel"],
 ["Malaxeur / machine", "Mixer / machine", "Mezcladora / máquina", "Mischer / Maschine"],
