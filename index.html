@@ -331,6 +331,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqt6{grid-template-columns:1.1fr repeat(5,1fr) auto!important;align-items:end}@media (max-width:560px){.apqt6{grid-template-columns:1fr 1fr 1fr!important}}
 .apqeqp{display:inline-flex;gap:2px}.apqeqp button{min-height:40px}
 .apqech{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 10px;align-items:center;margin-bottom:6px}.apqech input[type=text]{min-height:38px}@media (max-width:560px){.apqech{grid-template-columns:1fr}}
+.apqeqadd{align-items:stretch!important;margin-bottom:6px}.apqeqadd>button{min-height:0}.apqlbl{display:block;margin:4px 0}
 .apqslot{border:1px dashed var(--line);border-radius:8px;padding:6px;display:grid;gap:6px;align-content:start}
 .apqslot.fait{border-style:solid;border-color:var(--ok)}
 .apqslot>button{min-height:42px;font-size:13px;white-space:normal;padding:4px 6px}
@@ -811,7 +812,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.05";
+const APP_VERSION="2.07";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1340,11 +1341,20 @@ async function edUp(ev){if(ev&&PTR.has(ev.pointerId)){PTR.delete(ev.pointerId);i
   else if(c.t==="cote"){ED.obj.push(c);edDessiner();if(!await finCote(c)){ED.obj.pop();ED.hist.pop()}edDessiner();return}
   else if(c.t==="bulle"){if(BULNEUVE){bulleAbandon();edPousser()}c.txt="";ED.obj.push(c);ED.sel=ED.obj.length-1;BULNEUVE=true;txtOuvrir(c)}
   else ED.obj.push(c);edDessiner()}
+// v2.06 : la photo annotée garde les informations de la photo d'origine (date et heure de prise de vue, GPS, appareil) ; orientation remise à 1, miniature d'origine retirée
+async function copierExif(src,dst){try{const a=new Uint8Array(await src.arrayBuffer()),b=new Uint8Array(await dst.arrayBuffer());if(a[0]!==0xFF||a[1]!==0xD8||b[0]!==0xFF||b[1]!==0xD8) return dst;
+  let p=2,ex=null;while(p+4<=a.length&&a[p]===0xFF){const mk=a[p+1],L=a[p+2]<<8|a[p+3];if(mk===0xDA) break;
+    if(mk===0xE1&&a[p+4]===0x45&&a[p+5]===0x78&&a[p+6]===0x69&&a[p+7]===0x66){ex=a.slice(p,p+2+L);break}p+=2+L}
+  if(!ex) return dst;const dv=new DataView(ex.buffer),t=10,le=dv.getUint16(t)===0x4949,g16=o=>dv.getUint16(t+o,le),g32=o=>dv.getUint32(t+o,le);
+  const i0=g32(4),n=g16(i0);for(let i=0;i<n;i++){const e=i0+2+i*12;if(g16(e)===0x0112) dv.setUint16(t+e+8,1,le)}
+  dv.setUint32(t+i0+2+n*12,0,le);
+  let q=2;while(q+4<=b.length&&b[q]===0xFF&&b[q+1]>=0xE0&&b[q+1]<=0xEF&&(b[q+1]===0xE0||b[q+1]===0xE1)){q+=2+(b[q+2]<<8|b[q+3])}
+  return new Blob([b.subarray(0,2),ex,b.subarray(q)],{type:"image/jpeg"})}catch(e){return dst}}
 async function edExporter(){const p=ED.ctx.src[ED.i];ED.obj=ED.obj.filter(o=>!(o.t==="bulle"&&!o.txt));
   const c=ED.crop||{x:0,y:0,w:ED.img.width,h:ED.img.height};const k=Math.min(1,3000/Math.max(c.w,c.h));
   const cv=document.createElement("canvas");cv.width=Math.round(c.w*k);cv.height=Math.round(c.h*k);const g=cv.getContext("2d");
   g.drawImage(ED.img,c.x,c.y,c.w,c.h,0,0,cv.width,cv.height);g.save();g.scale(1,1);g.translate(-c.x*k,-c.y*k);for(const o of ED.obj) if(!(o.t==="bulle"&&!o.txt)) dessinerObjet(g,o,k);g.restore();
-  const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",0.9));
+  const blob=await copierExif(p.orig||p.blob,await new Promise(r=>cv.toBlob(r,"image/jpeg",0.9)));
   if(!p.orig) p.orig=p.blob;p.blob=blob;p.type="image/jpeg";p.annot={obj:ED.obj,crop:ED.crop,rot:ED.rot||0,redr:ED.redr||0,ech:ED.ech||null};p.thumb=await makeThumb(blob)}
 async function edEnregistrer(){if(!ED.hist.length){fermerEditeur();return}const rien=!ED.obj.length&&!ED.crop&&!ED.rot&&!ED.redr;await edValider();fermerEditeur();
   if(!rien) toast(ED.ctx.src===form.photos&&form.editId?"Photo annotée. Pense à « Enregistrer les modifications ».":"Photo annotée.")}
@@ -3075,7 +3085,8 @@ function apqEquip(a){const box=$("apqEq");box.innerHTML="";a.equip=a.equip||[];
   const inp=apqE("input",{type:"text",placeholder:"ex. Cyclone 1er étage C-101",autocomplete:"off"});
   const ajouter=()=>{const v=inp.value.trim();if(!v) return;if(!a.equipPlus.some(x=>x.toLowerCase()===v.toLowerCase())) a.equipPlus.push(v);apqSauver(true);apqEquip(a)};
   inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();ajouter()}};
-  box.append(apqE("div",{class:"apqmatadd"},apqE("label",{},"Équipement non listé",inp),apqE("button",{type:"button",onclick:ajouter},"＋ Ajouter")),
+  inp.setAttribute("aria-label","Équipement non listé");
+  box.append(apqE("label",{class:"apqlbl",text:"Équipement non listé"}),apqE("div",{class:"apqmatadd apqeqadd"},inp,apqE("button",{type:"button",onclick:ajouter},"＋ Ajouter")),
     apqE("div",{class:"apqrow"},apqChamp("Précision (zone, repère…)",a,"equipAutre",null,"ex. zone basse, côté nord")))}
 function apqEquipTexte(a){const n=(a.equip||[]).map(c=>{const e=(EQ||[]).find(x=>x.code===c);return e?e.nom:c});n.push(...(a.equipPlus||[]));if(a.equipAutre&&a.equipAutre.trim()) n.push(a.equipAutre.trim());return n.join(", ")}
 // v1.90 : si échantillons au laboratoire, début des travaux autorisé ou non en attente des résultats
@@ -3371,22 +3382,27 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       else if(a.eauCert){this.y+=2;this.paragraphe([{t:T("eauCert")+" : ",b:true},{t:a.eauCert}],M,L,10)}
       const pc=await this.photos((a.eauPhotos||[]).map(x=>({...x,leg:x.leg||T("eauCert")})),null);if(pc.length){this.y+=4;this.grille(pc)}}
     for(const s of a.sessions){this.titreSection([apqTr(s.methode,l),s.date&&frDate(s.date)].filter(Boolean).join(" – ")||T("methode"));
-      const r=s.releves||{},bl=[];
-      const mats=(s.mats||[]).map(id=>(a.materiaux.find(x=>x.id===id)||{}).produit).filter(Boolean).join(", ");if(mats&&a.materiaux.length>1) bl.push([T("mat"),mats]);
-      const mtl=(Array.isArray(s.materiels)?s.materiels:(s.materiel?[s.materiel]:[])).join(", ");if(mtl) bl.push([T("materiel"),mtl]);
-      const pan=[s.panneau,apqTr(s.position,l)].filter(Boolean).join(" – ");if(pan) bl.push([T(apqMaquette(s)?"maquette":"panneau"),pan]);
+      // v2.06 : chaque pavé suivi de ses photos (matériel, panneau/maquette, températures, échantillonnage, autres)
+      const r=s.releves||{};let bl=[];const vider=()=>{if(bl.length){this.boite(bl);bl=[]}};
+      const deSlots=sl=>(s.photos||[]).filter(x=>sl.includes(x.slot));
+      const bloc=async(rows,liste,apres)=>{bl.push(...rows);const ph=await this.photos(liste,r);if(ph.length||apres){vider();if(apres) apres();if(ph.length) this.grille(ph)}};
+      const r1=[];const mats=(s.mats||[]).map(id=>(a.materiaux.find(x=>x.id===id)||{}).produit).filter(Boolean).join(", ");if(mats&&a.materiaux.length>1) r1.push([T("mat"),mats]);
+      const mtl=(Array.isArray(s.materiels)?s.materiels:(s.materiel?[s.materiel]:[])).join(", ");if(mtl) r1.push([T("materiel"),mtl]);
+      await bloc(r1,deSlots(APQ_SL_MAT));
+      const pan=[s.panneau,apqTr(s.position,l)].filter(Boolean).join(" – ");
+      await bloc(pan?[[T(apqMaquette(s)?"maquette":"panneau"),pan]]:[],deSlots(["Panneau","Maquette"]));
       const TK=["tAir","tSupport","tSec","tEau","tGache"],aT=o=>o&&(o.heure||TK.some(k=>o[k]!==""&&o[k]!=null));
-      const rel=[r,...(s.relevesSup||[])].filter(aT);const tabT=rel.length>1||rel.some(o=>o.heure);
-      if(!tabT){const tt=TK.filter(k=>r[k]!==""&&r[k]!=null).map(k=>`${T(k)} ${r[k]} °C`).join(" · ");if(tt) bl.push([T("releves"),tt])}
-      if(r.eau) bl.push([T("eauG"),r.eau]);
-      const ec=APQ_ECH.filter(t=>s.echant&&s.echant[t]&&s.echant[t].on).map(t=>[apqTr(t,l),s.echant[t].dim].filter(Boolean).join(" ")).join(" · ");if(ec) bl.push([T("echS"),ec]);
-      const ct=[s.ctrlDelai&&T("apres").replace("{a}",String(s.ctrlDelai).trim().replace(/^(\d+(?:[.,]\d+)?)(?![\d.,])(?!\s*(?:h\b|j\b|d\b|heure|hour|jour|day|min|stund|tag|hora|día|dia))/i,"$1 h")),s.ctrlDate&&frDate(s.ctrlDate)].filter(Boolean).join(" – ");if(ct) bl.push([T("ctrl"),ct]);
-      if(bl.length) this.boite(bl);
-      if(tabT){this.sousTitre(T("releves")+" (°C)");const tri=[...rel].sort((x,y)=>(x.heure||"99").localeCompare(y.heure||"99"));
-        this.tableau([{t:T("heure"),w:.15},...TK.map(k=>({t:T(k+"C"),w:.17}))],tri.map(o=>[{t:o.heure||"–",b:true},...TK.map(k=>o[k]!==""&&o[k]!=null?`${o[k]} °C`:"–")]));this.y+=4}
-      if(s.commentaire&&s.commentaire.trim()){this.texteBalise(s.commentaire,M,L,10);this.y+=4}
-      const rg=x=>{const k=APQ_ORDRE_PH.indexOf(x.slot);return k<0?99:k};
-      const ph=await this.photos([...(s.photos||[])].sort((x,y)=>rg(x)-rg(y)),r);if(ph.length) this.grille(ph);
+      const rel=[r,...(s.relevesSup||[])].filter(aT);const tabT=rel.length>1||rel.some(o=>o.heure);const rT=[];
+      if(!tabT){const tt=TK.filter(k=>r[k]!==""&&r[k]!=null).map(k=>`${T(k)} ${r[k]} °C`).join(" · ");if(tt) rT.push([T("releves"),tt])}
+      if(r.eau) rT.push([T("eauG"),r.eau]);
+      await bloc(rT,deSlots(APQ_SL_TEMP),tabT?()=>{this.sousTitre(T("releves")+" (°C)");const tri=[...rel].sort((x,y)=>(x.heure||"99").localeCompare(y.heure||"99"));
+        this.tableau([{t:T("heure"),w:.15},...TK.map(k=>({t:T(k+"C"),w:.17}))],tri.map(o=>[{t:o.heure||"–",b:true},...TK.map(k=>o[k]!==""&&o[k]!=null?`${o[k]} °C`:"–")]))}:null);
+      const ec=APQ_ECH.filter(t=>s.echant&&s.echant[t]&&s.echant[t].on).map(t=>[apqTr(t,l),s.echant[t].dim].filter(Boolean).join(" ")).join(" · ");
+      await bloc(ec?[[T("echS"),ec]]:[],deSlots(APQ_SL_ECH));vider();
+      const ct=[s.ctrlDelai&&T("apres").replace("{a}",String(s.ctrlDelai).trim().replace(/^(\d+(?:[.,]\d+)?)(?![\d.,])(?!\s*(?:h\b|j\b|d\b|heure|hour|jour|day|min|stund|tag|hora|día|dia))/i,"$1 h")),s.ctrlDate&&frDate(s.ctrlDate)].filter(Boolean).join(" – ");
+      if(s.commentaire&&s.commentaire.trim()){this.y+=2;this.texteBalise(s.commentaire,M,L,10);this.y+=4}
+      const connus=[...APQ_SL_MAT,"Panneau","Maquette",...APQ_SL_TEMP,...APQ_SL_ECH];const rg=x=>{const k=APQ_ORDRE_PH.indexOf(x.slot);return k<0?99:k};
+      const ph=await this.photos((s.photos||[]).filter(x=>!connus.includes(x.slot)).sort((x,y)=>rg(x)-rg(y)),r);if(ph.length) this.grille(ph);
       if(s.applicateurs.length){this.sousTitre(T("appl"));
         this.tableau([{t:T("nom"),w:.2},{t:T("soc"),w:.19},{t:T("panneau"),w:.1},{t:T("ech"),w:.18},{t:T("ctl"),w:.17},{t:T("verdict"),w:.16}],
           s.applicateurs.map(p=>{const e=p.ech||{},ess=Object.entries(p.essais||{}).filter(([k,v])=>v).map(([k])=>apqTr(k,l));
@@ -3395,7 +3411,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
             return [{t:p.nom||"–",b:true},[p.societe,p.role].filter(Boolean).join(" / ")||"–",p.panneau||"–",ech,ctl,p.verdict?{t:apqVTxt(p,l),pill:APQ_V[p.verdict].pdf}:"–"]}));
         for(const p of s.applicateurs){const ph2=await this.photos(p.photos,null);if(!(p.commentaire&&p.commentaire.trim())&&!ph2.length) continue;
           this.sousTitre(p.nom||T("appl"),ph2.length&&!(p.commentaire&&p.commentaire.trim())?200:50);if(p.commentaire&&p.commentaire.trim()){this.texteBalise(p.commentaire,M,L,10);this.y+=4}if(ph2.length) this.grille(ph2)}}
-      const pc=await this.photos(s.ctrlPhotos||[],null);if(pc.length){this.sousTitre([T("ctrl"),ct].filter(Boolean).join(" – "),200);this.grille(pc)}}
+      const pc=await this.photos(s.ctrlPhotos||[],null);if(pc.length){this.sousTitre([T("ctrl"),ct].filter(Boolean).join(" – "),200);this.grille(pc)}else if(ct){this.y+=4;this.boite([[T("ctrl"),ct]])}}
     const tous=a.sessions.flatMap(s=>s.applicateurs.map(p=>({s,p})));
     if(tous.length||apqSansRedite(a)){{const ds=[...new Set(a.sessions.map(x=>x.date).filter(Boolean))].sort();
         this.titreSection("3. "+(ds.length>1?T("resN").replace("{a}",frDate(ds[0])).replace("{b}",frDate(ds[ds.length-1])):ds.length?T("res1").replace("{a}",frDate(ds[0])):T("res")))}
