@@ -330,6 +330,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqsumd{display:flex;align-items:center;gap:8px}.apqdel{min-height:34px;min-width:40px;padding:0 8px;font-size:15px}
 .apqt6{grid-template-columns:1.1fr repeat(5,1fr) auto!important;align-items:end}@media (max-width:560px){.apqt6{grid-template-columns:1fr 1fr 1fr!important}}
 .apqeqp{display:inline-flex;gap:2px}.apqeqp button{min-height:40px}
+.apqech{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 10px;align-items:center;margin-bottom:6px}.apqech input[type=text]{min-height:38px}@media (max-width:560px){.apqech{grid-template-columns:1fr}}
 .apqslot{border:1px dashed var(--line);border-radius:8px;padding:6px;display:grid;gap:6px;align-content:start}
 .apqslot.fait{border-style:solid;border-color:var(--ok)}
 .apqslot>button{min-height:42px;font-size:13px;white-space:normal;padding:4px 6px}
@@ -810,7 +811,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.04";
+const APP_VERSION="2.05";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2790,6 +2791,11 @@ async function chargerNavette(file){const info=`${file.name} · ${taille(file.si
 const APQ_METHODES=["Gunning","Coulage","Free flow / Selflow","Hand packing","Damage (ramming)","Vibrocoulage","Autre"];
 const APQ_ROLES=["Anti-érosion","Isolant","Dense","Autre"];
 const APQ_POS=["Vertical","Plafond","Plafond à 45°","Sol"];
+// v2.05 : photos de session rangées par pavé
+const APQ_SL_MAT=["Malaxeur / machine"],APQ_SL_TEMP=["T° matériau sec","T° eau","T° matériau gâché","Mesure de l'eau"],APQ_SL_ECH=["Échantillonnage"],APQ_SL_DIV=["Test « boule en main »","Application","Feuille de relevé"];
+const APQ_MAQUETTE=["Coulage","Free flow / Selflow","Vibrocoulage"];const apqMaquette=s=>APQ_MAQUETTE.includes(s.methode);
+const APQ_ECH=["Shoe box","Cubes","PLC bar","Plaque d'érosion"];
+const APQ_ORDRE_PH=["Malaxeur / machine","Panneau","Maquette","T° matériau sec","T° eau","T° matériau gâché","Mesure de l'eau","Test « boule en main »","Application","Échantillonnage","Feuille de relevé","Autre"];
 const APQ_SLOTS_C=["Panneaux après prise","Face arrière","Démontage","Demi-coupe","Casse au marteau"];
 const APQ_SLOTS_S=["Panneau","Malaxeur / machine","T° matériau sec","Mesure de l'eau","T° eau","T° matériau gâché","Test « boule en main »","Application","Échantillonnage","Feuille de relevé"];
 const APQ_SLOTS_M=["Sac / étiquette du lot","Certificat / preshipment test"];
@@ -2807,7 +2813,7 @@ const APQ_TR={"Conforme":["Conforme","Compliant","Conforme","Konform"],"Non conf
   "Vibrocoulage":["Vibrocoulage","Vibrocasting","Vibrocolado","Vibrogießen"],"Autre":["Autre","Other","Otro","Andere"],
   "Anti-érosion":["Anti-érosion","Erosion resistant","Antierosión","Erosionsbeständig"],"Isolant":["Isolant","Insulating","Aislante","Isolierend"],"Dense":["Dense","Dense","Denso","Dicht"],
   "Vertical":["Vertical","Vertical","Vertical","Senkrecht"],"Plafond":["Plafond","Overhead","Techo","Überkopf"],"Plafond à 45°":["Plafond à 45°","Overhead at 45°","Techo a 45°","Überkopf 45°"],"Panneaux après prise":["Panneaux après prise","Panels after setting","Paneles tras fraguado","Platten nach dem Abbinden"],"Démontage":["Démontage","Removal","Desmontaje","Ausbau"],"Sol":["Sol","Floor","Suelo","Boden"],
-  "Panneau":["Panneau","Test panel","Panel de prueba","Prüfpaneel"],"Malaxeur / machine":["Malaxeur / machine","Mixer / machine","Mezcladora / máquina","Mischer / Maschine"],
+  "Panneau":["Panneau","Test panel","Panel de prueba","Prüfpaneel"],"Maquette":["Maquette","Mock-up","Maqueta","Modell"],"Plaque d'érosion":["Plaque d'érosion","Erosion plate","Placa de erosión","Erosionsplatte"],"Cubes":["Cubes","Cubes","Cubos","Würfel"],"Shoe box":["Shoe box","Shoe box","Shoe box","Shoe box"],"PLC bar":["Barre PLC","PLC bar","Barra PLC","PLC-Stab"],"Malaxeur / machine":["Malaxeur / machine","Mixer / machine","Mezcladora / máquina","Mischer / Maschine"],
   "T° matériau sec":["T° matériau sec","Dry material T°","T° material seco","T° Trockenmaterial"],"Mesure de l'eau":["Mesure de l'eau","Water measurement","Medición del agua","Wassermessung"],
   "T° eau":["T° eau","Water T°","T° agua","T° Wasser"],"T° matériau gâché":["T° matériau gâché","Mixed material T°","T° material amasado","T° angemischtes Material"],
   "Test « boule en main »":["Test « boule en main »","“Ball in hand” test","Prueba de «bola en mano»","„Ball in der Hand“-Test"],
@@ -2825,7 +2831,7 @@ const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION S
   mat:["Matériaux","Materials","Materiales","Materialien"],produit:["Produit","Product","Producto","Produkt"],role:["Utilisation","Use","Uso","Verwendung"],
   lots:["N° de lots","Batch no.","N.º de lote","Chargen-Nr."],gen:["Observations générales","General observations","Observaciones generales","Allgemeine Beobachtungen"],
   eau:["Origine de l'eau","Water origin","Origen del agua","Herkunft des Wassers"],materiel:["Matériel","Equipment","Equipo","Ausrüstung"],
-  panneau:["Panneau","Test panel","Panel de prueba","Prüfpaneel"],releves:["Températures","Temperatures","Temperaturas","Temperaturen"],
+  panneau:["Panneau","Test panel","Panel de prueba","Prüfpaneel"],maquette:["Maquette","Mock-up","Maqueta","Modell"],echS:["Échantillonnage","Sampling","Muestreo","Probenahme"],releves:["Températures","Temperatures","Temperaturas","Temperaturen"],
   tAir:["air","air","aire","Luft"],heure:["Heure","Time","Hora","Uhrzeit"],tAirC:["Air","Air","Aire","Luft"],tSupportC:["Support","Substrate","Soporte","Untergrund"],tSecC:["Mat. sec","Dry mat.","Mat. seco","Trockenmat."],tEauC:["Eau","Water","Agua","Wasser"],tGacheC:["Mat. gâché","Mixed mat.","Mat. amasado","Angemischt"],tSupport:["support","substrate","soporte","Untergrund"],tSec:["matériau sec","dry material","material seco","Trockenmaterial"],
   tEau:["eau","water","agua","Wasser"],tGache:["matériau gâché","mixed material","material amasado","angemischtes Material"],
   eauG:["Eau de gâchage","Mixing water","Agua de amasado","Anmachwasser"],ctrl:["Contrôle après prise","Check after setting","Control tras fraguado","Prüfung nach dem Abbinden"],
@@ -3008,7 +3014,10 @@ function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has
       c.onchange=()=>{s.mats=c.checked?[...new Set([...s.mats,m.id])]:s.mats.filter(x=>x!==m.id);apqSauver()};
       box.append(apqE("label",{class:"toggle"},c," ",apqE("span",{"data-noi18n":true,text:m.produit||"(matériau sans nom)"})))}
     d.append(apqE("p",{class:"apqst",text:"Matériaux utilisés"}),box)}
-  d.append(apqE("p",{class:"apqst",text:"Matériel"}),apqMateriels(s),apqE("div",{class:"apqrow"},apqChamp("Panneau (dimensions)",s,"panneau",null,"ex. 500×500×100"),apqChoix("Position",s,"position",APQ_POS)));
+  s.photos=s.photos||[];const mq=apqMaquette(s);
+  d.append(apqE("p",{class:"apqst",text:"Matériel"}),apqMateriels(s),apqPhotos(s.photos,APQ_SL_MAT,true));
+  d.append(apqE("p",{class:"apqst",text:mq?"Maquette":"Panneau"}),apqE("div",{class:"apqrow"},mq?apqChamp("Descriptif de la maquette",s,"panneau",null,"ex. coffrage 1000×500×300, ancrages V"):apqChamp("Panneau (dimensions)",s,"panneau",null,"ex. 500×500×100"),apqChoix("Position",s,"position",APQ_POS)),
+    apqPhotos(s.photos,mq?["Maquette",...(s.photos.some(x=>x.slot==="Panneau")?["Panneau"]:[])]:["Panneau",...(s.photos.some(x=>x.slot==="Maquette")?["Maquette"]:[])],true));
   s.releves=s.releves||{};const r=s.releves;s.relevesSup=s.relevesSup||[];
   // v1.97 : plusieurs relevés de températures, chacun avec son heure en tête
   const ligneT=(o,suppr)=>apqE("div",{class:"apqrow apqt apqt6"},apqChamp("Heure",o,"heure","time"),apqChamp("Air",o,"tAir","number"),apqChamp("Support",o,"tSupport","number"),
@@ -3017,8 +3026,15 @@ function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has
   d.append(apqE("p",{class:"apqst",text:"Relevés (°C)"}),ligneT(r),
     ...s.relevesSup.map(o=>ligneT(o,async()=>{s.relevesSup.splice(s.relevesSup.indexOf(o),1);await apqSauver(true);renderApq()})),
     apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:async()=>{s.relevesSup.push({id:apqId(),heure:"",tAir:"",tSupport:"",tSec:"",tEau:"",tGache:""});await apqSauver(true);renderApq()}},"＋ Autre relevé de températures")),
-    apqE("div",{class:"apqrow"},apqChamp("Eau de gâchage",r,"eau",null,"ex. 4,5 L / sac de 25 kg")));
-  s.photos=s.photos||[];d.append(apqE("p",{class:"apqst",text:"Photos de la session"}),apqE("p",{class:"hint",text:"Une case par vue attendue : touchez-la pour ajouter une ou plusieurs photos (plusieurs à la fois possible), puis « ＋ Ajouter » pour en mettre d'autres."}),apqPhotos(s.photos,APQ_SLOTS_S),apqZone("Commentaire",s,"commentaire"));
+    apqE("div",{class:"apqrow"},apqChamp("Eau de gâchage",r,"eau",null,"ex. 4,5 L / sac de 25 kg")),apqPhotos(s.photos,APQ_SL_TEMP,true));
+  // v2.05 : pavé échantillonnage (type coché + dimensions)
+  s.echant=s.echant||{};const eb=apqE("div",{class:"apqech"});
+  for(const t of APQ_ECH){const o=s.echant[t]=s.echant[t]||{on:false,dim:""};const c=apqE("input",{type:"checkbox"});c.checked=!!o.on;
+    const di=apqE("input",{type:"text",value:o.dim||"",placeholder:"Dimensions / nombre","aria-label":"Dimensions "+t});di.disabled=!o.on;
+    c.onchange=()=>{o.on=c.checked;di.disabled=!c.checked;apqSauver();if(c.checked) di.focus()};di.oninput=()=>{o.dim=di.value;apqSauver()};
+    eb.append(apqE("label",{class:"toggle"},c," "+t),di)}
+  d.append(apqE("p",{class:"apqst",text:"Échantillonnage"}),eb,apqPhotos(s.photos,APQ_SL_ECH,true));
+  d.append(apqE("p",{class:"apqst",text:"Autres photos de la session"}),apqPhotos(s.photos,APQ_SL_DIV),apqZone("Commentaire",s,"commentaire"));
   s.ctrlPhotos=s.ctrlPhotos||[];
   d.append(apqE("p",{class:"apqst",text:"Contrôle des panneaux après prise"}),apqE("div",{class:"apqrow"},apqChamp("Délai",s,"ctrlDelai",null,"ex. 24 h"),apqChamp("Date du contrôle",s,"ctrlDate","date")),
     apqPhotos(s.ctrlPhotos,APQ_SLOTS_C));
@@ -3328,7 +3344,6 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
     // v1.92 : matériaux et sessions vides (créés puis non remplis) laissés hors du PDF
     a={...a,materiaux:(a.materiaux||[]).filter(x=>(x.produit||"").trim()||(x.lots||"").trim()||(x.photos||[]).length||x.tds),
       sessions:(a.sessions||[]).filter(s=>s.methode||(s.applicateurs||[]).length||(s.photos||[]).length||(s.ctrlPhotos||[]).length||(s.commentaire||"").trim())};
-    this.paragraphe([{t:T("h1"),b:true}],M,L,14);this.y+=4;
     const dates=[...new Set(a.sessions.map(s=>s.date).filter(Boolean))].sort().map(frDate).join(", ");
     this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(a.lieu&&a.lieu.trim()?[[T("lieu"),a.lieu.trim()]]:[]),...(this.inspBoite||m.inspecteur?[[pdfL("insp",l),this.inspBoite||m.inspecteur]]:[]),...(apqEquipTexte(a)?[[T("equip"),apqEquipTexte(a)]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")],...(a.labo&&a.laboDebut?[[T("laboDebut"),apqTr(a.laboDebut,l)]]:[])],true);
     if(a.intro&&a.intro.trim()){this.texteBalise(a.intro,M,L,10);this.y+=4}
@@ -3359,17 +3374,19 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const r=s.releves||{},bl=[];
       const mats=(s.mats||[]).map(id=>(a.materiaux.find(x=>x.id===id)||{}).produit).filter(Boolean).join(", ");if(mats&&a.materiaux.length>1) bl.push([T("mat"),mats]);
       const mtl=(Array.isArray(s.materiels)?s.materiels:(s.materiel?[s.materiel]:[])).join(", ");if(mtl) bl.push([T("materiel"),mtl]);
-      const pan=[s.panneau,apqTr(s.position,l)].filter(Boolean).join(" – ");if(pan) bl.push([T("panneau"),pan]);
+      const pan=[s.panneau,apqTr(s.position,l)].filter(Boolean).join(" – ");if(pan) bl.push([T(apqMaquette(s)?"maquette":"panneau"),pan]);
       const TK=["tAir","tSupport","tSec","tEau","tGache"],aT=o=>o&&(o.heure||TK.some(k=>o[k]!==""&&o[k]!=null));
       const rel=[r,...(s.relevesSup||[])].filter(aT);const tabT=rel.length>1||rel.some(o=>o.heure);
       if(!tabT){const tt=TK.filter(k=>r[k]!==""&&r[k]!=null).map(k=>`${T(k)} ${r[k]} °C`).join(" · ");if(tt) bl.push([T("releves"),tt])}
       if(r.eau) bl.push([T("eauG"),r.eau]);
+      const ec=APQ_ECH.filter(t=>s.echant&&s.echant[t]&&s.echant[t].on).map(t=>[apqTr(t,l),s.echant[t].dim].filter(Boolean).join(" ")).join(" · ");if(ec) bl.push([T("echS"),ec]);
       const ct=[s.ctrlDelai&&T("apres").replace("{a}",String(s.ctrlDelai).trim().replace(/^(\d+(?:[.,]\d+)?)(?![\d.,])(?!\s*(?:h\b|j\b|d\b|heure|hour|jour|day|min|stund|tag|hora|día|dia))/i,"$1 h")),s.ctrlDate&&frDate(s.ctrlDate)].filter(Boolean).join(" – ");if(ct) bl.push([T("ctrl"),ct]);
       if(bl.length) this.boite(bl);
       if(tabT){this.sousTitre(T("releves")+" (°C)");const tri=[...rel].sort((x,y)=>(x.heure||"99").localeCompare(y.heure||"99"));
         this.tableau([{t:T("heure"),w:.15},...TK.map(k=>({t:T(k+"C"),w:.17}))],tri.map(o=>[{t:o.heure||"–",b:true},...TK.map(k=>o[k]!==""&&o[k]!=null?`${o[k]} °C`:"–")]));this.y+=4}
       if(s.commentaire&&s.commentaire.trim()){this.texteBalise(s.commentaire,M,L,10);this.y+=4}
-      const ph=await this.photos(s.photos,r);if(ph.length) this.grille(ph);
+      const rg=x=>{const k=APQ_ORDRE_PH.indexOf(x.slot);return k<0?99:k};
+      const ph=await this.photos([...(s.photos||[])].sort((x,y)=>rg(x)-rg(y)),r);if(ph.length) this.grille(ph);
       if(s.applicateurs.length){this.sousTitre(T("appl"));
         this.tableau([{t:T("nom"),w:.2},{t:T("soc"),w:.19},{t:T("panneau"),w:.1},{t:T("ech"),w:.18},{t:T("ctl"),w:.17},{t:T("verdict"),w:.16}],
           s.applicateurs.map(p=>{const e=p.ech||{},ess=Object.entries(p.essais||{}).filter(([k,v])=>v).map(([k])=>apqTr(k,l));
@@ -3970,6 +3987,13 @@ const TRAD_UI=[
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
 ["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
 ["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["Maquette", "Mock-up", "Maqueta", "Modell"],
+["Descriptif de la maquette", "Mock-up description", "Descripción de la maqueta", "Beschreibung des Modells"],
+["Échantillonnage", "Sampling", "Muestreo", "Probenahme"],
+["Dimensions / nombre", "Dimensions / quantity", "Dimensiones / cantidad", "Abmessungen / Anzahl"],
+["Autres photos de la session", "Other session photos", "Otras fotos de la sesión", "Weitere Fotos der Sitzung"],
+[" Plaque d'érosion", " Erosion plate", " Placa de erosión", " Erosionsplatte"],
+[" PLC bar", " PLC bar", " Barra PLC", " PLC-Stab"],
 ["Conforme", "Compliant", "Conforme", "Konform"],
 ["Non conforme", "Non-compliant", "No conforme", "Nicht konform"],
 ["Certificat de l'eau", "Water certificate", "Certificado del agua", "Wasserzertifikat"],
@@ -4091,6 +4115,11 @@ const TRAD_UI=[
 ["Démontage", "Removal", "Desmontaje", "Ausbau"],
 ["Sol", "Floor", "Suelo", "Boden"],
 ["Panneau", "Test panel", "Panel de prueba", "Prüfpaneel"],
+["Maquette", "Mock-up", "Maqueta", "Modell"],
+["Plaque d'érosion", "Erosion plate", "Placa de erosión", "Erosionsplatte"],
+["Cubes", "Cubes", "Cubos", "Würfel"],
+["Shoe box", "Shoe box", "Shoe box", "Shoe box"],
+["PLC bar", "PLC bar", "Barra PLC", "PLC-Stab"],
 ["Malaxeur / machine", "Mixer / machine", "Mezcladora / máquina", "Mischer / Maschine"],
 ["T° matériau sec", "Dry material T°", "T° material seco", "T° Trockenmaterial"],
 ["Mesure de l'eau", "Water measurement", "Medición del agua", "Wassermessung"],
