@@ -218,6 +218,12 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .gvbas{padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px}#gvLeg{width:100%;box-sizing:border-box;font-size:16px;min-height:44px}
 .gvacts{display:grid;grid-template-columns:1fr 1fr 1.2fr;padding:2px 0}.gvacts .gvinc{grid-column:1/-1;min-height:40px}.gvacts button{min-height:44px;font-size:14px}.gvinc{font-size:15px}.gvinc input{width:22px;height:22px}
 .thumb .an{position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px}
+.card.pliable>h2,.card.pliable>.ghead>h2{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.card.pliable>h2::before,.card.pliable>.ghead>h2::before{content:"▾";display:inline-block;width:1.15em;color:var(--muted)}
+.card.pliable.ferme>h2::before,.card.pliable.ferme>.ghead>h2::before{content:"▸"}
+.card.pliable.ferme>:not(h2):not(.ghead){display:none!important}
+.card.pliable.ferme{padding-top:10px;padding-bottom:10px}.card.pliable.ferme>h2,.card.pliable.ferme>.ghead>h2{margin:0}
+.cbar{display:flex;justify-content:flex-end;gap:8px;margin:0 0 10px}.cbar button{padding:5px 12px;font-size:.85em;min-height:0}
 .duo,.listes{display:grid;gap:14px;margin-bottom:14px}.duo>.card,.listes>.card{margin-bottom:0}
 @media (min-width:1000px){.duo,.listes{grid-template-columns:1fr 1fr;align-items:start}.listes .cfg{min-height:520px}#pasteBox{min-height:120px}}
 .tligne{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}.tligne:first-child{border-top:0}
@@ -643,7 +649,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.67";
+const APP_VERSION="1.68";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -926,7 +932,7 @@ async function editEntry2(en,id){
   $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;$("fAcces").value=en.acces?en.acces.code:"";renderPlan(en.planReparation||[]);majAv(en.avancement||[]);
   form={photos:[],gravite:en.gravite,editId:id};
   for(const [k,n] of en.photos.entries()){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null,leg:(en.legendes||[])[k]||"",inc:(en.rapport||[])[k]!==false})}
-  renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
+  renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";ouvrirCarte($("formTitle"));$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
 /* ---------- ajout rapide depuis la saisie ---------- */
 let AJOUT=null;
 function arbreVersTexte(arbre,codesEnfants){return arbre.map(e=>`${e.nom} [${e.code}]`+e.enfants.map(c=>"\n- "+c.nom+(codesEnfants&&c.code&&c.code!==slug(c.nom)?` [${c.code}]`:"")).join("")).join("\n")}
@@ -1466,7 +1472,7 @@ function commencerPrevu(id){const p=PREVUS.find(x=>x.id===id);if(!p) return;
   refreshSelects({eq:p.eq,sub:p.sub,act:p.act,subact:p.subact});if(p.sub) $("fSub").value=p.sub;fillSubAct(p.subact);updatePath();
   if(p.repere) $("fRep").value=p.repere;
   form.prevuId=id;$("prevuBanner").hidden=false;$("prevuTxt").textContent=p.note;renderPrevus();
-  $("formTitle").scrollIntoView({behavior:"smooth",block:"start"})}
+  ouvrirCarte($("formTitle"));$("formTitle").scrollIntoView({behavior:"smooth",block:"start"})}
 async function prevuTermine(){if(!form.prevuId) return null;const id=form.prevuId;const p=PREVUS.find(x=>x.id===id)||null;PREVUS=PREVUS.filter(x=>x.id!==id);await sauverPrevus();return p}
 // panneau de préparation
 let PROPS=[],REC=null;
@@ -1534,6 +1540,31 @@ function effacerPrep(){const b=$("prepClear");if(!$("prepTxt").value.trim()&&!PR
   if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer : effacer";clearTimeout(effacerPrep.t);effacerPrep.t=setTimeout(()=>{b.dataset.ok="";b.textContent="🗑 Effacer le texte"},4000);return}
   clearTimeout(effacerPrep.t);b.dataset.ok="";b.textContent="🗑 Effacer le texte";
   $("prepTxt").value="";if(!REC) $("prepLive").textContent="";PROPS=[];renderPrep();toast("Texte effacé.");if(REC) $("prepTxt").focus()}
+/* ---------- v1.68 : cartes repliables (toucher le titre : ▾ ouverte / ▸ fermée), état mémorisé sur cet appareil ---------- */
+let ETAT_CARTES={};
+function lireEtatCartes(){try{ETAT_CARTES=JSON.parse(localStorage.getItem("cartes")||"{}")||{}}catch(e){ETAT_CARTES={}}}
+function ecrireEtatCartes(){try{localStorage.setItem("cartes",JSON.stringify(ETAT_CARTES))}catch(e){}}
+function titreCarte(c){return c.querySelector(":scope>h2")||c.querySelector(":scope>.ghead>h2")}
+function basculerCarte(c,fermer,memo=true){c.classList.toggle("ferme",fermer);const h=titreCarte(c);if(h) h.setAttribute("aria-expanded",String(!fermer));if(memo){ETAT_CARTES[c.dataset.cle]=fermer?1:0;ecrireEtatCartes()}}
+function ouvrirCarte(el){const c=el&&el.closest&&el.closest(".card.pliable");if(c&&c.classList.contains("ferme")) basculerCarte(c,false,false)}
+// au départ (aucun choix mémorisé) : cartes ouvertes, sauf l'onglet Missions (hors « Mission active »), Stockage (Journal) et Glossaire (Traduction)
+function carteFermeeParDefaut(sec,i,cle){return sec.id==="v-reglages"?i>1:(cle==="v-journal#2"||cle==="v-trad#2")}
+function initCartes(){lireEtatCartes();
+  document.querySelectorAll("main>section").forEach(sec=>{let i=0;const cartes=[];
+    sec.querySelectorAll(".card").forEach(c=>{if(c.classList.contains("confirm")||c.id==="prepCard") return;
+      const p=c.parentElement;if(!(p===sec||p.classList.contains("duo")||p.classList.contains("listes"))) return;
+      const h=titreCarte(c);if(!h) return;i++;
+      const cle=c.id||`${sec.id}#${i}`;c.dataset.cle=cle;c.classList.add("pliable");h.setAttribute("role","button");h.tabIndex=0;
+      basculerCarte(c,cle in ETAT_CARTES?!!ETAT_CARTES[cle]:carteFermeeParDefaut(sec,i,cle),false);
+      const go=ev=>{if(ev.type==="keydown"&&ev.key!=="Enter"&&ev.key!==" ") return;if(ev.target.closest("button,input,select,a")) return;ev.preventDefault();basculerCarte(c,!c.classList.contains("ferme"))};
+      h.addEventListener("click",go);h.addEventListener("keydown",go);cartes.push(c)});
+    if(cartes.length>=2){const bar=document.createElement("div");bar.className="cbar";
+      bar.innerHTML=`<button type="button" class="ghost">Tout replier</button><button type="button" class="ghost">Tout déplier</button>`;
+      const [bR,bD]=bar.querySelectorAll("button");bR.onclick=()=>cartes.forEach(c=>basculerCarte(c,true));bD.onclick=()=>cartes.forEach(c=>basculerCarte(c,false));
+      sec.prepend(bar)}});
+  // une carte de confirmation (programme, renommage, envoi…) qui apparaît dans une carte fermée l'ouvre
+  new MutationObserver(ms=>{for(const m of ms){const t=m.target;if(t.nodeType===1&&!t.hidden&&t.classList.contains("confirm")) ouvrirCarte(t.parentElement)}})
+    .observe(document.querySelector("main"),{attributes:true,attributeFilter:["hidden"],subtree:true})}
 function initPrep(){
   $("trOk").onclick=enregistrerTrad;$("trNon").onclick=()=>{$("trCard").hidden=true;TRAD_EN_COURS=null};
   $("prepClear").onclick=effacerPrep;
@@ -2399,7 +2430,7 @@ async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`
   $("accTrad").hidden=$("navTrad").hidden}
 function initAccueil(){$("pdfToutes").onchange=renderPdfs;document.querySelectorAll("#v-accueil .acc").forEach(b=>b.onclick=()=>{const g=b.dataset.go;
   if(g==="prep"){showView("saisie");prepOuvrir(true);$("prepCard").scrollIntoView({block:"start"});return}
-  if(g==="prevus"){showView("saisie");if(!$("prevusCard").hidden) $("prevusCard").scrollIntoView({block:"start"});return}
+  if(g==="prevus"){showView("saisie");if(!$("prevusCard").hidden){ouvrirCarte($("prevusCard"));$("prevusCard").scrollIntoView({block:"start"})}return}
   showView(g)});
   document.querySelector("header h1").style.cursor="pointer";document.querySelector("header h1").onclick=()=>showView("accueil")}
 /* ---------- démarrage ---------- */
@@ -2744,6 +2775,7 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
    Les listes de la mission (équipements, activités, accès, dégâts courants) gardent la langue de la mission.
    {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
 const TRAD_UI=[
+["Tout déplier","Expand all","Desplegar todo","Alle aufklappen"],
 ["Programme d'arrêt","Turnaround programme","Programa de parada","Stillstandsprogramm"],
 ["Charger le programme","Load the programme","Cargar el programa","Programm laden"],
 ["Programme d'arrêt {a} : {b} constats prévus en {c} visites.","Turnaround programme {a}: {b} planned findings in {c} visits.","Programa de parada {a}: {b} constataciones previstas en {c} visitas.","Stillstandsprogramm {a}: {b} geplante Befunde in {c} Begehungen."],
@@ -3400,7 +3432,7 @@ function initLangueUI(){LANGUI.lang=langueUI();
   const s=$("uiLang");if(s) s.onchange=()=>appliquerLangueUI(s.value);appliquerLangueUI(LANGUI.lang)}
 async function start(){
   initLangueUI();
-  initEditeur2();initGalerie();initPrep();initTheme();
+  initEditeur2();initGalerie();initPrep();initTheme();initCartes();
   initEditeur("fObs");initEditeur("fReco");
   try{DB=await openDB()}catch(e){document.querySelector("main").innerHTML=`<div class="card"><strong>Stockage indisponible.</strong><p class="hint">Ouvre l'appli dans Chrome (pas en navigation privée).</p></div>`;return}
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
