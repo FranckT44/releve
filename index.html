@@ -327,6 +327,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqeq{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.apqeq button{min-height:40px}.apqeq button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:transparent;font-weight:700}
 .apqlabo{display:grid;gap:6px;margin:6px 0}
 .apqtds{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}.apqtds button{min-height:40px}.apqtdsn{font-weight:600;font-size:14px;word-break:break-all}
+.apqsumd{display:flex;align-items:center;gap:8px}.apqdel{min-height:34px;min-width:40px;padding:0 8px;font-size:15px}
 .apqslot{border:1px dashed var(--line);border-radius:8px;padding:6px;display:grid;gap:6px;align-content:start}
 .apqslot.fait{border-style:solid;border-color:var(--ok)}
 .apqslot>button{min-height:42px;font-size:13px;white-space:normal;padding:4px 6px}
@@ -805,7 +806,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="1.93";
+const APP_VERSION="1.95";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2808,7 +2809,7 @@ const APQ_TR={"Conforme":["Conforme","Compliant","Conforme","Konform"],"Non conf
   "Face arrière":["Face arrière","Back side","Cara posterior","Rückseite"],"Démontage":["Démontage","Dismantling","Desmontaje","Ausbau"],
   "Demi-coupe":["Demi-coupe","Half-cut","Corte por la mitad","Halbschnitt"],"Casse au marteau":["Casse au marteau","Hammer break","Rotura con martillo","Hammerbruch"],
   "Densité":["Densité","Density","Densidad","Dichte"],"Abrasion":["Abrasion","Abrasion","Abrasión","Abrieb"],
-  "OK":["OK","OK","OK","OK"],"Acceptable":["Acceptable","Acceptable","Aceptable","Akzeptabel"],"Refusé":["Refusé","Rejected","Rechazado","Abgelehnt"],"À repasser":["À repasser","To be re-tested","A repetir","Zu wiederholen"]};
+  "OK":["OK","OK","OK","OK"],"Acceptable":["Acceptable","Acceptable","Aceptable","Akzeptabel"],"Refusé":["Refusé","Rejected","Rechazado","Abgelehnt"],"À repasser":["À repasser","To be re-tested","A repetir","Zu wiederholen"],"à repasser":["à repasser","to be re-tested","a repetir","zu wiederholen"]};
 const apqTr=(v,l)=>v?(APQ_TR[v]?APQ_TR[v][iLangue(l)]:v):"";
 const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION SESSION REPORT","INFORME DE SESIÓN DE PRECUALIFICACIÓN","BERICHT ZUR PRÄQUALIFIKATIONSSITZUNG"],
   h1:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht zur Präqualifikationssitzung"],
@@ -2906,13 +2907,22 @@ async function apqAjouterPhotos(files){const c=APQ_CIBLE;APQ_CIBLE=null;if(!c||!
       c.liste.push({pid,slot:c.slot,leg:""})}
     await apqSauver(true)}
   catch(e){toast("Photo non ajoutée : "+(e&&e.message||e),6000)}finally{busyFin();renderApq()}}
+// v1.95 : « Refusé » peut être combiné avec « À repasser » (p.repasser)
+const apqVTxt=(p,l)=>p.verdict?(l?apqTr(APQ_V[p.verdict].fr,l):APQ_V[p.verdict].fr)+(p.verdict==="ref"&&p.repasser?" – "+(l?apqTr("à repasser",l):"à repasser"):""):"";
 function apqVerdict(p){const box=apqE("div",{class:"apqv"});
-  for(const [k,v] of Object.entries(APQ_V)){const b=apqE("button",{type:"button","aria-pressed":String(p.verdict===k)},v.fr);
-    if(p.verdict===k) b.style.background=v.c;b.onclick=()=>{p.verdict=p.verdict===k?"":k;apqSauver();renderApq()};box.append(b)}
+  for(const [k,v] of Object.entries(APQ_V)){const on=p.verdict===k||(k==="rep"&&p.verdict==="ref"&&!!p.repasser);
+    const b=apqE("button",{type:"button","aria-pressed":String(on)},v.fr);if(on) b.style.background=v.c;
+    b.onclick=()=>{if(k==="rep"&&p.verdict==="ref") p.repasser=!p.repasser;
+      else if(k==="ref"&&p.verdict==="rep"){p.verdict="ref";p.repasser=true}
+      else{p.verdict=p.verdict===k?"":k;p.repasser=false}
+      apqSauver();renderApq()};box.append(b)}
+  box.append(apqE("span",{class:"hint",text:"« Refusé » et « À repasser » peuvent être cochés ensemble."}));
   return box}
 function apqApplicateur(s,p){const d=apqE("details",{class:"apqs apqa"});d.open=APQ_OUV.has(p.id);d.ontoggle=()=>d.open?APQ_OUV.add(p.id):APQ_OUV.delete(p.id);
   const v=p.verdict&&APQ_V[p.verdict];
-  d.append(apqE("summary",{},apqE("span",{"data-noi18n":true,text:p.nom||"Applicateur sans nom"}),v?apqE("span",{class:"st",style:`background:${v.c};color:#fff;border-color:transparent`},v.fr):null));
+  const supA=async()=>{for(const x of p.photos||[]) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}s.applicateurs.splice(s.applicateurs.indexOf(p),1);await apqSauver(true);renderApq();toast("Applicateur retiré.")};
+  const videA=()=>!p.nom&&!p.verdict&&!(p.photos||[]).length&&!(p.commentaire||"").trim();
+  d.append(apqE("summary",{},apqE("span",{"data-noi18n":true,text:p.nom||"Applicateur sans nom"}),apqE("span",{class:"apqsumd"},v?apqE("span",{class:"st",style:`background:${v.c};color:#fff;border-color:transparent`},apqVTxt(p)):null,apqPoubelle(videA,"l'applicateur",supA))));
   if((APQ.personnes||[]).length){const sel=apqE("select",{},apqE("option",{value:"",text:"—"}),APQ.personnes.map(q=>apqE("option",{value:q.id,text:apqNomPers(q)||"(sans nom)","data-noi18n":true})));
     sel.value=p.personne||"";sel.onchange=async()=>{p.personne=sel.value;const q=APQ.personnes.find(x=>x.id===sel.value);if(q){p.nom=apqNomPers(q);p.societe=q.societe||p.societe||""}await apqSauver(true);renderApq()};
     d.append(apqE("div",{class:"apqrow"},apqE("label",{},"Choisir dans les applicateurs présentés",sel)))}
@@ -2973,9 +2983,17 @@ function apqGalerie(a){const box=apqE("div",{class:"apqpers"});a.personnes=a.per
         await apqSauver(true);renderApq()}},"🗑 Retirer"))))}
   box.append(apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:async()=>{a.personnes.push({id:apqId(),prenom:"",nom:"",societe:(a.personnes[a.personnes.length-1]||{}).societe||"",photos:[]});await apqSauver(true);renderApq()}},"＋ Applicateur présenté")));
   return box}
+// v1.94 : 🗑 dans l'en-tête d'une session / d'un applicateur (suppression directe si vide, sinon confirmation)
+function apqPoubelle(vide,quoi,suppr){const b=apqE("button",{type:"button",class:"ghost apqdel",title:"Supprimer "+quoi,"aria-label":"Supprimer "+quoi},"🗑");
+  b.onclick=async ev=>{ev.preventDefault();ev.stopPropagation();
+    if(!vide()&&!b.dataset.ok){b.dataset.ok="1";b.textContent="Supprimer ?";b.classList.add("danger");setTimeout(()=>{if(b.isConnected){delete b.dataset.ok;b.textContent="🗑";b.classList.remove("danger")}},4000);return}
+    await suppr()};return b}
 function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has(s.id);d.ontoggle=()=>d.open?APQ_OUV.add(s.id):APQ_OUV.delete(s.id);
   const n=s.applicateurs.length;
-  d.append(apqE("summary",{},apqE("span",{text:apqLibSession(s)}),apqE("span",{class:"stat",text:`${n} applicateur${n>1?"s":""}`})));
+  const supS=async()=>{for(const x of [...(s.photos||[]),...s.applicateurs.flatMap(p=>p.photos||[])]) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
+    APQ.sessions.splice(APQ.sessions.indexOf(s),1);await apqSauver(true);renderApq();toast("Session supprimée.")};
+  const videS=()=>!s.methode&&!n&&!(s.photos||[]).length&&!(s.commentaire||"").trim();
+  d.append(apqE("summary",{},apqE("span",{text:apqLibSession(s)}),apqE("span",{class:"apqsumd"},apqE("span",{class:"stat",text:`${n} applicateur${n>1?"s":""}`}),apqPoubelle(videS,"la session",supS))));
   d.append(apqE("div",{class:"apqrow"},apqChoix("Méthode",s,"methode",APQ_METHODES,renderApq),apqChamp("Date",s,"date","date")));
   // matériaux de la session (cochés dans la liste des matériaux)
   if(APQ.materiaux.length){const box=apqE("div",{class:"apqchk"});s.mats=s.mats||[];
@@ -3051,7 +3069,7 @@ async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apq
     a.sessions.push(s);APQ_OUV.add(s.id);await apqSauver(true);renderApq()}},"＋ Session (méthode et date)")));
   const rs=$("apqRes");rs.innerHTML="";const tous=a.sessions.flatMap(s=>s.applicateurs.map(p=>({s,p})));
   if(tous.length){const ul=apqE("ul",{class:"apqbilan"});for(const {s,p} of tous){const v=p.verdict&&APQ_V[p.verdict];
-      ul.append(apqE("li",{},apqE("span",{"data-noi18n":true,text:`${p.nom||"?"} – ${apqLibSession(s)}`}),apqE("span",{class:"st",style:v?`background:${v.c};color:#fff;border-color:transparent`:null},v?v.fr:"sans verdict")))}
+      ul.append(apqE("li",{},apqE("span",{"data-noi18n":true,text:`${p.nom||"?"} – ${apqLibSession(s)}`}),apqE("span",{class:"st",style:v?`background:${v.c};color:#fff;border-color:transparent`:null},v?apqVTxt(p):"sans verdict")))}
     rs.append(ul)}
   // v1.89 : plus de texte proposé à partir des verdicts (il répétait le tableau) ; les lignes déjà proposées sont retirées
   {const r=apqSansRedite(a);if(r!==(a.resultats||"").trim()){a.resultats=r;apqSauver(true)}}
@@ -3320,14 +3338,14 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
           s.applicateurs.map(p=>{const e=p.ech||{},ess=Object.entries(p.essais||{}).filter(([k,v])=>v).map(([k])=>apqTr(k,l));
             const ech=[e.ids,e.labo?T("laboC"):"",ess.join(", ")].filter(Boolean).join(" – ")||"–";
             const ctl=APQ_CTL.filter(([k])=>(p.ctl||{})[k]).map(([k,t])=>apqTr(t,l)).join(", ")||"–";
-            return [{t:p.nom||"–",b:true},[p.societe,p.role].filter(Boolean).join(" / ")||"–",p.panneau||"–",ech,ctl,p.verdict?{t:apqTr(APQ_V[p.verdict].fr,l),pill:APQ_V[p.verdict].pdf}:"–"]}));
+            return [{t:p.nom||"–",b:true},[p.societe,p.role].filter(Boolean).join(" / ")||"–",p.panneau||"–",ech,ctl,p.verdict?{t:apqVTxt(p,l),pill:APQ_V[p.verdict].pdf}:"–"]}));
         for(const p of s.applicateurs){const ph2=await this.photos(p.photos,null);if(!(p.commentaire&&p.commentaire.trim())&&!ph2.length) continue;
           this.sousTitre(p.nom||T("appl"));if(p.commentaire&&p.commentaire.trim()){this.texteBalise(p.commentaire,M,L,10);this.y+=4}if(ph2.length) this.grille(ph2)}}}
     const tous=a.sessions.flatMap(s=>s.applicateurs.map(p=>({s,p})));
     if(tous.length||apqSansRedite(a)){{const ds=[...new Set(a.sessions.map(x=>x.date).filter(Boolean))].sort();
         this.titreSection("3. "+(ds.length>1?T("resN").replace("{a}",frDate(ds[0])).replace("{b}",frDate(ds[ds.length-1])):ds.length?T("res1").replace("{a}",frDate(ds[0])):T("res")))}
       if(tous.length) this.tableau([{t:T("nom"),w:.32},{t:T("methode"),w:.3},{t:T("date"),w:.18},{t:T("verdict"),w:.2}],
-        tous.map(({s,p})=>[{t:p.nom||"–",b:true},apqTr(s.methode,l)||"–",s.date?frDate(s.date):"–",p.verdict?{t:apqTr(APQ_V[p.verdict].fr,l),pill:APQ_V[p.verdict].pdf}:"–"]));
+        tous.map(({s,p})=>[{t:p.nom||"–",b:true},apqTr(s.methode,l)||"–",s.date?frDate(s.date):"–",p.verdict?{t:apqVTxt(p,l),pill:APQ_V[p.verdict].pdf}:"–"]));
       const rt=apqSansRedite(a);if(rt){this.y+=4;this.texteBalise(rt,M,L,10)}}
     if(ann&&ann.length){this.titreSection(T("annexes"));
       this.tableau([{t:"N°",w:.08},{t:T("docA"),w:.38},{t:T("fichA"),w:.4},{t:T("pagesA"),w:.14}],ann.map((x,i)=>[{t:String(i+1),b:true},x.titre,x.nom,x.pages?String(x.pages):T("nonInseree")]))}}}}
@@ -3908,6 +3926,11 @@ const TRAD_UI=[
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
 ["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
 ["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["« Refusé » et « À repasser » peuvent être cochés ensemble.", "“Rejected” and “To be re-tested” can be selected together.", "«Rechazado» y «A repetir» pueden marcarse juntos.", "„Abgelehnt“ und „Zu wiederholen“ können zusammen gewählt werden."],
+["Refusé – à repasser", "Rejected – to be re-tested", "Rechazado – a repetir", "Abgelehnt – zu wiederholen"],
+["Supprimer ?", "Delete?", "¿Eliminar?", "Löschen?"],
+["Session supprimée.", "Session deleted.", "Sesión eliminada.", "Sitzung gelöscht."],
+["Applicateur retiré.", "Applicator removed.", "Aplicador retirado.", "Verarbeiter entfernt."],
 ["Lieu de réalisation", "Location", "Lugar de realización", "Durchführungsort"],
 ["📎 Fiche technique (PDF)", "📎 Technical data sheet (PDF)", "📎 Ficha técnica (PDF)", "📎 Technisches Datenblatt (PDF)"],
 [" Annexer au rapport", " Append to report", " Anexar al informe", " Dem Bericht anhängen"],
@@ -4036,6 +4059,7 @@ const TRAD_UI=[
 ["Acceptable", "Acceptable", "Aceptable", "Akzeptabel"],
 ["Refusé", "Rejected", "Rechazado", "Abgelehnt"],
 ["À repasser", "To be re-tested", "A repetir", "Zu wiederholen"],
+["à repasser", "to be re-tested", "a repetir", "zu wiederholen"],
 ["Enregistré dans Téléchargements.", "Saved in Downloads.", "Guardado en Descargas.", "In Downloads gespeichert."],
 ["Trait", "Stroke", "Trazo", "Strich"],
 ["━ plein", "━ solid", "━ continuo", "━ durchgezogen"],
