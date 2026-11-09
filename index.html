@@ -736,7 +736,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 
 <script>
 "use strict";
-const APP_VERSION="1.73";
+const APP_VERSION="1.74";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1170,7 +1170,10 @@ function edDessiner(){const cv=$("edCv"),g=cv.getContext("2d");if(!ED.v) return;
     g.setLineDash([10*px,6*px]);g.strokeStyle="#fff";g.lineWidth=2*px;g.strokeRect(x,y,w,h);g.restore()}
   g.setTransform(1,0,0,1,0,0);
   $("edDel").disabled=ED.sel<0;$("edUndo").disabled=!ED.hist.length;$("edRedo").disabled=!ED.redo.length}
-function edPoint(ev){const r=$("edCv").getBoundingClientRect();return [(ev.clientX-r.left)/ED.v.sc+ED.v.x0,(ev.clientY-r.top)/ED.v.sc+ED.v.y0]}
+// v1.74 : le point est ramené dans la photo (dans le recadrage s'il y en a un) : on ne dessine plus en dehors de l'image
+function edPoint(ev){const r=$("edCv").getBoundingClientRect(),x=(ev.clientX-r.left)/ED.v.sc+ED.v.x0,y=(ev.clientY-r.top)/ED.v.sc+ED.v.y0;
+  const B=(ED.tool!=="crop"&&ED.crop)||{x:0,y:0,w:ED.img.width,h:ED.img.height};
+  return [Math.min(Math.max(x,B.x),B.x+B.w),Math.min(Math.max(y,B.y),B.y+B.h)]}
 // deux doigts = zoom et déplacement de la vue (le dessin en cours est abandonné)
 const PTR=new Map();
 function edPinchPos(){const [a,b]=[...PTR.values()],r=$("edCv").getBoundingClientRect();return {d:Math.hypot(a.x-b.x,a.y-b.y)||1,cx:(a.x+b.x)/2-r.left,cy:(a.y+b.y)/2-r.top}}
