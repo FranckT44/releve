@@ -809,7 +809,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="1.97";
+const APP_VERSION="1.99";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2817,7 +2817,7 @@ const APQ_TR={"Conforme":["Conforme","Compliant","Conforme","Konform"],"Non conf
 const apqTr=(v,l)=>v?(APQ_TR[v]?APQ_TR[v][iLangue(l)]:v):"";
 const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION SESSION REPORT","INFORME DE SESIÓN DE PRECUALIFICACIÓN","BERICHT ZUR PRÄQUALIFIKATIONSSITZUNG"],
   h1:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht zur Präqualifikationssitzung"],
-  dates:["Dates","Dates","Fechas","Daten"],lieu:["Lieu de réalisation","Location","Lugar de realización","Durchführungsort"],tds:["Fiche technique","Technical data sheet","Ficha técnica","Technisches Datenblatt"],annexes:["Annexes","Appendices","Anexos","Anlagen"],docA:["Document","Document","Documento","Dokument"],fichA:["Fichier","File","Archivo","Datei"],pagesA:["Pages","Pages","Páginas","Seiten"],nonInseree:["non insérée (PDF protégé ou illisible)","not inserted (protected or unreadable PDF)","no insertada (PDF protegido o ilegible)","nicht eingefügt (geschütztes oder unlesbares PDF)"],equip:["Équipement(s) concerné(s)","Equipment concerned","Equipo(s) afectado(s)","Betroffene Ausrüstung"],laboDebut:["Travaux avant résultats labo","Works before lab results","Trabajos antes de resultados","Arbeiten vor Laborergebnis"],psh:["Preshipment test","Preshipment test","Ensayo previo al envío","Preshipment-Test"],labo:["Échantillons pour laboratoire","Samples for laboratory","Muestras para laboratorio","Proben für Labor"],
+  dates:["Dates","Dates","Fechas","Daten"],etabli:["Rapport établi par","Report prepared by","Informe elaborado por","Bericht erstellt von"],lieu:["Lieu de réalisation","Location","Lugar de realización","Durchführungsort"],tds:["Fiche technique","Technical data sheet","Ficha técnica","Technisches Datenblatt"],annexes:["Annexes","Appendices","Anexos","Anlagen"],docA:["Document","Document","Documento","Dokument"],fichA:["Fichier","File","Archivo","Datei"],pagesA:["Pages","Pages","Páginas","Seiten"],nonInseree:["non insérée (PDF protégé ou illisible)","not inserted (protected or unreadable PDF)","no insertada (PDF protegido o ilegible)","nicht eingefügt (geschütztes oder unlesbares PDF)"],equip:["Équipement(s) concerné(s)","Equipment concerned","Equipo(s) afectado(s)","Betroffene Ausrüstung"],laboDebut:["Travaux avant résultats labo","Works before lab results","Trabajos antes de resultados","Arbeiten vor Laborergebnis"],psh:["Preshipment test","Preshipment test","Ensayo previo al envío","Preshipment-Test"],labo:["Échantillons pour laboratoire","Samples for laboratory","Muestras para laboratorio","Proben für Labor"],
   oui:["Oui","Yes","Sí","Ja"],non:["Non","No","No","Nein"],perim:["Périmètre","Scope","Alcance","Umfang"],
   mat:["Matériaux","Materials","Materiales","Materialien"],produit:["Produit","Product","Producto","Produkt"],role:["Utilisation","Use","Uso","Verwendung"],
   lots:["N° de lots","Batch no.","N.º de lote","Chargen-Nr."],gen:["Observations générales","General observations","Observaciones generales","Allgemeine Beobachtungen"],
@@ -3272,7 +3272,7 @@ async function apqFusion(octets,ann){const L=await apqPdfLib();const doc=await L
 // la classe est créée à la demande : PdfRapide est défini plus loin dans la page
 function PdfApqClasse(){return class PdfApq extends PdfRapide{
   constructor(l,soc,m){super(l,soc,m);this.titre1=apqL("titre",l);this.nPh=0}
-  sousTitre(t){this.place(22);this.y+=4;this.txt(this.M,this.y+10,t,"B",10.5,"0.20 0.20 0.20");this.y+=16}
+  sousTitre(t,suite){this.place(22+(suite??50));this.y+=4;this.txt(this.M,this.y+10,t,"B",10.5,"0.20 0.20 0.20");this.y+=16}
   boite(lg){const M=this.M,L=this.W-2*M,s=9.5,lh=12.5;const rows=lg.map(([k,v])=>({k,ll:this.lignes([{t:String(v)}],L-170,s)}));
     const h=rows.reduce((t,r)=>t+Math.max(1,r.ll.length)*lh+3,0)+6;this.place(h);const y0=this.y;this.rect(M,y0,L,h,"0.96 0.96 0.95");this.y+=4;
     for(const r of rows){this.txt(M+8,this.y+10,r.k,"B",8.5,"0.40 0.40 0.40");let yy=this.y;
@@ -3311,7 +3311,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       sessions:(a.sessions||[]).filter(s=>s.methode||(s.applicateurs||[]).length||(s.photos||[]).length||(s.ctrlPhotos||[]).length||(s.commentaire||"").trim())};
     this.paragraphe([{t:T("h1"),b:true}],M,L,14);this.y+=4;
     const dates=[...new Set(a.sessions.map(s=>s.date).filter(Boolean))].sort().map(frDate).join(", ");
-    this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(a.lieu&&a.lieu.trim()?[[T("lieu"),a.lieu.trim()]]:[]),...(m.inspecteur?[[pdfL("insp",l),m.inspecteur]]:[]),...(apqEquipTexte(a)?[[T("equip"),apqEquipTexte(a)]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")],...(a.labo&&a.laboDebut?[[T("laboDebut"),apqTr(a.laboDebut,l)]]:[])]);
+    this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(a.lieu&&a.lieu.trim()?[[T("lieu"),a.lieu.trim()]]:[]),...(this.inspBoite||m.inspecteur?[[pdfL("insp",l),this.inspBoite||m.inspecteur]]:[]),...(apqEquipTexte(a)?[[T("equip"),apqEquipTexte(a)]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")],...(a.labo&&a.laboDebut?[[T("laboDebut"),apqTr(a.laboDebut,l)]]:[])]);
     if(a.intro&&a.intro.trim()){this.texteBalise(a.intro,M,L,10);this.y+=4}
     if(a.perimetre&&a.perimetre.trim()){this.titreSection(T("perim"));this.texteBalise(a.perimetre,M,L,10)}
     // v1.78 : documents de référence
@@ -3356,8 +3356,8 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
             const ctl=APQ_CTL.filter(([k])=>(p.ctl||{})[k]).map(([k,t])=>apqTr(t,l)).join(", ")||"–";
             return [{t:p.nom||"–",b:true},[p.societe,p.role].filter(Boolean).join(" / ")||"–",p.panneau||"–",ech,ctl,p.verdict?{t:apqVTxt(p,l),pill:APQ_V[p.verdict].pdf}:"–"]}));
         for(const p of s.applicateurs){const ph2=await this.photos(p.photos,null);if(!(p.commentaire&&p.commentaire.trim())&&!ph2.length) continue;
-          this.sousTitre(p.nom||T("appl"));if(p.commentaire&&p.commentaire.trim()){this.texteBalise(p.commentaire,M,L,10);this.y+=4}if(ph2.length) this.grille(ph2)}}
-      const pc=await this.photos(s.ctrlPhotos||[],null);if(pc.length){this.sousTitre([T("ctrl"),ct].filter(Boolean).join(" – "));this.grille(pc)}}
+          this.sousTitre(p.nom||T("appl"),ph2.length&&!(p.commentaire&&p.commentaire.trim())?200:50);if(p.commentaire&&p.commentaire.trim()){this.texteBalise(p.commentaire,M,L,10);this.y+=4}if(ph2.length) this.grille(ph2)}}
+      const pc=await this.photos(s.ctrlPhotos||[],null);if(pc.length){this.sousTitre([T("ctrl"),ct].filter(Boolean).join(" – "),200);this.grille(pc)}}
     const tous=a.sessions.flatMap(s=>s.applicateurs.map(p=>({s,p})));
     if(tous.length||apqSansRedite(a)){{const ds=[...new Set(a.sessions.map(x=>x.date).filter(Boolean))].sort();
         this.titreSection("3. "+(ds.length>1?T("resN").replace("{a}",frDate(ds[0])).replace("{b}",frDate(ds[ds.length-1])):ds.length?T("res1").replace("{a}",frDate(ds[0])):T("res")))}
@@ -3370,8 +3370,10 @@ async function pdfApq(){if(PDF_EN_COURS) return;const a=await apqCharger();if(!a
   PDF_EN_COURS=true;busy("Création du PDF…","");await repos();
   try{await apqSauver(true);const m=curMission()||CFG.mission,l=apqLangue(m);let so=socMission(m);
     if(a.logo==="QUARTIS"||a.logo==="FTA") so=socMission({...m,societe:a.logo});
-    const insp=[a.inspecteur||m.inspecteur,a.apiNo?`API ${a.apiType||"936"} N° ${a.apiNo}`:""].filter(Boolean).join(" – ");
-    const mk=new (PdfApqClasse())(l,so.societe,{...m,...so,inspecteur:insp});
+    // v1.99 : en-tête sans n° API ; n° API dans l'encadré « Inspecteur » ; pied « Rapport établi par : <inspecteur> – <date> »
+    const nomI=a.inspecteur||m.inspecteur||"",insp=[nomI,a.apiNo?`API ${a.apiType||"936"} N° ${a.apiNo}`:""].filter(Boolean).join(" – ");
+    const mk=new (PdfApqClasse())(l,so.societe,{...m,...so,inspecteur:nomI});mk.inspBoite=insp;
+    mk.pied=`${apqL("etabli",l)} : ${[nomI,frDate(today())].filter(Boolean).join(" – ")}`;
     if(a.logo==="perso"&&(a.logoPhotos||[]).length){const ph=await getPhoto(a.logoPhotos[0].pid);if(ph&&ph.blob){try{mk.logoPerso=await jpegPdf(ph.blob,600)}catch(e){}}}const ann=await apqAnnexes(a,l);await mk.rapport(a,ann);
     const dts=a.sessions.map(s=>s.date).filter(Boolean).sort();
     const nom=nomSur(`${m.no} - ${apqL("fichier",l)} - ${dts.length?dts[dts.length-1]:today()}`)+".pdf";
@@ -3539,7 +3541,7 @@ class PdfRapide{
       if(m){const d=Math.floor(m[1].replace(/\t/g,"  ").length/2),mk=m[2]?"•":m[3]+".",ind=x+d*14,mw=Math.max(12,pdfLargeur(mk,"R",s)+5);
         this.place(s*1.32);this.txt(ind,this.y+s*0.95,mk,"R",s);this.paragraphe(morceaux(m[4]),ind+mw,w-(ind+mw-x),s)}
       else this.paragraphe(morceaux(brut),x,w,s)}}
-  titreSection(t){this.place(30);this.y+=8;this.txt(this.M,this.y+10,t.toUpperCase(),"B",9.5,"0.42 0.16 0.08");this.trait(this.M,this.y+14,this.W-this.M,this.y+14,"0.85 0.85 0.85",0.6);this.y+=20}
+  titreSection(t,suite){this.place(30+(suite??80));this.y+=8;this.txt(this.M,this.y+10,t.toUpperCase(),"B",9.5,"0.42 0.16 0.08");this.trait(this.M,this.y+14,this.W-this.M,this.y+14,"0.85 0.85 0.85",0.6);this.y+=20}
   async constat(e,photos){const l=this.l,M=this.M,L=this.W-2*M;this.nouvellePage();
     // titre
     const titre=[e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom].filter(Boolean).join(" – ");
@@ -3594,7 +3596,7 @@ class PdfRapide{
       const t2=`${pdfL("mission",l)} ${this.m.no||""}`;this.txt(W-M-pdfLargeur(t2,"R",8.5),M+26,t2,"R",8.5,"0.40 0.40 0.40");
       if(this.soc!=="FTA"){const t3=pdfL("prelim",l);this.txt(W-M-pdfLargeur(t3,"I",8),M+38,t3,"I",8,"0.70 0.15 0.12")}
       this.trait(M,M+48,W-M,M+48,"0.42 0.16 0.08",1);
-      const pied=[this.m.inspecteur?`${pdfL("insp",l)} : ${this.m.inspecteur}`:"",gen].filter(Boolean).join(" · ");
+      const pied=this.pied||[this.m.inspecteur?`${pdfL("insp",l)} : ${this.m.inspecteur}`:"",gen].filter(Boolean).join(" · ");
       this.trait(M,this.H-M-14,W-M,this.H-M-14,"0.85 0.85 0.85",0.5);this.txt(M,this.H-M-3,pied,"R",7.5,"0.45 0.45 0.45");
       const np=`${pdfL("page",l)} ${i+1} / ${N}`;this.txt(W-M-pdfLargeur(np,"R",7.5),this.H-M-3,np,"R",7.5,"0.45 0.45 0.45");pg.ops.push(...ops);pg.d.push(...dd)})}
   async octets(){await this.miseEnPage();const l=this.l,W=this.W,N=this.pages.length;
