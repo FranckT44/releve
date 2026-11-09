@@ -223,7 +223,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .card.pliable.ferme>h2::before,.card.pliable.ferme>.ghead>h2::before{content:"▸"}
 .card.pliable.ferme>:not(h2):not(.ghead){display:none!important}
 .card.pliable.ferme{padding-top:10px;padding-bottom:10px}.card.pliable.ferme>h2,.card.pliable.ferme>.ghead>h2{margin:0}
-.cbar{display:flex;justify-content:flex-end;gap:8px;margin:0 0 10px}.cbar button{padding:5px 12px;font-size:.85em;min-height:0}
+.cbar{display:flex;justify-content:flex-end;gap:8px;margin:0 0 10px;position:sticky;top:var(--hdrH,56px);z-index:4;background:var(--bg);padding:6px 0;box-shadow:0 6px 6px -6px rgba(0,0,0,.25)}.cbar button{padding:5px 12px;font-size:.85em;min-height:0}
 .duo,.listes{display:grid;gap:14px;margin-bottom:14px}.duo>.card,.listes>.card{margin-bottom:0}
 @media (min-width:1000px){.duo,.listes{grid-template-columns:1fr 1fr;align-items:start}.listes .cfg{min-height:520px}#pasteBox{min-height:120px}}
 .tligne{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}.tligne:first-child{border-top:0}
@@ -329,6 +329,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqtds{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}.apqtds button{min-height:40px}.apqtdsn{font-weight:600;font-size:14px;word-break:break-all}
 .apqsumd{display:flex;align-items:center;gap:8px}.apqdel{min-height:34px;min-width:40px;padding:0 8px;font-size:15px}
 .apqt6{grid-template-columns:1.1fr repeat(5,1fr) auto!important;align-items:end}@media (max-width:560px){.apqt6{grid-template-columns:1fr 1fr 1fr!important}}
+.apqeqp{display:inline-flex;gap:2px}.apqeqp button{min-height:40px}
 .apqslot{border:1px dashed var(--line);border-radius:8px;padding:6px;display:grid;gap:6px;align-content:start}
 .apqslot.fait{border-style:solid;border-color:var(--ok)}
 .apqslot>button{min-height:42px;font-size:13px;white-space:normal;padding:4px 6px}
@@ -809,7 +810,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="1.99";
+const APP_VERSION="2.01";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1739,6 +1740,8 @@ function initCartes(){lireEtatCartes();
   // une carte de confirmation (programme, renommage, envoi…) qui apparaît dans une carte fermée l'ouvre
   new MutationObserver(ms=>{for(const m of ms){const t=m.target;if(t.nodeType===1&&!t.hidden&&t.classList.contains("confirm")) ouvrirCarte(t.parentElement)}})
     .observe(document.querySelector("main"),{attributes:true,attributeFilter:["hidden"],subtree:true})}
+function hauteurEntete(){const h=document.querySelector("header");if(!h) return;const f=()=>document.documentElement.style.setProperty("--hdrH",h.offsetHeight+"px");f();try{new ResizeObserver(f).observe(h)}catch(e){addEventListener("resize",f)}}
+hauteurEntete();
 function initPrep(){
   $("trOk").onclick=enregistrerTrad;$("trNon").onclick=()=>{$("trCard").hidden=true;TRAD_EN_COURS=null};
   $("prepClear").onclick=effacerPrep;
@@ -3046,9 +3049,19 @@ function apqEquip(a){const box=$("apqEq");box.innerHTML="";a.equip=a.equip||[];
     for(const e of l){const b=apqE("button",{type:"button","aria-pressed":String(a.equip.includes(e.code)),"data-noi18n":true,title:e.code},e.nom);
       b.onclick=()=>{const i=a.equip.indexOf(e.code);if(i<0) a.equip.push(e.code);else a.equip.splice(i,1);b.setAttribute("aria-pressed",String(i<0));apqSauver()};g.append(b)}
     box.append(g)}
-  else box.append(apqE("p",{class:"hint",text:"Aucun équipement dans la mission active (Réglages) : précisez-le ci-dessous."}));
-  box.append(apqE("div",{class:"apqrow"},apqChamp("Précision / autre équipement",a,"equipAutre",null,"ex. Riser R-101, cyclones 1er étage")))}
-function apqEquipTexte(a){const n=(a.equip||[]).map(c=>{const e=(EQ||[]).find(x=>x.code===c);return e?e.nom:c});if(a.equipAutre&&a.equipAutre.trim()) n.push(a.equipAutre.trim());return n.join(", ")}
+  else box.append(apqE("p",{class:"hint",text:"Aucun équipement dans la mission active (Réglages) : ajoutez-le ci-dessous."}));
+  // v2.00 : équipements non listés, ajoutés au rapport (a.equipPlus), retirables par ✕
+  a.equipPlus=a.equipPlus||[];
+  if(a.equipPlus.length){const g2=apqE("div",{class:"apqeq"});
+    for(const nm of a.equipPlus) g2.append(apqE("span",{class:"apqeqp"},apqE("button",{type:"button","aria-pressed":"true","data-noi18n":true},nm),
+      apqE("button",{type:"button",class:"ghost","aria-label":"Retirer cet équipement",onclick:()=>{a.equipPlus.splice(a.equipPlus.indexOf(nm),1);apqSauver(true);apqEquip(a)}},"✕")));
+    box.append(g2)}
+  const inp=apqE("input",{type:"text",placeholder:"ex. Cyclone 1er étage C-101",autocomplete:"off"});
+  const ajouter=()=>{const v=inp.value.trim();if(!v) return;if(!a.equipPlus.some(x=>x.toLowerCase()===v.toLowerCase())) a.equipPlus.push(v);apqSauver(true);apqEquip(a)};
+  inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();ajouter()}};
+  box.append(apqE("div",{class:"apqmatadd"},apqE("label",{},"Équipement non listé",inp),apqE("button",{type:"button",onclick:ajouter},"＋ Ajouter")),
+    apqE("div",{class:"apqrow"},apqChamp("Précision (zone, repère…)",a,"equipAutre",null,"ex. zone basse, côté nord")))}
+function apqEquipTexte(a){const n=(a.equip||[]).map(c=>{const e=(EQ||[]).find(x=>x.code===c);return e?e.nom:c});n.push(...(a.equipPlus||[]));if(a.equipAutre&&a.equipAutre.trim()) n.push(a.equipAutre.trim());return n.join(", ")}
 // v1.90 : si échantillons au laboratoire, début des travaux autorisé ou non en attente des résultats
 function apqLabo(a){const c=apqE("input",{type:"checkbox"});c.checked=!!a.labo;const box=apqE("div",{class:"apqlabo"});
   const maj=()=>{box.innerHTML="";box.append(apqE("label",{class:"toggle"},c," Échantillons envoyés au laboratoire"));
@@ -3945,6 +3958,9 @@ const TRAD_UI=[
 ["Légende", "Caption", "Leyenda", "Bildunterschrift"],
 ["＋ Ajouter", "＋ Add", "＋ Añadir", "＋ Hinzufügen"],
 ["Matériel", "Equipment", "Equipo", "Ausrüstung"],
+["Équipement non listé", "Unlisted equipment", "Equipo no listado", "Nicht gelistete Ausrüstung"],
+["Précision (zone, repère…)", "Details (area, mark…)", "Detalle (zona, marca…)", "Präzisierung (Bereich, Markierung…)"],
+["Aucun équipement dans la mission active (Réglages) : ajoutez-le ci-dessous.", "No equipment in the active mission (Settings): add it below.", "Ningún equipo en la misión activa (Ajustes): añádalo abajo.", "Keine Ausrüstung in der aktiven Mission (Einstellungen): unten hinzufügen."],
 ["Heure", "Time", "Hora", "Uhrzeit"],
 ["＋ Autre relevé de températures", "＋ Another temperature reading", "＋ Otra lectura de temperaturas", "＋ Weitere Temperaturmessung"],
 [" Certificat de l'eau conforme", " Water certificate compliant", " Certificado del agua conforme", " Wasserzertifikat konform"],
