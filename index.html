@@ -320,6 +320,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqtitre{font-size:13px;font-weight:600;text-align:center}
 .apqbt{display:grid;grid-template-columns:1fr 1fr;gap:4px}.apqbt button{min-height:40px;font-size:12px;padding:2px 4px}
 #bCtxPrec{width:100%;display:grid;gap:2px;justify-items:start;text-align:left;padding:8px 12px;margin-bottom:8px}#bCtxPrec small{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.c-rouge{background:var(--c-ambre);border-left:4px solid var(--crit)}#razBox{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}#razListe{margin:4px 0 8px 18px;padding:0}.razAlerte{color:var(--crit);font-weight:650}#razOk:not(:disabled){background:var(--crit);border-color:var(--crit);color:#fff}
 .plAutreL{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:4px 0}.plAutreL input[type=text]{margin:0}.plAutreL input[type=checkbox]{width:24px;height:24px;margin:0 2px}.plAutreL button{min-height:40px;padding:0 10px}#plAutreAdd{margin-top:6px}
 .apqgg figure{position:relative}.apqgg figure.annotee::before{content:"annotée";position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px;pointer-events:none}
 .apqgg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px}
@@ -740,6 +741,22 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     </select></label>
     <p class="hint">En DeX, la fenêtre de partage peut s'ouvrir et se fermer aussitôt : choisis « Toujours enregistrer dans Téléchargements », puis envoie depuis Mes fichiers &gt; Téléchargements &gt; Partager &gt; Quick Share. Navigateur détecté : <span id="uaInfo"></span></p>
   </div>
+  <div class="card c-rouge" id="razCard">
+    <h2>⚠ Zone de remise à zéro</h2>
+    <p class="hint">Pour repartir sur une base propre pendant les tests. N'agit que sur cet appareil (à refaire sur chaque téléphone, tablette ou PC). Les fichiers déjà rangés sur le PC et les rapports ne sont pas touchés.</p>
+    <p class="hint"><b>Vider les constats</b> : efface les constats, photos, constats prévus, PDF rapides, rapports de préqualification et brouillons ; garde les projets, leurs listes et les réglages.</p>
+    <p class="hint"><b>Réinitialiser l'appli</b> : efface tout, projets et réglages compris ; l'appli repart comme à la première installation.</p>
+    <div class="btns"><button type="button" class="danger" id="bRazConst">🧹 Vider les constats</button><button type="button" class="danger" id="bRazTout">♻ Réinitialiser l'appli</button></div>
+    <div id="razBox" hidden>
+      <p><b id="razTitre"></b></p>
+      <p class="hint" id="razIntro"></p>
+      <ul id="razListe"></ul>
+      <p class="razAlerte" id="razAlerte" hidden>⚠ Des constats ne sont pas encore envoyés au PC : ils seront perdus.</p>
+      <p class="hint" id="razGarde"></p>
+      <label>Pour confirmer, tape EFFACER<input type="text" id="razMot" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      <div class="btns"><button type="button" class="primary" id="razOk" disabled>Effacer</button><button type="button" id="razNon">Annuler</button></div>
+    </div>
+  </div>
 </section>
 </main>
 
@@ -828,7 +845,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.17";
+const APP_VERSION="2.18";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2075,6 +2092,39 @@ function galGlisser(d){let t=null,x0=0,y0=0,bouge=false;
     if(ev.type==="pointerup"&&!bouge) gvOuvrir(+d.dataset.i)};
   d.addEventListener("pointerup",fin);d.addEventListener("pointercancel",fin);
   d.addEventListener("contextmenu",ev=>ev.preventDefault())}
+/* v2.18 : remise à zéro de cet appareil (phase de test) */
+let RAZ=null;
+async function razBilan(){const en=await tx("entries","readonly",s=>s.getAll());const nph=await tx("photos","readonly",s=>s.count());const npdf=await tx("pdfs","readonly",s=>s.count());
+  const cles=await tx("kv","readonly",s=>s.getAllKeys());let nprev=0;try{nprev=((await kvGet("prevus"))||[]).length}catch(e){}
+  return {n:en.length,nonEnv:en.filter(e=>!e.envoye).length,nph,npdf,nprev,napq:cles.filter(k=>String(k).startsWith("apq:")).length,cles:cles.map(String)}}
+async function razDemander(mode){let b;try{b=await razBilan()}catch(e){toast("Lecture du stockage impossible : "+(e&&e.message||e));return}RAZ={mode,b};
+  $("razTitre").textContent=mode==="tout"?"Réinitialiser l'appli":"Vider les constats";
+  $("razIntro").textContent="Seront effacés sur cet appareil :";
+  const ul=$("razListe");ul.innerHTML="";const li=t=>{const x=document.createElement("li");x.textContent=t;ul.append(x)};
+  li(`${b.n} constat(s), dont ${b.nonEnv} pas encore envoyé(s) au PC`);li(`${b.nph} photo(s)`);li(`${b.nprev} constat(s) prévu(s)`);li(`${b.npdf} PDF rapide(s)`);li(`${b.napq} rapport(s) de préqualification`);
+  if(mode==="tout") li("les projets, leurs listes et tous les réglages de cet appareil");
+  $("razAlerte").hidden=!b.nonEnv;
+  $("razGarde").textContent=mode==="tout"?"L'appli redémarrera comme à la première installation.":"Les projets, leurs listes et les réglages sont gardés.";
+  $("razOk").textContent=mode==="tout"?"Réinitialiser l'appli":"Vider les constats";
+  $("razMot").value="";$("razOk").disabled=true;$("razBox").hidden=false;ouvrirCarte($("razBox"));setTimeout(()=>{try{$("razMot").focus();$("razBox").scrollIntoView({block:"center"})}catch(e){}},50)}
+function razFermer(){RAZ=null;$("razBox").hidden=true;$("razMot").value=""}
+async function razExecuter(){if(!RAZ||$("razMot").value.trim().toUpperCase()!=="EFFACER") return;const mode=RAZ.mode;
+  BR.charge=false;BR.silence=true;clearTimeout(BR.minuterie);busy(mode==="tout"?"Réinitialisation…":"Effacement des constats…");
+  try{
+    if(mode==="tout"){try{localStorage.clear()}catch(e){}try{DB.close()}catch(e){}
+      await new Promise(r=>{const q=indexedDB.deleteDatabase("releve-refractaire");q.onsuccess=q.onerror=q.onblocked=()=>r()})}
+    else{await tx("entries","readwrite",s=>s.clear());await tx("photos","readwrite",s=>s.clear());await tx("pdfs","readwrite",s=>s.clear());
+      const suppr=RAZ.b.cles.filter(k=>k==="prevus"||k==="prevusFaits"||k==="brouillonTexte"||k==="brouillonPhotos"||k.startsWith("apq:")||k.startsWith("apqSauveLe:"));
+      await tx("kv","readwrite",s=>{for(const k of suppr) s.delete(k)});
+      for(const m of MISSIONS){delete m.navetteLe;delete m.programme}await saveMissions();
+      try{localStorage.removeItem("galPlie");localStorage.removeItem("ctxPrec")}catch(e){}}
+  }catch(e){busyFin();toast("Effacement incomplet : "+(e&&e.message||e),6000);return}
+  try{sessionStorage.setItem("razFait",mode)}catch(e){}
+  location.reload()}
+function initRaz(){$("bRazConst").onclick=()=>razDemander("constats");$("bRazTout").onclick=()=>razDemander("tout");$("razNon").onclick=razFermer;
+  $("razMot").oninput=()=>{$("razOk").disabled=$("razMot").value.trim().toUpperCase()!=="EFFACER"};$("razOk").onclick=razExecuter;
+  let f=null;try{f=sessionStorage.getItem("razFait");sessionStorage.removeItem("razFait")}catch(e){}
+  if(f) setTimeout(()=>toast(f==="tout"?"Appli réinitialisée.":"Constats vidés : les projets et leurs listes sont gardés.",4500),800)}
 /* v2.12 : constats de la Galerie repliables (toucher le titre), état mémorisé sur cet appareil */
 let GAL_PLIE=null;
 function galEtatPlie(){if(!GAL_PLIE){try{GAL_PLIE=JSON.parse(localStorage.getItem("galPlie")||"{}")||{}}catch(e){GAL_PLIE={}}}return GAL_PLIE}
@@ -2150,7 +2200,7 @@ async function gvOuvrir(i){if(i<0||i>=GAL.vis.length) return;await galFlush();GA
   $("gvLeg").value=it.leg;$("gvInc").checked=it.inc;$("gvAvant").disabled=it.k===0;$("gvApres").disabled=it.k>=it.e.photos.length-1}
 async function gvFermer(){await galFlush();$("gv").hidden=true;document.body.style.overflow="";if(GAL.url){URL.revokeObjectURL(GAL.url);GAL.url=null}renderGalerie()}
 function initGalerie(){
-  $("gEq").onchange=renderGalerie;$("gDate").onchange=renderGalerie;
+  $("gEq").onchange=renderGalerie;$("gDate").onchange=renderGalerie;initRaz();
   $("fAcces").addEventListener("change",()=>majAccesLibre(true));
   $("gSelBtn").onclick=galEntrerSel;$("gSelMode").onchange=galMajSel;$("gSelAnn").onclick=()=>galQuitterSel();$("gSelOk").onclick=galAjouterSel;
   $("gSelTout").onclick=()=>{if(!GAL.sel) return;const ci=galCiblesSel();if(!ci.length){toast("Tous les constats sont repliés : déplie ceux dont tu veux les photos.");return}
@@ -4886,7 +4936,29 @@ const TRAD_UI=[
 ["5 étapes « Autre » au maximum", "5 “Other” steps maximum", "5 etapas «Otra» como máximo", "Höchstens 5 weitere Schritte"],
 ["5 étapes « Autre » au maximum.", "5 “Other” steps maximum.", "5 etapas «Otra» como máximo.", "Höchstens 5 weitere Schritte."],
 ["↺ Reprendre le précédent", "↺ Reuse the previous one", "↺ Retomar el anterior", "↺ Vorherigen übernehmen"],
-["L'équipement ou l'activité du constat précédent n'existe plus dans la liste.", "The equipment or activity of the previous finding is no longer in the list.", "El equipo o la actividad del hallazgo anterior ya no está en la lista.", "Ausrüstung oder Tätigkeit des vorherigen Befunds ist nicht mehr in der Liste."]
+["L'équipement ou l'activité du constat précédent n'existe plus dans la liste.", "The equipment or activity of the previous finding is no longer in the list.", "El equipo o la actividad del hallazgo anterior ya no está en la lista.", "Ausrüstung oder Tätigkeit des vorherigen Befunds ist nicht mehr in der Liste."],
+["⚠ Zone de remise à zéro", "⚠ Reset area", "⚠ Zona de restablecimiento", "⚠ Zurücksetzen"],
+["Pour repartir sur une base propre pendant les tests. N'agit que sur cet appareil (à refaire sur chaque téléphone, tablette ou PC). Les fichiers déjà rangés sur le PC et les rapports ne sont pas touchés.", "To start again from a clean base during testing. Only affects this device (to be done on each phone, tablet or PC). Files already filed on the PC and the reports are not touched.", "Para empezar de nuevo desde una base limpia durante las pruebas. Solo afecta a este dispositivo (hay que hacerlo en cada teléfono, tableta o PC). Los archivos ya archivados en el PC y los informes no se tocan.", "Für einen sauberen Neustart während der Tests. Betrifft nur dieses Gerät (auf jedem Telefon, Tablet oder PC zu wiederholen). Bereits auf dem PC abgelegte Dateien und die Berichte bleiben unverändert."],
+["🧹 Vider les constats", "🧹 Clear the findings", "🧹 Vaciar los hallazgos", "🧹 Befunde leeren"],
+["♻ Réinitialiser l'appli", "♻ Reset the app", "♻ Restablecer la app", "♻ App zurücksetzen"],
+["Vider les constats", "Clear the findings", "Vaciar los hallazgos", "Befunde leeren"],
+["Réinitialiser l'appli", "Reset the app", "Restablecer la app", "App zurücksetzen"],
+["Seront effacés sur cet appareil :", "Will be deleted on this device:", "Se borrarán en este dispositivo:", "Auf diesem Gerät werden gelöscht:"],
+["{a} constat(s), dont {b} pas encore envoyé(s) au PC", "{a} finding(s), including {b} not yet sent to the PC", "{a} hallazgo(s), de los cuales {b} aún no enviado(s) al PC", "{a} Befund(e), davon {b} noch nicht an den PC gesendet"],
+["{a} photo(s)", "{a} photo(s)", "{a} foto(s)", "{a} Foto(s)"],
+["{a} constat(s) prévu(s)", "{a} planned finding(s)", "{a} hallazgo(s) previsto(s)", "{a} geplante(r) Befund(e)"],
+["{a} PDF rapide(s)", "{a} quick PDF(s)", "{a} PDF rápido(s)", "{a} Kurz-PDF(s)"],
+["{a} rapport(s) de préqualification", "{a} prequalification report(s)", "{a} informe(s) de precalificación", "{a} Vorqualifikationsbericht(e)"],
+["les projets, leurs listes et tous les réglages de cet appareil", "the projects, their lists and all the settings of this device", "los proyectos, sus listas y todos los ajustes de este dispositivo", "die Projekte, ihre Listen und alle Einstellungen dieses Geräts"],
+["⚠ Des constats ne sont pas encore envoyés au PC : ils seront perdus.", "⚠ Some findings have not been sent to the PC yet: they will be lost.", "⚠ Hay hallazgos aún no enviados al PC: se perderán.", "⚠ Einige Befunde wurden noch nicht an den PC gesendet: Sie gehen verloren."],
+["L'appli redémarrera comme à la première installation.", "The app will restart as on first installation.", "La app se reiniciará como en la primera instalación.", "Die App startet neu wie bei der ersten Installation."],
+["Les projets, leurs listes et les réglages sont gardés.", "The projects, their lists and the settings are kept.", "Se conservan los proyectos, sus listas y los ajustes.", "Projekte, ihre Listen und die Einstellungen bleiben erhalten."],
+["Pour confirmer, tape EFFACER", "To confirm, type EFFACER", "Para confirmar, escribe EFFACER", "Zur Bestätigung EFFACER eingeben"],
+["Effacer", "Delete", "Borrar", "Löschen"],
+["Réinitialisation…", "Resetting…", "Restableciendo…", "Wird zurückgesetzt…"],
+["Effacement des constats…", "Deleting the findings…", "Borrando los hallazgos…", "Befunde werden gelöscht…"],
+["Appli réinitialisée.", "App reset.", "App restablecida.", "App zurückgesetzt."],
+["Constats vidés : les projets et leurs listes sont gardés.", "Findings cleared: the projects and their lists are kept.", "Hallazgos vaciados: se conservan los proyectos y sus listas.", "Befunde geleert: Projekte und ihre Listen bleiben erhalten."]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
