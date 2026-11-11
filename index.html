@@ -150,7 +150,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .dayhead h3{margin:0;font-size:15px}
 .stat{font:13px var(--mono);color:var(--muted)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);
-  padding:12px 16px;border-radius:8px;font-size:15px;z-index:20;max-width:90vw;box-shadow:0 4px 18px rgba(0,0,0,.25);pointer-events:none}
+  padding:12px 16px;border-radius:8px;font-size:15px;z-index:45;max-width:90vw;box-shadow:0 4px 18px rgba(0,0,0,.25);pointer-events:none}
 .confirm{border:2px solid var(--accent);background:var(--accent-soft)}
 .cfg{font:14px/1.5 var(--mono);min-height:220px}
 .edQuit{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px}.edQuit[hidden]{display:none!important}
@@ -321,6 +321,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqbt{display:grid;grid-template-columns:1fr 1fr;gap:4px}.apqbt button{min-height:40px;font-size:12px;padding:2px 4px}
 #bCtxPrec{width:100%;display:grid;gap:2px;justify-items:start;text-align:left;padding:8px 12px;margin-bottom:8px}#bCtxPrec small{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
 .c-rouge{background:var(--c-ambre);border-left:4px solid var(--crit)}#razBox{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}#razListe{margin:4px 0 8px 18px;padding:0}.razAlerte{color:var(--crit);font-weight:650}#razOk:not(:disabled){background:var(--crit);border-color:var(--crit);color:#fff}
+#ed [data-t="crop"].cropOk::after{content:" ✓";color:#7ee08a;font-weight:700}
 .plAutreL{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:4px 0}.plAutreL input[type=text]{margin:0}.plAutreL input[type=checkbox]{width:24px;height:24px;margin:0 2px}.plAutreL button{min-height:40px;padding:0 10px}#plAutreAdd{margin-top:6px}
 .apqgg figure{position:relative}.apqgg figure.annotee::before{content:"annotée";position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px;pointer-events:none}
 .apqgg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px}
@@ -845,7 +846,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.18";
+const APP_VERSION="2.19";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1297,7 +1298,7 @@ function edDessiner(){const cv=$("edCv"),g=cv.getContext("2d");if(!ED.v) return;
     g.beginPath();g.rect(-1e6,-1e6,2e6,2e6);g.rect(x,y,w,h);g.fill("evenodd");
     g.setLineDash([10*px,6*px]);g.strokeStyle="#fff";g.lineWidth=2*px;g.strokeRect(x,y,w,h);g.restore()}
   g.setTransform(1,0,0,1,0,0);
-  $("edDel").disabled=ED.sel<0;$("edUndo").disabled=!ED.hist.length;$("edRedo").disabled=!ED.redo.length}
+  $("edDel").disabled=ED.sel<0;{const bc=document.querySelector('#ed [data-t="crop"]');if(bc) bc.classList.toggle("cropOk",!!ED.crop)}$("edUndo").disabled=!ED.hist.length;$("edRedo").disabled=!ED.redo.length}
 // v1.74 : le point est ramené dans la photo (dans le recadrage s'il y en a un) : on ne dessine plus en dehors de l'image
 function edPoint(ev){const r=$("edCv").getBoundingClientRect(),x=(ev.clientX-r.left)/ED.v.sc+ED.v.x0,y=(ev.clientY-r.top)/ED.v.sc+ED.v.y0;
   const B=(ED.tool!=="crop"&&ED.crop)||{x:0,y:0,w:ED.img.width,h:ED.img.height};
@@ -1409,7 +1410,7 @@ async function edExporter(){const p=ED.ctx.src[ED.i];ED.obj=ED.obj.filter(o=>!(o
   const blob=await copierExif(p.orig||p.blob,await new Promise(r=>cv.toBlob(r,"image/jpeg",0.9)));
   if(!p.orig) p.orig=p.blob;p.blob=blob;p.type="image/jpeg";p.annot={obj:ED.obj,crop:ED.crop,rot:ED.rot||0,redr:ED.redr||0,ech:ED.ech||null};p.thumb=await makeThumb(blob)}
 async function edEnregistrer(){if(!ED.hist.length){fermerEditeur();return}const rien=!ED.obj.length&&!ED.crop&&!ED.rot&&!ED.redr;await edValider();fermerEditeur();
-  if(!rien) toast(ED.ctx.src===form.photos&&form.editId?"Photo annotée. Pense à « Enregistrer les modifications ».":"Photo annotée.")}
+  if(!rien) toast(ED.ctx.src===form.photos?(form.editId?"Photo modifiée. Pense à « Enregistrer les modifications » du constat.":"Photo modifiée : elle sera gardée quand tu enregistreras le constat."):"Photo annotée.",4000)}
 async function edOriginal(silencieux){const p=ED.ctx.src[ED.i];if(p.orig){p.blob=p.orig;p.orig=null;p.annot=null;p.thumb=await makeThumb(p.blob)}
   if(!silencieux){if(ED.ctx.apres) await ED.ctx.apres(ED.i);fermerEditeur();toast("Photo d'origine rétablie.")}}
 
@@ -3938,7 +3939,8 @@ function apercuPdf(mk,nom,o={}){$("pvTitre").textContent=o.titre||"Aperçu du PD
   $("pvZoom").onclick=()=>{const z=pv.classList.toggle("zoom");$("pvZoom").setAttribute("aria-pressed",String(z))};
   for(const pg of mk.pages){if(fini) return;const cv=document.createElement("canvas");box.append(cv);await dessinerPagePdf(mk,pg,cv,k)}})}
 let PDF_EN_COURS=false;
-async function pdfRapide(liste){if(!liste.length){toast("Aucun constat sélectionné.");return}if(PDF_EN_COURS) return;PDF_EN_COURS=true;
+async function pdfRapide(liste){if(!liste.length){toast("Aucun constat sélectionné.");return}if(PDF_EN_COURS) return;
+  if(form.editId&&liste.some(e=>e.id===form.editId)){toast("Ce constat est ouvert dans la Saisie : enregistre (ou annule) d'abord la modification, pour que le PDF prenne en compte tes changements.",7000);return}PDF_EN_COURS=true;
   try{toast("Création du PDF…",60000);const m=MISSIONS.find(x=>liste[0].mission&&x.id===liste[0].mission.id)||curMission()||CFG.mission;
     const so=socMission(m),l=m.langue||langueMission();const mk=new PdfRapide(l,so.societe,{...m,...so});
     const tri=[...liste].sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));
@@ -4958,7 +4960,10 @@ const TRAD_UI=[
 ["Réinitialisation…", "Resetting…", "Restableciendo…", "Wird zurückgesetzt…"],
 ["Effacement des constats…", "Deleting the findings…", "Borrando los hallazgos…", "Befunde werden gelöscht…"],
 ["Appli réinitialisée.", "App reset.", "App restablecida.", "App zurückgesetzt."],
-["Constats vidés : les projets et leurs listes sont gardés.", "Findings cleared: the projects and their lists are kept.", "Hallazgos vaciados: se conservan los proyectos y sus listas.", "Befunde geleert: Projekte und ihre Listen bleiben erhalten."]
+["Constats vidés : les projets et leurs listes sont gardés.", "Findings cleared: the projects and their lists are kept.", "Hallazgos vaciados: se conservan los proyectos y sus listas.", "Befunde geleert: Projekte und ihre Listen bleiben erhalten."],
+["Photo modifiée. Pense à « Enregistrer les modifications » du constat.", "Photo changed. Remember to “Save changes” of the finding.", "Foto modificada. Recuerda «Guardar los cambios» del hallazgo.", "Foto geändert. Denk an „Änderungen speichern“ beim Befund."],
+["Photo modifiée : elle sera gardée quand tu enregistreras le constat.", "Photo changed: it will be kept when you save the finding.", "Foto modificada: se guardará cuando guardes el hallazgo.", "Foto geändert: Sie wird beim Speichern des Befunds übernommen."],
+["Ce constat est ouvert dans la Saisie : enregistre (ou annule) d'abord la modification, pour que le PDF prenne en compte tes changements.", "This finding is open in Entry: save (or cancel) the change first, so that the PDF includes your changes.", "Este hallazgo está abierto en Captura: guarda (o cancela) primero la modificación para que el PDF incluya tus cambios.", "Dieser Befund ist in der Erfassung geöffnet: zuerst die Änderung speichern (oder abbrechen), damit das PDF sie enthält."]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
