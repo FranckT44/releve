@@ -349,7 +349,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 <body>
 <header>
   <h1 id="hTitle"><span class="tLong">The 982 Inspector Toolbox</span><span class="tCourt">982 Toolbox</span></h1>
-  <button type="button" class="mission" id="hMission" aria-label="Changer de mission"></button>
+  <button type="button" class="mission" id="hMission" aria-label="Changer de projet"></button>
   <select id="uiLang" class="langSel" data-noi18n title="Langue de l'appli / App language" aria-label="Langue de l'appli / App language"><option value="fr" title="Français">FR</option><option value="en" title="English">EN</option><option value="es" title="Español">ES</option><option value="de" title="Deutsch">DE</option></select>
   <button type="button" class="themeBtn" id="bTheme" aria-label="Thème : automatique">🌓</button>
 </header>
@@ -358,7 +358,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 <!-- ============ ACCUEIL ============ -->
 <section id="v-accueil">
   <div class="acc-titre"><span>The 982 Inspector Toolbox</span><span class="acc-ver" id="accVer"></span></div>
-  <div class="card c-bleu acc-tete"><h2>Mission active</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div><div class="acc-alerte" id="accAlerte" hidden></div></div>
+  <div class="card c-bleu acc-tete"><h2>Projet actif</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div><div class="acc-alerte" id="accAlerte" hidden></div></div>
   <div class="card confirm brCard" id="brCardA" hidden><strong class="brTxt"></strong><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
   <div class="acc-grille">
     <button type="button" class="acc c-ambre" data-go="saisie"><span class="acc-ic">📷</span><b>Nouveau constat</b><span class="hint">Photos, constat, observation</span></button>
@@ -368,7 +368,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <button type="button" class="acc c-violet" data-go="galerie"><span class="acc-ic">🖼️</span><b>Galerie</b><span class="hint">Légendes, ordre, annotations</span></button>
     <button type="button" class="acc c-ambre" data-go="pdfs"><span class="acc-ic">📄</span><b>PDF préliminaires</b><span class="hint" id="accPdfs">Aucun</span></button>
     <button type="button" class="acc c-jaune" data-go="apq"><span class="acc-ic">🧪</span><b>Préqualification</b><span class="hint">Applicateurs, panneaux, verdicts</span></button>
-    <button type="button" class="acc c-vert" data-go="reglages"><span class="acc-ic">📁</span><b>Missions</b><span class="hint">Listes, partage, réglages</span></button>
+    <button type="button" class="acc c-vert" data-go="reglages"><span class="acc-ic">📁</span><b>Projets</b><span class="hint">Listes, partage, réglages</span></button>
     <button type="button" class="acc c-bleu" data-go="trad" id="accTrad" hidden><span class="acc-ic">🌐</span><b>Traduction</b><span class="hint">Observations du CSV (PC)</span></button>
   </div>
 </section>
@@ -418,7 +418,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
         <label>Nom<input type="text" id="addNom" autocomplete="off"></label>
         <label id="lAddCode">Code (court)<input type="text" id="addCode" autocomplete="off" autocapitalize="characters"></label>
       </div>
-      <div class="btns"><button class="primary" id="bAddOk" type="button">Ajouter à la mission</button><button id="bAddCancel" type="button">Annuler</button></div>
+      <div class="btns"><button class="primary" id="bAddOk" type="button">Ajouter au projet</button><button id="bAddCancel" type="button">Annuler</button></div>
     </div>
     <div class="row2">
       <label>Repère (optionnel)<input type="text" id="fRep" placeholder="MH1, section 402…" autocomplete="off"></label>
@@ -508,7 +508,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <h2>Préqualification des applicateurs</h2>
     <div class="acc-mission" id="apqMission" data-noi18n></div>
     <p class="stat" id="apqInfo"></p>
-    <p class="hint">Un rapport par mission : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.</p>
+    <p class="hint">Un rapport par projet : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.</p>
     <div id="apqTete"></div>
     <div id="apqRecup" class="card confirm" hidden></div>
   </div>
@@ -534,11 +534,11 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 <!-- ============ CONSTATS (v1.70 : visualisation) ============ -->
 <section id="v-constats" hidden>
   <div class="card c-vert">
-    <h2>Constats de la mission</h2>
+    <h2>Constats du projet</h2>
     <div class="row2"><label>Équipement<select id="kEq"></select></label><label>Statut<select id="kSt"><option value="">Tous</option><option value="prevu">Prévus</option><option value="aenv">À envoyer</option><option value="env">Envoyés</option></select></label></div>
     <label>Activité<select id="kAct"></select></label>
     <p class="stat" id="kInfo"></p>
-    <p class="hint">Tous les constats de la mission, par équipement et sous-zone, dans l'ordre de la liste. Les constats prévus (pas encore commencés) sont en grisé. L'envoi au PC se fait depuis le Journal.</p>
+    <p class="hint">Tous les constats du projet, par équipement et sous-zone, dans l'ordre de la liste. Les constats prévus (pas encore commencés) sont en grisé. L'envoi au PC se fait depuis le Journal.</p>
   </div>
   <div id="constats"></div>
 </section>
@@ -568,7 +568,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <div class="duo">
   <div class="card c-bleu">
     <h2>Traduire les observations</h2>
-    <p class="hint">Ouvre le fichier « Observations_releve.csv » du dossier de la mission. Les traductions sont ajoutées dans des colonnes à part : le texte d'origine n'est jamais modifié. La traduction se fait sur ce PC, sans envoyer le texte sur internet.</p>
+    <p class="hint">Ouvre le fichier « Observations_releve.csv » du dossier du projet. Les traductions sont ajoutées dans des colonnes à part : le texte d'origine n'est jamais modifié. La traduction se fait sur ce PC, sans envoyer le texte sur internet.</p>
     <div class="row2">
       <label>Langue du texte saisi<select id="tSrc">
       <option value="fr">Français (FR)</option><option value="en">Anglais (EN)</option><option value="es">Espagnol (ES)</option><option value="pt">Portugais (PT)</option>
@@ -607,7 +607,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <div class="card c-ambre">
     <h2>PDF préliminaires</h2>
     <p class="hint">Les PDF rapides créés depuis le Journal sont gardés ici, sur le téléphone. Touche un PDF pour l'ouvrir, le partager à nouveau ou le supprimer.</p>
-    <label class="toggle"><input type="checkbox" id="pdfToutes"> Afficher toutes les missions</label>
+    <label class="toggle"><input type="checkbox" id="pdfToutes"> Afficher tous les projets</label>
     <p class="hint" id="pdfInfo"></p>
   </div>
   <div id="pdfListe"></div>
@@ -615,24 +615,24 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 <section id="v-reglages" hidden>
   <div class="duo">
   <div class="card c-bleu">
-    <h2>Mission active</h2>
-    <label>Mission<select id="mSel"></select></label>
+    <h2>Projet actif</h2>
+    <label>Projet<select id="mSel"></select></label>
     <div class="btns">
-      <button class="primary" id="bNew" type="button">Nouvelle mission</button>
+      <button class="primary" id="bNew" type="button">Nouveau projet</button>
       <button id="bArch" type="button">Archiver</button>
     </div>
-    <label class="toggle"><input type="checkbox" id="mShowArch"> Afficher les missions archivées</label>
+    <label class="toggle"><input type="checkbox" id="mShowArch"> Afficher les projets archivés</label>
     <div id="newCard" class="card confirm" hidden>
-      <strong>Nouvelle mission</strong>
+      <strong>Nouveau projet</strong>
       <label>Partir de<select id="nFrom"></select></label>
       <label>Langue des listes<select id="nLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
       <div class="row2">
-        <label>N° mission<input type="text" id="nNo" inputmode="numeric" autocomplete="off"></label>
+        <label>N° projet<input type="text" id="nNo" autocapitalize="characters" autocomplete="off" placeholder="ex. 260099 ou FT2601"></label>
         <label>Client / site<input type="text" id="nClient" autocomplete="off"></label>
       </div>
       <div class="row2"><label>Rapports émis au nom de<select id="nSoc"><option value="QUARTIS">QUARTIS (consultant)</option><option value="FTA">Mon entreprise (compte propre)</option></select></label>
         <label id="lNActSoc" hidden>Activité affichée<select id="nActSoc"><option value="API 936 Consultancy">API 936 Consultancy</option><option value="API 982 Consultancy">API 982 Consultancy</option></select></label></div>
-      <div class="btns"><button class="primary" id="bNewOk" type="button">Créer la mission</button><button id="bNewCancel" type="button">Annuler</button></div>
+      <div class="btns"><button class="primary" id="bNewOk" type="button">Créer le projet</button><button id="bNewCancel" type="button">Annuler</button></div>
     </div>
     <div id="archCard" class="card confirm" hidden>
       <strong id="archTxt"></strong>
@@ -640,20 +640,20 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     </div>
   </div>
   <div class="card c-bleu">
-    <h2>Informations de la mission</h2>
+    <h2>Informations du projet</h2>
     <div class="row2">
-      <label>N° mission<input type="text" id="cNo"></label>
+      <label>N° projet<input type="text" id="cNo" autocapitalize="characters"></label>
       <label>Inspecteur<input type="text" id="cInsp"></label>
     </div>
     <label>Client / site<input type="text" id="cClient"></label>
     <div class="row2"><label>Rapports émis au nom de<select id="cSoc"><option value="QUARTIS">QUARTIS (consultant)</option><option value="FTA">Mon entreprise (compte propre)</option></select></label>
       <label id="lActSoc" hidden>Activité affichée dans l'en-tête<select id="cActSoc"><option value="API 936 Consultancy">API 936 Consultancy</option><option value="API 982 Consultancy">API 982 Consultancy</option></select></label></div>
-    <p class="hint">Change le logo et l'en-tête des IPR / IR générés sur le PC pour cette mission (dossier 982 Toolbox\Sociétés).</p>
-    <label>Dossier de la mission sur le PC<input type="text" id="cDir"></label>
+    <p class="hint">Change le logo et l'en-tête des IPR / IR générés sur le PC pour ce projet (dossier 982 Toolbox\Sociétés).</p>
+    <label>Dossier du projet sur le PC<input type="text" id="cDir"></label>
     <label>Langue des listes (équipements, activités)<select id="cLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
     <p class="hint" id="dicoInfo"></p>
     <div class="card confirm" id="trCard" hidden><strong id="trTitre"></strong>
-      <p class="hint">Saisis la traduction de chaque nom (laisse-le tel quel s'il ne change pas). Elle est mémorisée dans la mission, envoyée avec elle aux autres appareils et au PC pour les rapports : la prochaine fois, la traduction sera automatique.</p>
+      <p class="hint">Saisis la traduction de chaque nom (laisse-le tel quel s'il ne change pas). Elle est mémorisée dans le projet, envoyée avec lui aux autres appareils et au PC pour les rapports : la prochaine fois, la traduction sera automatique.</p>
       <div class="trList" id="trList"></div>
       <div class="btns"><button type="button" class="primary" id="trOk">Enregistrer les traductions</button><button type="button" class="ghost" id="trNon">Plus tard</button></div></div>
     <p class="hint">Les photos seront rangées dans ce dossier, sous « Dossier Photo\Équipement\Sous-équipement\Activité\Date ».</p>
@@ -686,10 +686,10 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <button id="bRenOnly" type="button">Enregistrer sans modifier les constats</button>
     <button class="ghost" id="bRenCancel" type="button">Annuler</button>
   </div>
-  <button class="primary big" id="bCfgSave" type="button">Enregistrer la mission</button>
+  <button class="primary big" id="bCfgSave" type="button">Enregistrer le projet</button>
   <p></p>
   <div class="card c-violet">
-    <h2>Partager une mission</h2>
+    <h2>Partager un projet</h2>
     <div id="impCard" class="card confirm" hidden>
       <strong id="impTxt"></strong>
       <div class="btns"><button class="primary" id="bImpOk" type="button">Remplacer</button><button id="bImpCancel" type="button">Garder celle de cet appareil</button></div>
@@ -700,13 +700,13 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
       <div class="btns"><button class="primary" id="bProgOk" type="button">Charger le programme</button><button id="bProgCancel" type="button">Annuler</button></div>
     </div>
     <div class="btns">
-      <button id="bCfgExport" type="button">Envoyer cette mission</button>
-      <button id="bCfgImport" type="button">Charger une mission</button>
+      <button id="bCfgExport" type="button">Envoyer ce projet</button>
+      <button id="bCfgImport" type="button">Charger un projet</button>
     </div>
     <input type="file" id="iCfg" accept="image/jpeg,.jpg,.txt,.json,text/plain,application/json" hidden>
     <p class="hint" id="appVer"></p>
-    <p class="hint">Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.</p>
-    <p class="hint">« Charger une mission » accepte aussi l'image « programme-N°.jpg » préparée sur le PC (Préparer l'arrêt) : elle crée les constats prévus de l'arrêt.</p>
+    <p class="hint">Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Un projet déjà présent (même n°) est mis à jour, sinon il est ajouté.</p>
+    <p class="hint">« Charger un projet » accepte aussi l'image « programme-N°.jpg » préparée sur le PC (Préparer l'arrêt) : elle crée les constats prévus de l'arrêt.</p>
   </div>
   <div class="card c-vert">
     <h2>Navette téléphone ⇄ tablette</h2>
@@ -722,7 +722,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <label class="toggle"><input type="checkbox" id="navTout"> Navette complète (sinon : seulement ce qui est nouveau ou modifié depuis la dernière navette)</label>
     <p class="hint" id="navInfo"></p>
     <input type="file" id="iNav" accept="image/jpeg,.jpg" hidden>
-    <p class="hint">« Créer la navette » met dans une image les constats (photos complètes), les constats prévus et les listes de la mission. Dépose-la dans OneDrive (982 Toolbox › Navette) ou envoie-la par Quick Share, puis sur l'autre appareil : « Charger une navette ». Les deux appareils sont alors à jour, sans doublon.</p>
+    <p class="hint">« Créer la navette » met dans une image les constats (photos complètes), les constats prévus et les listes du projet. Dépose-la dans OneDrive (982 Toolbox › Navette) ou envoie-la par Quick Share, puis sur l'autre appareil : « Charger une navette ». Les deux appareils sont alors à jour, sans doublon.</p>
   </div>
   <div class="card">
     <h2>Réglage de ce téléphone</h2>
@@ -750,7 +750,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <button type="button" data-v="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Journal<span class="badge" id="nbPending" hidden></span></span></button>
   <button type="button" data-v="galerie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><circle cx="9" cy="10" r="2"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>Galerie</button>
   <button type="button" data-v="trad" id="navTrad" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 6 8M11 5c-1 4-4 7-7 8"/><path d="M13 21l4-9 4 9M14.5 18h5"/></svg>Traduction</button>
-  <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h6l2 2"/></svg><span>Missions<span class="badge" id="mWarn" hidden>!</span></span></button>
+  <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h6l2 2"/></svg><span>Projets<span class="badge" id="mWarn" hidden>!</span></span></button>
 </nav>
 <div id="pretCard" class="card confirm" hidden><strong id="pretTxt"></strong><p class="hint" id="pretPq"></p>
   <div class="btns"><button class="primary" id="bPretPartager" type="button">Partager</button><button id="bPretDl" type="button">Enregistrer dans Téléchargements</button><button class="ghost" id="bPretNon" type="button">Fermer</button></div></div>
@@ -828,7 +828,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.15";
+const APP_VERSION="2.17";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -909,7 +909,7 @@ Installation des revêtements [7]
 - Hand packing [7b]
 - Gunning [7c]
 - Fiber installation [7d]`},
- vide:{nom:"Mission vide",equipements:`Équipement 1 [EQ1]
+ vide:{nom:"Projet vide",equipements:`Équipement 1 [EQ1]
 - Général`,activites:`Inspection [1]`}
 };
 const FIRST_MISSION={no:"260008",client:"REPSOL A Coruña – FCC TA26",inspecteur:"Franck TALLEUX",dossierPC:"C:\\Users\\franc\\OneDrive\\QUARTIS\\Missions\\260008 - REPSOL Coruna"};
@@ -1013,7 +1013,7 @@ function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m
 const curMission=()=>MISSIONS.find(m=>m.id===CFG.mission.id);
 const belongs=e=>e.mission&&(e.mission.id?e.mission.id===CFG.mission.id:e.mission.no===CFG.mission.no);
 async function saveMissions(){await kvSet("missions",MISSIONS)}
-async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);BR.silence=true;resetForm(true);BR.silence=false;BR.session=false;refreshSelects();renderHeader();renderCfg();refreshBadge();renderPrevus();renderDegats();renderAcces();afficherBrouillon();if($("prepCorps")&&!$("prepCorps").hidden) visRemplir();toast(`Mission ${m.no} active`)}
+async function switchMission(id){const m=MISSIONS.find(x=>x.id===id);if(!m) return;setActive(m);BR.silence=true;resetForm(true);BR.silence=false;BR.session=false;refreshSelects();renderHeader();renderCfg();refreshBadge();renderPrevus();renderDegats();renderAcces();afficherBrouillon();if($("prepCorps")&&!$("prepCorps").hidden) visRemplir();toast(`Projet ${m.no} actif`)}
 /* ---------- formulaire ---------- */
 function fillSelect(sel,items,keep){const v=keep??sel.value;sel.innerHTML="";for(const it of items){const o=document.createElement("option");o.value=it.code;o.textContent=it.nom;sel.append(o)}
   if(items.some(i=>i.code===v)) sel.value=v}
@@ -1158,7 +1158,7 @@ async function validerAjout(){const nom=$("addNom").value.trim().replace(/[\[\]]
   m.modifieLe=new Date().toISOString();await saveMissions();
   const keep={eq:choix.eq||$("fEq").value,act:choix.act||$("fAct").value};setActive(m);
   fillSelect($("fEq"),EQ,keep.eq);fillSub(choix.sub||$("fSub").value);fillSelect($("fAct"),ACT,keep.act);fillSubAct(choix.subact);
-  $("addCard").hidden=true;AJOUT=null;renderHeader();toast(`« ${nom} » ajouté à la mission. Pense à envoyer la mission à tes autres appareils.`,4500)}
+  $("addCard").hidden=true;AJOUT=null;renderHeader();toast(`« ${nom} » ajouté au projet. Pense à envoyer le projet à tes autres appareils.`,4500)}
 /* ---------- éditeur d'annotation ----------
    Objets en coordonnées de l'image d'origine : {t:"pen"|"line"|"arrow"|"rect"|"ell"|"text", pts|x1,y1,x2,y2|x,y,txt, col, w, fill, op}
    La photo d'origine est conservée (orig) ; la version annotée (blob) est celle des rapports. */
@@ -1671,7 +1671,7 @@ function sousMultiples(eq,stems,seg){if(!eq||eq.enfants.length<2) return [];
   const pos=c=>{const autres=new Set(f.filter(d=>d!==c).flatMap(kw));const propres=motsCles(c.nom).filter(t=>!autres.has(stem(t)));
     const cherche=(propres.length?propres:motsCles(c.nom)).flatMap(variantes);let m=1e9;toks.forEach((t,i)=>{if(i<m&&cherche.includes(t)) m=i});return m};
   return f.map(c=>[pos(c),c]).sort((a,b)=>a[0]-b[0]).map(x=>x[1])}
-// stockage : kv « prevus » = constats préparés, toutes missions
+// stockage : kv « prevus » = constats préparés, tous projets
 let PREVUS=[];
 let PREVUS_OK=false;
 async function chargerPrevus(){try{PREVUS=(await kvGet("prevus"))||[];PREVUS_OK=true}catch(e){PREVUS=[]}}
@@ -1768,7 +1768,7 @@ function ecrireEtatCartes(){try{localStorage.setItem("cartes",JSON.stringify(ETA
 function titreCarte(c){return c.querySelector(":scope>h2")||c.querySelector(":scope>.ghead>h2")}
 function basculerCarte(c,fermer,memo=true){c.classList.toggle("ferme",fermer);const h=titreCarte(c);if(h) h.setAttribute("aria-expanded",String(!fermer));if(memo){ETAT_CARTES[c.dataset.cle]=fermer?1:0;ecrireEtatCartes()}}
 function ouvrirCarte(el){const c=el&&el.closest&&el.closest(".card.pliable");if(c&&c.classList.contains("ferme")) basculerCarte(c,false,false)}
-// au départ (aucun choix mémorisé) : cartes ouvertes, sauf l'onglet Missions (hors « Mission active »), Stockage (Journal) et Glossaire (Traduction)
+// au départ (aucun choix mémorisé) : cartes ouvertes, sauf l'onglet Projets (hors « Projet actif »), Stockage (Journal) et Glossaire (Traduction)
 function carteFermeeParDefaut(sec,i,cle){return sec.id==="v-reglages"?i>1:(cle==="v-journal#2"||cle==="v-trad#2")}
 function initCartes(){lireEtatCartes();
   document.querySelectorAll("main>section").forEach(sec=>{let i=0;const cartes=[];
@@ -1899,7 +1899,7 @@ function validerDegat(){const d=DEG_EN_COURS;if(!d) return;const v=$("degVal").v
 function estInitiale(a){return !!a&&(a.code==="1"||a.code==="2"||/initia|inicial|erst|complement|additional|zusatz|erganz/i.test(norm(a.nom)))}
 function majDegats(){const w=document.querySelector(".degats");if(!w) return;const v=estInitiale(curAct());w.hidden=!v;if(!v){$("degParam").hidden=true;DEG_EN_COURS=null}}
 /* ---------- plan de réparation (v1.59) ----------
-   Étapes = activités de la mission qui ne sont pas des inspections initiale / complémentaire (leurs sous-activités s'il y en a),
+   Étapes = activités du projet qui ne sont pas des inspections initiale / complémentaire (leurs sous-activités s'il y en a),
    dans l'ordre de la liste. Pour chaque étape cochée : point d'arrêt (hold point) et commentaire mis en forme. Repris au §4 de l'IR. */
 function etapesPlan(){const out=[];for(const a of ACT){if(estInitiale(a)) continue;
   if(a.enfants.length) for(const c of a.enfants) out.push({code:c.code,nom:c.nom,groupe:a.nom});else out.push({code:a.code,nom:a.nom,groupe:""})}return out}
@@ -1934,7 +1934,7 @@ function renderPlan(sel){sel=Array.isArray(sel)?sel:[];const box=$("planList");i
   const cle=x=>x.code+"|"+x.nom;const liste=et.slice();
   for(const s of sel) if(!plEstAutre(s)&&!liste.some(x=>cle(x)===cle(s))) liste.push({...s,absent:true});
   box.innerHTML="";
-  if(!liste.length) box.innerHTML='<p class="hint">Aucune étape de réparation dans les activités de la mission (à ajouter dans l\'onglet Missions, après les inspections).</p>';
+  if(!liste.length) box.innerHTML='<p class="hint">Aucune étape de réparation dans les activités du projet (à ajouter dans l\'onglet Projets, après les inspections).</p>';
   let grp=null;
   for(const x of liste){const s=sel.find(y=>cle(y)===cle(x));
     if(!x.absent&&(x.groupe||"")!==grp){grp=x.groupe||"";if(grp){const g=document.createElement("p");g.className="plGrp";g.dataset.noi18n="";g.textContent=grp;box.append(g)}}
@@ -1949,7 +1949,7 @@ function renderPlan(sel){sel=Array.isArray(sel)?sel:[];const box=$("planList");i
 function majPlan(){const c=$("planCard");if(!c) return;c.hidden=!estInitiale(curAct());if(JSON.stringify(etapesPlan())!==PLAN_SIG) renderPlan(lirePlan())}
 /* ---------- avancement (v1.61) ----------
    Activités d'avancement (tout ce qui n'est pas inspection initiale / complémentaire) : étapes du plan de réparation de la zone
-   (dernier constat de la même zone qui a un plan), sinon toutes les étapes de la mission. Par étape cochée : avancement CUMULÉ
+   (dernier constat de la même zone qui a un plan), sinon toutes les étapes du projet. Par étape cochée : avancement CUMULÉ
    en % ou en quantité fait / total (unité), point d'arrêt libéré ou non (si l'étape est un point d'arrêt du plan), commentaire. */
 const AV_UNITES=["m²","nb","ml","kg","m³"];
 const AV={tok:0,sig:null,pend:null,ctx:null,n:0};
@@ -1982,11 +1982,11 @@ async function majAv(sel){const c=$("avCard");if(!c) return;const a=curAct();c.h
 function majPrecAv(){if(!AV.ctx) return;document.querySelectorAll("#avList .avStep").forEach(d=>{const p=AV.ctx.prec[d.dataset.code+"|"+d.dataset.nom];const el=d.querySelector(".avPrec");
   const t=p?texteAv(p,"fr"):"";el.textContent=t?`Précédent : ${t} (${frDate(p.date)})`:"";el.hidden=!t})}
 function renderAv(sel,ctx){sel=Array.isArray(sel)?sel:[];const box=$("avList");if(!box) return;
-  $("avSrc").textContent=ctx.plan?`Étapes du plan de réparation de cette zone (constat du ${frDate(ctx.plan.date)}).`:"Pas de plan de réparation pour cette zone : toutes les étapes de la mission sont proposées.";
+  $("avSrc").textContent=ctx.plan?`Étapes du plan de réparation de cette zone (constat du ${frDate(ctx.plan.date)}).`:"Pas de plan de réparation pour cette zone : toutes les étapes du projet sont proposées.";
   const cle=x=>x.code+"|"+x.nom;const liste=ctx.etapes.slice();
   for(const x of sel) if(!liste.some(y=>cle(y)===cle(x))) liste.push({...x,absent:true});
   box.innerHTML="";
-  if(!liste.length){box.innerHTML='<p class="hint">Aucune étape de réparation dans les activités de la mission (à ajouter dans l\'onglet Missions, après les inspections).</p>';return}
+  if(!liste.length){box.innerHTML='<p class="hint">Aucune étape de réparation dans les activités du projet (à ajouter dans l\'onglet Projets, après les inspections).</p>';return}
   // nouveau constat sans étape cochée : l'étape de la sous-activité choisie est cochée d'office
   const sa=subActObj();const auto=!sel.length&&!form.editId&&sa?sa.code:null;
   let grp=null;
@@ -2049,7 +2049,7 @@ function renderGalerie(){
   const nInc=GAL.vis.filter(i=>i.inc).length;
   $("gInfo").textContent=GAL.items.length?`${GAL.vis.length} photo(s) affichée(s), dont ${nInc} dans le rapport.`:"";
   const g=$("galerie");g.innerHTML="";apqSectionGalerie(g);
-  if(!GAL.items.length){g.innerHTML=`<div class="card"><p class="hint">Aucune photo enregistrée pour la mission ${esc(CFG.mission.no)}. Les photos des constats enregistrés (onglet Saisie) apparaissent ici, jusqu'à ce qu'ils soient supprimés du téléphone.</p></div>`;return}
+  if(!GAL.items.length){g.innerHTML=`<div class="card"><p class="hint">Aucune photo enregistrée pour le projet ${esc(CFG.mission.no)}. Les photos des constats enregistrés (onglet Saisie) apparaissent ici, jusqu'à ce qu'ils soient supprimés du téléphone.</p></div>`;return}
   let carte=null,grille=null,eid=null;
   GAL.vis.forEach((it,i)=>{
     if(it.eid!==eid){eid=it.eid;const e=it.e,lot=GAL.vis.filter(x=>x.eid===eid);carte=document.createElement("div");carte.className="card";
@@ -2204,8 +2204,8 @@ async function renderJournal(){
   const tous=await allEntries();const en=tous.filter(belongs).sort((a,b)=>(b.date+b.hms).localeCompare(a.date+a.hms));
   const pend=en.filter(e=>!e.envoye);const np=pend.reduce((s,e)=>s+e.photos.length,0);
   const autres=[...new Set(tous.filter(e=>!e.envoye&&!belongs(e)).map(e=>e.mission.no))];
-  $("sendInfo").textContent=(pend.length?`Mission ${CFG.mission.no} : ${pend.length} constat(s) et ${np} photo(s) pas encore envoyés au PC.`:`Mission ${CFG.mission.no} : tout a été envoyé au PC.`)
-    +(autres.length?` Il reste aussi des constats à envoyer pour la mission ${autres.join(", ")}.`:"");
+  $("sendInfo").textContent=(pend.length?`Projet ${CFG.mission.no} : ${pend.length} constat(s) et ${np} photo(s) pas encore envoyés au PC.`:`Projet ${CFG.mission.no} : tout a été envoyé au PC.`)
+    +(autres.length?` Il reste aussi des constats à envoyer pour le projet ${autres.join(", ")}.`:"");
   // sélection : les constats non envoyés sont cochés d'office la première fois qu'ils apparaissent
   for(const e of en) if(!JVU.has(e.id)){JVU.add(e.id);if(!e.envoye) JSEL.add(e.id)}
   for(const id of [...JSEL]) if(!en.some(e=>e.id===id)) JSEL.delete(id);
@@ -2247,7 +2247,7 @@ function majSelection(en,tout){const sel=en.filter(e=>JSEL.has(e.id)),np=sel.red
   $("bSend").disabled=$("bDl").disabled=$("bPdfSel").disabled=!sel.length;
   clearTimeout(MAJSEL);PREP=null;if(sel.length) MAJSEL=setTimeout(()=>prepareSend(),tout?0:400)}
 async function selectionEnvoi(){return (await allEntries()).filter(e=>belongs(e)&&JSEL.has(e.id))}
-// le dossier PC et les infos de mission sont pris dans la mission telle qu'elle est aujourd'hui (corrigée depuis, peut-être)
+// le dossier PC et les infos de mission sont pris dans le projet telle qu'elle est aujourd'hui (corrigée depuis, peut-être)
 function entryJSON(e){const {hms,envoye,envoyeLe,...rest}=e;const m=MISSIONS.find(x=>e.mission&&x.id===e.mission.id);
   if(m) rest.mission={id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m)};
   return JSON.stringify({...rest,versionAppli:APP_VERSION},null,2)}
@@ -2273,7 +2273,7 @@ async function paquetEnvoi(list,files){const m=list[0].mission||{},np=list.reduc
   const nom=nomSur(`${m.no||"mission"} - Envoi PC - ${today()} ${String(h.getHours()).padStart(2,"0")}h${String(h.getMinutes()).padStart(2,"0")} - ${list.length} constat${list.length>1?"s":""}`)+".releve.jpg";
   const c=document.createElement("canvas");c.width=900;c.height=Math.min(1400,260+Math.min(list.length,20)*40);const g=c.getContext("2d");
   g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.fillStyle="#6b2914";g.fillRect(0,0,900,10);g.font="bold 30px sans-serif";g.fillText("Envoi vers le PC – paquet de transfert",40,64);
-  g.fillStyle="#444";g.font="24px sans-serif";g.fillText(`Mission ${m.no||""} · ${list.length} constat${list.length>1?"s":""} · ${np} photo${np>1?"s":""}`,40,110);
+  g.fillStyle="#444";g.font="24px sans-serif";g.fillText(`Projet ${m.no||""} · ${list.length} constat${list.length>1?"s":""} · ${np} photo${np>1?"s":""}`,40,110);
   g.fillStyle="#222";g.font="21px sans-serif";list.slice(0,20).forEach((e,i)=>{const t=`${frDate(e.date)} – ${libelleConstat(e)}`;g.fillText(t.length>70?t.slice(0,68)+"…":t,40,160+i*40)});
   if(list.length>20) g.fillText(`… et ${list.length-20} autre(s)`,40,160+20*40);
   g.fillStyle="#777";g.font="19px sans-serif";g.fillText("Déballé et rangé automatiquement sur le PC (Ranger les relevés). Ne pas ouvrir ni renommer.",40,c.height-30);
@@ -2295,7 +2295,7 @@ async function ficheConstat(e){const nom=`${e.id}.releve.jpg`;const c=document.c
   g.fillStyle="#ffffff";g.fillRect(0,0,900,420);g.fillStyle="#6b2914";g.fillRect(0,0,900,10);
   g.fillStyle="#6b2914";g.font="bold 30px sans-serif";g.fillText("Fiche constat – transfert vers le PC",40,70);
   g.fillStyle="#222";g.font="bold 26px sans-serif";const lib=libelleConstat(e);g.fillText(lib.length>60?lib.slice(0,58)+"…":lib,40,140);
-  g.font="24px sans-serif";g.fillStyle="#444";g.fillText(`Mission ${e.mission&&e.mission.no||""} · ${frDate(e.date)}${e.repere?" · "+e.repere:""} · ${e.photos.length} photo${e.photos.length>1?"s":""}`,40,190);
+  g.font="24px sans-serif";g.fillStyle="#444";g.fillText(`Projet ${e.mission&&e.mission.no||""} · ${frDate(e.date)}${e.repere?" · "+e.repere:""} · ${e.photos.length} photo${e.photos.length>1?"s":""}`,40,190);
   g.font="20px sans-serif";g.fillStyle="#777";g.fillText("Fichier lu et rangé automatiquement sur le PC (Ranger les relevés).",40,330);g.fillText("Ne pas ouvrir ni renommer.",40,365);
   const jpg=new Uint8Array(await (await new Promise(r=>c.toBlob(r,"image/jpeg",0.8))).arrayBuffer());
   let pos=2;while(pos+4<jpg.length&&jpg[pos]===0xFF&&jpg[pos+1]>=0xE0&&jpg[pos+1]<=0xEF) pos+=2+(jpg[pos+2]<<8|jpg[pos+3]);
@@ -2365,7 +2365,7 @@ const DICO=[
  {fr:"Inspection",en:"Inspection",es:"Inspección",de:"Inspektion"}];
 const GENERAL={fr:"(général)",en:"(general)",es:"(general)",de:"(allgemein)"};
 const AUCUNE={fr:"(aucune)",en:"(none)",es:"(ninguna)",de:"(keine)"};
-/* v1.66 : dictionnaire personnel de la mission (m.dico = [{fr,en,es,de}]) pour les noms que le dictionnaire intégré ne connaît pas */
+/* v1.66 : dictionnaire personnel du projet (m.dico = [{fr,en,es,de}]) pour les noms que le dictionnaire intégré ne connaît pas */
 function trouverTrad(nom,l,m){const n=String(nom||"").trim().toLowerCase();if(!n) return null;const d=DICO.find(x=>Object.values(x).some(v=>v.toLowerCase()===n));if(d) return d[l];
   m=m||curMission();const p=(m&&m.dico||[]).find(x=>Object.values(x).some(v=>v&&String(v).toLowerCase()===n));return p&&p[l]?p[l]:null}
 function traduireNom(nom,l,m){const t=trouverTrad(nom,l,m);return t==null?nom:t}
@@ -2388,8 +2388,8 @@ async function enregistrerTrad(){const m=curMission();if(!m||!TRAD_EN_COURS) ret
     let d=m.dico.find(x=>Object.values(x).some(y=>y&&String(y).toLowerCase()===k));if(!d){d={};m.dico.push(d)}if(!d[de]) d[de]=src;d[l]=v;n++}
   m.equipements=convertirEquipements(m.equipements,l,m);m.activites=convertirActivites(m.activites,l);m.modifieLe=new Date().toISOString();
   await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();
-  $("trCard").hidden=true;TRAD_EN_COURS=null;toast(`${n} traduction${n>1?"s":""} enregistrée${n>1?"s":""} dans la mission.`,4000)}
-function majDicoInfo(){const m=curMission(),el=$("dicoInfo");if(!el) return;const n=(m&&m.dico||[]).length;el.textContent=n?`Dictionnaire de la mission : ${n} nom${n>1?"s":""} traduit${n>1?"s":""} à la main.`:"";el.hidden=!n}
+  $("trCard").hidden=true;TRAD_EN_COURS=null;toast(`${n} traduction${n>1?"s":""} enregistrée${n>1?"s":""} dans le projet.`,4000)}
+function majDicoInfo(){const m=curMission(),el=$("dicoInfo");if(!el) return;const n=(m&&m.dico||[]).length;el.textContent=n?`Dictionnaire du projet : ${n} nom${n>1?"s":""} traduit${n>1?"s":""} à la main.`:"";el.hidden=!n}
 function convertirActivites(txt,l){const t=parseTree(txt);for(const a of t){a.nom=traduireNom(a.nom,l);for(const c of a.enfants) c.nom=traduireNom(c.nom,l)}
   return t.map(a=>`${a.nom} [${a.code}]`+a.enfants.map(c=>`\n- ${c.nom} [${c.code}]`).join("")).join("\n")}
 const langueMission=()=>(curMission()&&curMission().langue)||"fr";
@@ -2401,21 +2401,21 @@ async function changerLangue(l){const m=curMission();if(!m) return;const de=m.la
   toast("Listes passées en "+{fr:"français",en:"anglais",es:"espagnol",de:"allemand"}[l]+". Les constats déjà saisis gardent leurs noms ; les nouvelles photos iront dans des dossiers à ce nom.",6000);
   if(manque.length) ouvrirTrad(manque,de,l)}
 /* ---------- mission transportée dans une image ----------
-   Quick Share envoie mal un fichier texte seul : la mission part comme une image JPEG (carte lisible),
+   Quick Share envoie mal un fichier texte seul : le projet part comme une image JPEG (carte lisible),
    les données sont dans des segments « commentaire » du JPEG (RELEVE-MISSION:<base64>). */
 function b64(txt){const u=new TextEncoder().encode(txt);let s="";for(let i=0;i<u.length;i+=8192) s+=String.fromCharCode(...u.subarray(i,i+8192));return btoa(s)}
 function deb64(b){const s=atob(b);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i);return new TextDecoder().decode(u)}
 async function fichierMission(obj){
   const c=document.createElement("canvas");c.width=900;c.height=480;const g=c.getContext("2d");
   g.fillStyle="#1d2a33";g.fillRect(0,0,900,480);g.fillStyle="#b4441c";g.fillRect(0,0,14,480);
-  g.fillStyle="#ffffff";g.font="bold 44px sans-serif";g.fillText("Mission "+obj.no,50,95);
+  g.fillStyle="#ffffff";g.font="bold 44px sans-serif";g.fillText("Projet "+obj.no,50,95);
   g.font="30px sans-serif";g.fillText((obj.client||"").slice(0,48),50,150);
   g.fillStyle="#c9d3d9";g.font="26px sans-serif";
   const eq=parseTree(obj.equipements),ac=parseTree(obj.activites);
   g.fillText(`${eq.length} équipement(s), ${eq.reduce((n,e)=>n+e.enfants.length,0)} sous-équipement(s)`,50,230);
   g.fillText(`${ac.length} activité(s) · langue ${(obj.langue||"fr").toUpperCase()}`,50,272);
   g.fillText("Version du "+fmtDT(obj.modifieLe),50,314);
-  g.font="22px sans-serif";g.fillText("The 982 Inspector Toolbox : Missions › Charger une mission",50,420);
+  g.font="22px sans-serif";g.fillText("The 982 Inspector Toolbox : Projets › Charger un projet",50,420);
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.9));const b=new Uint8Array(await blob.arrayBuffer());
   const data=b64(JSON.stringify(obj));const morceaux=[];for(let i=0;i<data.length;i+=60000) morceaux.push(data.slice(i,i+60000));
   const segs=morceaux.map(m=>{const t=new TextEncoder().encode("RELEVE-MISSION:"+m);const L=t.length+2;const s=new Uint8Array(L+2);s.set([0xFF,0xFE,L>>8,L&255]);s.set(t,4);return s});
@@ -2431,16 +2431,16 @@ function fmtDT(iso){if(!iso) return "";const d=new Date(iso);return `${pad(d.get
 function estSynchro(m){return !m.modifieLe||(m.envoyeLe&&m.envoyeLe>=m.modifieLe)||(m.recuLe&&m.versionRecue===m.modifieLe)}
 function renderSync(){const m=curMission();const el=$("syncInfo");if(!m||!el) return;
   let txt,cls;
-  if(!m.modifieLe&&!m.envoyeLe&&!m.recuLe){txt="Cette mission n'a pas encore été envoyée à un autre appareil.";cls=""}
+  if(!m.modifieLe&&!m.envoyeLe&&!m.recuLe){txt="Ce projet n'a pas encore été envoyé à un autre appareil.";cls=""}
   else if(estSynchro(m)){cls="ok";txt=m.envoyeLe&&m.envoyeLe>=(m.modifieLe||"")?`✓ À jour : version du ${fmtDT(m.modifieLe)} envoyée le ${fmtDT(m.envoyeLe)}.`:`✓ Version du ${fmtDT(m.modifieLe)}, reçue le ${fmtDT(m.recuLe)}.`}
-  else{cls="warn";txt=`⚠ Modifiée le ${fmtDT(m.modifieLe)} et pas encore envoyée aux autres appareils. Touche « Envoyer cette mission », puis charge-la sur tes téléphones.`}
+  else{cls="warn";txt=`⚠ Modifié le ${fmtDT(m.modifieLe)} et pas encore envoyé aux autres appareils. Touche « Envoyer ce projet », puis charge-le sur tes téléphones.`}
   el.className="sync "+cls;el.textContent=txt;
   $("mWarn").hidden=MISSIONS.filter(x=>!x.archive).every(estSynchro)}
 /* ---------- société émettrice des rapports (v1.48) : QUARTIS ou compte propre (dossier _OUTILS\Sociétés\FTA) ---------- */
 function socMission(m){const societe=m&&m.societe||"QUARTIS";return {societe,activiteSociete:societe==="FTA"?(m.activiteSociete||"API 936 Consultancy"):""}}
 function libelleSociete(m){const s=socMission(m);return s.societe==="FTA"?`Compte propre – ${s.activiteSociete}`:"Pour QUARTIS"}
 function majChoixSoc(sel,lab){$(lab).hidden=$(sel).value!=="FTA"}
-function missionLabel(m){return `${m.no} – ${m.client||"sans nom"}${m.archive?" (archivée)":""}`}
+function missionLabel(m){return `${m.no} – ${m.client||"sans nom"}${m.archive?" (archivé)":""}`}
 function renderCfg(){
   const show=$("mShowArch").checked;const sel=$("mSel");sel.innerHTML="";
   for(const m of MISSIONS.filter(m=>show||!m.archive||m.id===CFG.mission.id)){const o=document.createElement("option");o.value=m.id;o.textContent=missionLabel(m);sel.append(o)}
@@ -2448,8 +2448,8 @@ function renderCfg(){
   $("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur||"";$("cClient").value=CFG.mission.client||"";$("cDir").value=CFG.mission.dossierPC||"";{const so=socMission(cur);$("cSoc").value=so.societe;$("cActSoc").value=so.activiteSociete||"API 936 Consultancy";majChoixSoc("cSoc","lActSoc")}$("cLang").value=langueMission();$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites;
   const f=$("nFrom");f.innerHTML="";
   const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;f.append(o)};
-  add("copy:"+CFG.mission.id,`Copie de la mission ${CFG.mission.no}`);
-  for(const m of MISSIONS.filter(m=>m.id!==CFG.mission.id&&!m.archive)) add("copy:"+m.id,`Copie de la mission ${m.no}`);
+  add("copy:"+CFG.mission.id,`Copie du projet ${CFG.mission.no}`);
+  for(const m of MISSIONS.filter(m=>m.id!==CFG.mission.id&&!m.archive)) add("copy:"+m.id,`Copie du projet ${m.no}`);
   for(const [k,t] of Object.entries(TEMPLATES)) add("tpl:"+k,t.nom);majDicoInfo();renderSync();majNavInfo()}
 function detecterRenommages(ancien,nouveau){
   const cle=e=>e.code+"|"+e.nom;const kN=new Set(nouveau.map(cle)),kA=new Set(ancien.map(cle));
@@ -2474,13 +2474,13 @@ async function majConstats(ren){
     Object.assign(e,{equipement:{code:r.n.code,nom:r.n.nom},sousEquipement:sub,photos:nouveaux,dossierCible:parts.join("\\"),modifieLe:new Date().toISOString()});
     await tx("entries","readwrite",s=>s.put(e))}
   return liste.length}
-// constats non envoyés : recopier les infos corrigées de la mission (n°, client, dossier PC…)
+// constats non envoyés : recopier les infos corrigées du projet (n°, client, dossier PC…)
 async function majMissionConstats(m){const liste=(await allEntries()).filter(e=>!e.envoye&&e.mission&&(e.mission.id===m.id||(!e.mission.id&&e.mission.no===m.no)));
   for(const e of liste){e.mission={id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m)};await tx("entries","readwrite",s=>s.put(e))}
   return liste.length}
 async function saveCfg(){
   const eq=parseTree($("cEq").value),ac=parseTree($("cAct").value);if(!eq.length||!ac.length){toast("Il faut au moins un équipement et une activité.");return}
-  if(!$("cNo").value.trim()){toast("Indique le n° de mission.");return}
+  if(!$("cNo").value.trim()){toast("Indique le n° de projet.");return}
   const m=curMission();const nv={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),societe:$("cSoc").value,activiteSociete:$("cSoc").value==="FTA"?$("cActSoc").value:"",equipements:$("cEq").value,activites:$("cAct").value};
   const change=Object.keys(nv).some(k=>(k==="societe"?socMission(m).societe:k==="activiteSociete"?socMission(m).activiteSociete:(m[k]||""))!==nv[k]);
   const ren=detecterRenommages(parseTree(m.equipements),eq);
@@ -2491,23 +2491,23 @@ async function saveCfg(){
       $("renCard").hidden=false;$("renCard").scrollIntoView({block:"center"});return}}
   saveCfg.force=false;Object.assign(m,nv);await majMissionConstats(m);if(change) m.modifieLe=new Date().toISOString();
   await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();renderDegats();renderAcces();
-  toast(change?"Mission enregistrée. Pense à l'envoyer à tes autres appareils.":"Aucun changement",3500)}
+  toast(change?"Projet enregistré. Pense à l'envoyer à tes autres appareils.":"Aucun changement",3500)}
 async function finirRenommage(majAussi){$("renCard").hidden=true;const r=REN_EN_ATTENTE;REN_EN_ATTENTE=null;
-  saveCfg.force=true;await saveCfg();if(majAussi&&r){const n=await majConstats(r.ren);refreshBadge();toast(`Mission enregistrée et ${n} constat(s) mis à jour.`,4000)}}
+  saveCfg.force=true;await saveCfg();if(majAussi&&r){const n=await majConstats(r.ren);refreshBadge();toast(`Projet enregistré et ${n} constat(s) mis à jour.`,4000)}}
 function dossierPour(no,client){const base=(CFG.mission.dossierPC||"").replace(/\\[^\\]*$/,"");return base?`${base}\\${safeDir(no+(client?" - "+client:""))}`:""}
 async function createMission(){
-  const no=$("nNo").value.trim(),client=$("nClient").value.trim();if(!no){toast("Indique le n° de la nouvelle mission.");return}
-  if(MISSIONS.some(m=>m.no===no&&!m.archive)){toast(`La mission ${no} existe déjà.`);return}
+  const no=$("nNo").value.trim(),client=$("nClient").value.trim();if(!no){toast("Indique le n° du nouveau projet.");return}
+  if(MISSIONS.some(m=>m.no===no&&!m.archive)){toast(`Le projet ${no} existe déjà.`);return}
   const [kind,ref]=$("nFrom").value.split(":");const src=kind==="copy"?MISSIONS.find(m=>m.id===ref):TEMPLATES[ref];
   const lang=$("nLang").value||"fr";
   const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",equipements:src.equipements,activites:convertirActivites(src.activites,lang),dico:kind==="copy"&&src.dico?JSON.parse(JSON.stringify(src.dico)):[],modifieLe:new Date().toISOString()};
   MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
-  toast(`Mission ${no} créée : vérifie le dossier PC et complète les listes`,4000)}
+  toast(`Projet ${no} créé : vérifie le dossier PC et complète les listes`,4000)}
 async function toggleArchive(){const m=curMission();
-  if(m.archive){m.archive=false;await saveMissions();renderCfg();toast(`Mission ${m.no} désarchivée`);return}
-  const other=MISSIONS.find(x=>!x.archive&&x.id!==m.id);if(!other){toast("Crée d'abord une autre mission : il faut au moins une mission active.");return}
+  if(m.archive){m.archive=false;await saveMissions();renderCfg();toast(`Projet ${m.no} désarchivé`);return}
+  const other=MISSIONS.find(x=>!x.archive&&x.id!==m.id);if(!other){toast("Crée d'abord un autre projet : il faut au moins un projet actif.");return}
   const n=(await allEntries()).filter(e=>!e.envoye&&belongs(e)).length;
-  $("archTxt").textContent=`Archiver la mission ${m.no} ?`+(n?` Attention : ${n} constat(s) pas encore envoyé(s) au PC.`:" Ses constats restent sur le téléphone tant que tu ne libères pas la place.");$("archCard").hidden=false}
+  $("archTxt").textContent=`Archiver le projet ${m.no} ?`+(n?` Attention : ${n} constat(s) pas encore envoyé(s) au PC.`:" Ses constats restent sur le téléphone tant que tu ne libères pas la place.");$("archCard").hidden=false}
 async function doArchive(){const m=curMission();m.archive=true;await saveMissions();$("archCard").hidden=true;await switchMission(MISSIONS.find(x=>!x.archive).id)}
 function renderHeader(){renderSync();$("appVer").textContent="Version de l'appli : "+APP_VERSION;$("hMission").textContent=CFG.mission.no+(CFG.mission.client?" · "+CFG.mission.client:"")}
 async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new Date().toISOString();
@@ -2517,17 +2517,17 @@ async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new
   // sur PC, le partage Windows ouvre Quick Share sans le fichier : on enregistre directement dans Téléchargements
   if(mobile&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});ok=true}catch(e){if(e.name==="AbortError") return}}
   if(!ok){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();
-    toast(`« ${f.name} » est dans Téléchargements : glisse-le dans la fenêtre Quick Share, ou clic droit > Envoyer avec Quick Share. Sur le téléphone : Missions > Charger une mission.`,9000)}
+    toast(`« ${f.name} » est dans Téléchargements : glisse-le dans la fenêtre Quick Share, ou clic droit > Envoyer avec Quick Share. Sur le téléphone : Projets > Charger un projet.`,9000)}
   m.envoyeLe=new Date().toISOString();await saveMissions();renderSync()}
 async function importCfg(file){busy("Lecture du fichier…",`${file.name} · ${taille(file.size)}`);await repos();try{await importCfg0(file)}finally{busyFin()}}
 async function importCfg0(file){if(/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)){const nv=await lireNavette(file).catch(()=>null);if(nv){afficherNavette(nv);return}const pr=await lireImageProgramme(file).catch(()=>null);if(pr){afficherProgramme(pr);return}}
   let j;try{j=/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)?await lireImageMission(file):JSON.parse(await file.text())}catch(e){j=null}
-  if(!j||!j.equipements||!j.activites){toast("Ce fichier n'est pas un fichier de mission valide.");return}
+  if(!j||!j.equipements||!j.activites){toast("Ce fichier n'est pas un fichier de projet valide.");return}
   const d=j.schema==="reglages-releve/1"?{...j.mission,equipements:j.equipements,activites:j.activites}:j; // ancien format accepté
-  if(!d.no){toast("Ce fichier ne contient pas de n° de mission.");return}
+  if(!d.no){toast("Ce fichier ne contient pas de n° de projet.");return}
   const m=MISSIONS.find(x=>x.no===d.no);
   if(m&&!estSynchro(m)&&(!d.modifieLe||d.modifieLe<m.modifieLe)){ // la version locale est plus récente que le fichier
-    IMPORT_EN_ATTENTE=d;$("impTxt").textContent=`La mission ${d.no} a été modifiée sur cet appareil le ${fmtDT(m.modifieLe)}, après la version du fichier (${d.modifieLe?fmtDT(d.modifieLe):"date inconnue"}). La remplacer quand même ?`;$("impCard").hidden=false;return}
+    IMPORT_EN_ATTENTE=d;$("impTxt").textContent=`Le projet ${d.no} a été modifié sur cet appareil le ${fmtDT(m.modifieLe)}, après la version du fichier (${d.modifieLe?fmtDT(d.modifieLe):"date inconnue"}). Le remplacer quand même ?`;$("impCard").hidden=false;return}
   await appliquerImport(d)}
 let IMPORT_EN_ATTENTE=null;
 async function appliquerImport(d){$("impCard").hidden=true;IMPORT_EN_ATTENTE=null;
@@ -2535,7 +2535,7 @@ async function appliquerImport(d){$("impCard").hidden=true;IMPORT_EN_ATTENTE=nul
   if(!m){m={id:newId(),archive:false};MISSIONS.push(m)}
   const v=d.modifieLe||new Date().toISOString();
   Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",societe:d.societe||"QUARTIS",activiteSociete:d.activiteSociete||"",equipements:d.equipements,activites:d.activites,dico:Array.isArray(d.dico)?d.dico:(m.dico||[]),archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
-  await saveMissions();await switchMission(m.id);toast(maj?`Mission ${m.no} mise à jour`:`Mission ${m.no} ajoutée`)}
+  await saveMissions();await switchMission(m.id);toast(maj?`Projet ${m.no} mis à jour`:`Projet ${m.no} ajouté`)}
 /* ---------- v1.67 : programme d'arrêt préparé sur le PC (« Préparer l'arrêt », 982 Toolbox) ----------
    image programme-<N°>.jpg : JSON {schema:"releve-programme/1", id, mission:{no}, lignes:[{eq:{nom,code}, sub, act, lining, rem}]}
    dans des commentaires JPEG « RELEVE-PROGRAMME:<base64> ». Lignes déjà triées dans l'ordre du parcours. */
@@ -2566,11 +2566,11 @@ function preparerProgramme(j,m){ // calcule les listes complétées et les ligne
 function visitesProgramme(lignes){const g=[];for(const x of lignes){const k=x.e.code+"|"+x.a.code+"|"+(x.sa?x.sa.code:"");let v=g.find(y=>y.k===k);if(!v){v={k,e:x.e,a:x.a,sa:x.sa,items:[]};g.push(v)}v.items.push(x)}return g}
 let PROG_EN_ATTENTE=null;
 function afficherProgramme(j){const no=String(j.mission&&j.mission.no||"");const m=MISSIONS.find(x=>x.no===no);
-  if(!m){toast(`Programme de la mission ${no||"?"} : cette mission n'est pas sur cet appareil. Charge-la ou crée-la d'abord (même n°), puis recharge le programme.`,9000);return}
+  if(!m){toast(`Programme du projet ${no||"?"} : ce projet n'est pas sur cet appareil. Charge-le ou crée-le d'abord (même n°), puis recharge le programme.`,9000);return}
   const p=preparerProgramme(j,m);if(!p.lignes.length){toast("Ce programme ne contient aucune zone prévue (colonne Prévu).",6000);return}
   const vs=visitesProgramme(p.lignes),anciens=PREVUS.filter(x=>x.mission===m.id&&x.prog).length;
   const t=[`Programme d'arrêt ${m.no} : ${p.lignes.length} constats prévus en ${vs.length} visites.`];
-  if(p.nEq||p.nSub) t.push(`Ajouté aux listes de la mission : ${p.nEq} équipement(s), ${p.nSub} sous-équipement(s).`);
+  if(p.nEq||p.nSub) t.push(`Ajouté aux listes du projet : ${p.nEq} équipement(s), ${p.nSub} sous-équipement(s).`);
   if(anciens) t.push(`Les ${anciens} constats prévus du programme précédent, pas encore faits, seront remplacés.`);
   if(p.actInc.length) t.push(`Activité inconnue (${p.actInc.join(", ")}) : remplacée par « ${p.defaut} ».`);
   const box=$("progTxt");box.innerHTML="";for(const x of t){const d=document.createElement("div");d.textContent=x;box.append(d)}
@@ -2591,8 +2591,8 @@ async function appliquerProgramme(){const P=PROG_EN_ATTENTE;$("progCard").hidden
 /* ---------- v1.69 : navette entre appareils (téléphone ⇄ tablette) ----------
    navette-<N°>-<appareil>-<date>.jpg : en-tête JSON (UTF-8 découpé) dans des commentaires JPEG « RELEVE-NAVETTE: »,
    photos complètes (blob, original) à la suite dans des commentaires « RELEVE-NDATA: » (65 000 octets).
-   Contenu : constats de la mission nouveaux / modifiés depuis la dernière navette créée sur cet appareil (ou tous),
-   constats prévus de la mission, constats prévus faits ou supprimés (pierres tombales), réglage de la mission.
+   Contenu : constats du projet nouveaux / modifiés depuis la dernière navette créée sur cet appareil (ou tous),
+   constats prévus du projet, constats prévus faits ou supprimés (pierres tombales), réglage du projet.
    Fusion : un constat est remplacé si la version reçue est plus récente (modifieLe) ; un constat prévu fait ou
    supprimé sur un appareil disparaît sur l'autre ; un constat reçu n'est pas renvoyé tant qu'il n'est pas modifié. */
 const cleP=p=>p.prog?[p.prog,p.eq,p.sub,p.act,p.subact||""].join("|"):"";
@@ -2617,17 +2617,17 @@ async function creerNavette(){const m=curMission();if(!m) return;const ap=await 
     const h={schema:"releve-navette/1",cree:new Date().toISOString(),appareil:ap,depuis,mission:mis,entrees:en,photos,prevus:PREVUS.filter(p=>p.mission===m.id).map(({mission,...p})=>p),faits};
     busyMaj("Assemblage du fichier…",95);await repos();
     const f=await fichierNavette(h,blobs,off);busyFin();
-    const ok=await partagerImage(f,`« ${f.name} » est dans Téléchargements : dépose-le dans OneDrive (982 Toolbox › Navette) depuis Mes fichiers, ou envoie-le par Quick Share. Sur l'autre appareil : Missions > Charger une navette.`);
+    const ok=await partagerImage(f,`« ${f.name} » est dans Téléchargements : dépose-le dans OneDrive (982 Toolbox › Navette) depuis Mes fichiers, ou envoie-le par Quick Share. Sur l'autre appareil : Projets > Charger une navette.`);
     if(ok){m.navetteLe=h.cree;await saveMissions();majNavInfo();toast(`Navette créée : ${en.length} constat(s), ${photos.length} photo(s), ${h.prevus.length} constat(s) prévu(s).`,6000)}}
   catch(e){toast("Navette impossible : "+(e&&e.message||e),8000)}
   finally{busyFin();b.disabled=false;b.textContent="🔄 Créer la navette"}}
 async function fichierNavette(h,blobs,total){const c=document.createElement("canvas");c.width=900;c.height=480;const g=c.getContext("2d");
   g.fillStyle="#1d2a33";g.fillRect(0,0,900,480);g.fillStyle="#2e7d4f";g.fillRect(0,0,14,480);
-  g.fillStyle="#fff";g.font="bold 42px sans-serif";g.fillText("Navette – mission "+h.mission.no,50,95);
+  g.fillStyle="#fff";g.font="bold 42px sans-serif";g.fillText("Navette – projet "+h.mission.no,50,95);
   g.font="28px sans-serif";g.fillText((h.mission.client||"").slice(0,50),50,148);g.fillStyle="#c9d3d9";g.font="26px sans-serif";
   g.fillText(`${h.entrees.length} constat(s) · ${h.photos.length} photo(s) · ${h.prevus.length} constat(s) prévu(s)`,50,230);
   g.fillText(`De : ${h.appareil.nom} · ${fmtDT(h.cree)}`,50,272);g.fillText(h.depuis?`Nouveautés depuis le ${fmtDT(h.depuis)}`:"Navette complète",50,314);
-  g.font="22px sans-serif";g.fillText("The 982 Inspector Toolbox : Missions › Charger une navette",50,420);
+  g.font="22px sans-serif";g.fillText("The 982 Inspector Toolbox : Projets › Charger une navette",50,420);
   const jpg=new Uint8Array(await (await new Promise(r=>c.toBlob(r,"image/jpeg",0.85))).arrayBuffer());
   const enc=new TextEncoder(),parts=[jpg.subarray(0,2)],T=65000;
   const seg=(pre,len,...data)=>{const L=pre.length+len+2;parts.push(new Uint8Array([0xFF,0xFE,L>>8,L&255]),pre,...data)};
@@ -2670,11 +2670,11 @@ async function analyseNavette(h){const no=String(h.mission&&h.mission.no||"");co
   const ajouts=(h.prevus||[]).filter(p=>!locP.some(x=>x.id===p.id||(cleP(p)&&cleP(x)===cleP(p)))&&!mesTombes.has(p.id)&&!(cleP(p)&&mesTombes.has(cleP(p)))&&!tombes.has(p.id));
   return {no,m,nouv,maj,ign,retires,ajouts,listes:!m||(h.mission.modifieLe&&(!m.modifieLe||h.mission.modifieLe>m.modifieLe))}}
 async function afficherNavette(h){const a=await analyseNavette(h);
-  const t=[`Navette de la mission ${a.no}, créée sur « ${h.appareil&&h.appareil.nom||"?"} » le ${fmtDT(h.cree)}.`];
-  if(!a.m) t.push(`La mission ${a.no} n'est pas sur cet appareil : elle sera ajoutée.`);
+  const t=[`Navette du projet ${a.no}, créée sur « ${h.appareil&&h.appareil.nom||"?"} » le ${fmtDT(h.cree)}.`];
+  if(!a.m) t.push(`Le projet ${a.no} n'est pas sur cet appareil : il sera ajouté.`);
   t.push(`Constats : ${a.nouv} nouveau(x), ${a.maj} mis à jour, ${a.ign} déjà à jour.`);
   t.push(`Constats prévus : ${a.retires.length} faits ou supprimés sur l'autre appareil (retirés ici), ${a.ajouts.length} ajouté(s).`);
-  if(a.m&&a.listes) t.push("Les listes de la mission (équipements, activités) seront remplacées par la version plus récente de la navette.");
+  if(a.m&&a.listes) t.push("Les listes du projet (équipements, activités) seront remplacées par la version plus récente de la navette.");
   const box=$("navTxt");box.innerHTML="";for(const x of t){const d=document.createElement("div");d.textContent=x;box.append(d)}
   NAV_EN_ATTENTE=h;$("navCard").hidden=false;$("navCard").scrollIntoView({behavior:"smooth",block:"center"})}
 async function appliquerNavette(){const h=NAV_EN_ATTENTE;$("navCard").hidden=true;NAV_EN_ATTENTE=null;if(!h) return;
@@ -2700,7 +2700,7 @@ async function appliquerNavette(){const h=NAV_EN_ATTENTE;$("navCard").hidden=tru
     toast(`Navette fusionnée : ${nE} constat(s) (${nP} photo(s)), ${a.retires.length} constat(s) prévu(s) retiré(s), ${a.ajouts.length} ajouté(s).`,7000)}
   catch(e){toast("Fusion impossible : "+(e&&e.message||e),8000)}
   finally{busyFin();b.disabled=false}}
-function majNavInfo(){const m=curMission(),el=$("navInfo");if(!m||!el) return;el.textContent=m.navetteLe?`Dernière navette créée sur cet appareil : ${fmtDT(m.navetteLe)}.`:"Aucune navette créée sur cet appareil pour cette mission : la première sera complète."}
+function majNavInfo(){const m=curMission(),el=$("navInfo");if(!m||!el) return;el.textContent=m.navetteLe?`Dernière navette créée sur cet appareil : ${fmtDT(m.navetteLe)}.`:"Aucune navette créée sur cet appareil pour ce projet : la première sera complète."}
 /* ---------- import depuis Excel (copier-coller) ---------- */
 let COLLAGE=null;
 function lireCollage(txt){
@@ -2721,7 +2721,7 @@ function majCollage(){COLLAGE=lireCollage($("pasteBox").value);const ok=!!COLLAG
 function appliquerCollage(remplacer){if(!COLLAGE) return;
   let base=remplacer?[]:parseTree($("cEq").value).map(e=>({nom:e.nom,code:e.code,enfants:e.enfants.map(x=>x.nom)}));
   for(const e of COLLAGE){const x=base.find(b=>b.nom===e.nom);if(!x) base.push({...e,enfants:[...e.enfants]});else for(const sz of e.enfants) if(!x.enfants.includes(sz)) x.enfants.push(sz)}
-  $("cEq").value=arbreTexte(base);$("pasteBox").value="";majCollage();toast("Liste mise à jour : vérifie-la puis « Enregistrer la mission ».",4500);$("cEq").scrollIntoView({block:"center"})}
+  $("cEq").value=arbreTexte(base);$("pasteBox").value="";majCollage();toast("Liste mise à jour : vérifie-la puis « Enregistrer le projet ».",4500);$("cEq").scrollIntoView({block:"center"})}
 /* ---------- traduction (PC, traducteur intégré à Chrome) ---------- */
 const GLOSS_EN=`garnissage réfractaire = refractory lining
 revêtement réfractaire = refractory lining
@@ -2828,7 +2828,7 @@ async function enregistrerCsv(){const txt=csvEcrire(T.head,T.rows);
   if(T.handle){try{const w=await T.handle.createWritable();await w.write(txt);await w.close();T.modif=false;rendreTrad();toast("Fichier enregistré.");return}
     catch(e){toast("Écriture impossible ("+e.message+"). Le fichier est-il ouvert dans Excel ?",7000);return}}
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv"}));a.download=T.nom||"Observations_releve.csv";a.click();
-  T.modif=false;rendreTrad();toast("Fichier enregistré dans Téléchargements : remplace l'ancien dans le dossier de la mission.",6000)}
+  T.modif=false;rendreTrad();toast("Fichier enregistré dans Téléchargements : remplace l'ancien dans le dossier du projet.",6000)}
 async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) return;$("navTrad").hidden=false;
   try{const l=await kvGet("tLang");if(l) T.lang=l;const sl=await kvGet("tSrc");if(sl) T.src=sl}catch(e){}$("tLang").value=T.lang;$("tSrc").value=T.src;
   const majGloss=async()=>{$("tGloss").value=await glossaire(T.src,T.lang);$("tGlossHint").textContent=`Sens ${T.src.toUpperCase()} → ${T.lang.toUpperCase()}. Une ligne par terme : « terme d'origine = traduction ». Ces termes sont remplacés avant la traduction automatique, pour garder le vocabulaire du métier.`};
@@ -2885,7 +2885,7 @@ async function renderConstats(){
   const items=[...en.map(e=>({k:"e",e,eq:e.equipement&&e.equipement.code||"",act:e.activite&&e.activite.code||"",st:e.envoye?"env":"aenv"})),
                ...pv.map(p=>({k:"p",p,eq:p.eq||"",act:p.act||"",st:"prevu"}))]
     .filter(x=>(!CST.eq||x.eq===CST.eq)&&(!CST.act||x.act===CST.act)&&(!CST.st||x.st===CST.st));
-  // équipements dans l'ordre de la liste de la mission, puis ceux qui n'y sont plus
+  // équipements dans l'ordre de la liste du projet, puis ceux qui n'y sont plus
   const eqs=EQ.map(q=>({code:q.code,nom:q.nom,enfants:q.enfants}));
   for(const x of items) if(x.eq&&!eqs.some(q=>q.code===x.eq)) eqs.push({code:x.eq,nom:x.k==="e"?x.e.equipement.nom:x.eq,enfants:[]});
   if(items.some(x=>!x.eq)) eqs.push({code:"",nom:"Autres",enfants:[]});
@@ -2905,7 +2905,7 @@ async function renderConstats(){
       for(const x of ls.filter(x=>x.k==="e")) c.append(ligneConstat(x.e));
       for(const x of ls.filter(x=>x.k==="p")) c.append(lignePrevu(x.p))}
     box.append(c)}
-  if(!items.length) box.innerHTML=`<div class="card"><p class="hint">${en.length+nP?"Aucun constat ne correspond à ces filtres.":"Aucun constat pour cette mission. Les constats enregistrés depuis l'onglet Saisie et les constats prévus apparaissent ici, par équipement."}</p></div>`;
+  if(!items.length) box.innerHTML=`<div class="card"><p class="hint">${en.length+nP?"Aucun constat ne correspond à ces filtres.":"Aucun constat pour ce projet. Les constats enregistrés depuis l'onglet Saisie et les constats prévus apparaissent ici, par équipement."}</p></div>`;
   if(CST.ouvrir){const el=$("cst_"+CST.ouvrir);CST.ouvrir=null;
     if(el){const b=el.querySelector("button.ouvrir");if(b&&b.getAttribute("aria-expanded")!=="true") b.click();
       el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash");setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),60)}}}
@@ -2932,13 +2932,13 @@ function initBusy(){$("busyStop").onclick=busyFin;
   for(const id of ["iCfg","iNav"]) $(id).addEventListener("cancel",busyFin)}
 async function chargerNavette(file){const info=`${file.name} · ${taille(file.size)}`;busy("Lecture de la navette…",info,0);await repos();
   try{const nv=await lireNavette(file,p=>busyMaj(info,p)).catch(()=>null);
-    if(!nv){busyFin();toast("Ce fichier n'est pas une navette. Mission ou programme d'arrêt : « Charger une mission ».",7000);return}
+    if(!nv){busyFin();toast("Ce fichier n'est pas une navette. Projet ou programme d'arrêt : « Charger un projet ».",7000);return}
     busy("Analyse de la navette…",`${(nv.entrees||[]).length} constat(s), ${(nv.photos||[]).length} photo(s)`);await repos();
     await afficherNavette(nv)}
   finally{busyFin()}}
 
 /* ---------- v1.75 : préqualification des applicateurs (APQ) ----------
-   Un rapport par mission (kv « apq:<id mission> ») : introduction, périmètre, matériaux, conditions générales,
+   Un rapport par projet (kv « apq:<id mission> ») : introduction, périmètre, matériaux, conditions générales,
    sessions (méthode + date : matériel, panneau, relevés, photos guidées, contrôle après prise, applicateurs), résultats.
    Photos dans le magasin « photos » (id « apq_… », entry « apq:<id mission> »). PDF sur le téléphone (générateur du PDF rapide). */
 const APQ_METHODES=["Gunning","Coulage","Free flow / Selflow","Hand packing","Damage (ramming)","Vibrocoulage","Autre"];
@@ -3003,7 +3003,7 @@ const apqVide=()=>({v:1,intro:"",perimetre:"",conditions:"",eau:"",labo:false,pe
 let APQ_REF=null,APQ_SALE=false,APQ_CONFLIT=false;
 async function apqCharger(){const id=CFG.mission.id;if(APQ&&APQ_M===id) return APQ;let a=null;try{a=await kvGet("apq:"+id)}catch(e){}APQ_REF=a&&a.modifieLe||null;APQ_CONFLIT=false;
   APQ=a&&a.v?a:apqVide();APQ_M=id;
-  // v1.79 : inspecteur et certification API (repris du dernier rapport, sinon de la mission)
+  // v1.79 : inspecteur et certification API (repris du dernier rapport, sinon du projet)
   if(APQ.inspecteur==null){let d=null;try{d=await kvGet("apqInsp")}catch(e){}d=d||{};APQ.inspecteur=d.nom||CFG.mission.inspecteur||"";APQ.apiNo=d.no||"";APQ.apiType=d.type||"936"}
   return APQ}
 function apqSauver(tout){clearTimeout(APQ_T);APQ_SALE=true;const go=async()=>{if(!APQ||APQ_CONFLIT) return;
@@ -3132,8 +3132,8 @@ function apqMateriels(s){if(!Array.isArray(s.materiels)){s.materiels=s.materiel?
   return apqE("div",{},chips,apqE("div",{class:"apqmatadd"},inp,dl,apqE("button",{type:"button",onclick:ajouter},"＋ Ajouter")))}
 
 
-// v1.87 : logo du rapport (société de la mission, QUARTIS, Franck TALLEUX / FTA, ou image choisie)
-const APQ_LOGOS=[["","Société de la mission"],["QUARTIS","QUARTIS"],["FTA","Franck TALLEUX (FTA)"],["perso","Image choisie…"]];
+// v1.87 : logo du rapport (société du projet, QUARTIS, Franck TALLEUX / FTA, ou image choisie)
+const APQ_LOGOS=[["","Société du projet"],["QUARTIS","QUARTIS"],["FTA","Franck TALLEUX (FTA)"],["perso","Image choisie…"]];
 function apqLogo(a){const sel=apqE("select",{},APQ_LOGOS.map(([v,t])=>apqE("option",{value:v,text:t})));sel.value=a.logo||"";
   sel.onchange=async()=>{a.logo=sel.value;await apqSauver(true);renderApq()};
   const box=apqE("div",{},apqE("div",{class:"apqrow"},apqE("label",{},"Logo du rapport",sel)));
@@ -3212,7 +3212,7 @@ function apqSession(s){const d=apqE("details",{class:"apqs"});d.open=APQ_OUV.has
       APQ.sessions.splice(APQ.sessions.indexOf(s),1);await apqSauver(true);renderApq()}},"🗑 Supprimer la session")));
   return d}
 let APQ_RECUP_FAIT=null;
-// v1.87 : photos de préqualification présentes dans l'appli mais rattachées à aucun rapport (toutes missions) -> « Photos retrouvées » du rapport ouvert
+// v1.87 : photos de préqualification présentes dans l'appli mais rattachées à aucun rapport (tous projets) -> « Photos retrouvées » du rapport ouvert
 let APQ_DIAG=null;
 async function apqRecuperer(a){if(APQ_RECUP_FAIT===APQ_M) return;APQ_RECUP_FAIT=APQ_M;
   let l=[],cles=[];try{l=await tx("photos","readonly",s=>s.getAll(IDBKeyRange.bound("apq_","apq_￿")));cles=await tx("kv","readonly",s=>s.getAllKeys())}catch(e){return}
@@ -3224,13 +3224,13 @@ async function apqRecuperer(a){if(APQ_RECUP_FAIT===APQ_M) return;APQ_RECUP_FAIT=
   for(const p of orph){a.recup.push({pid:p.id,slot:"Photos retrouvées",leg:""});if(p.entry!=="apq:"+APQ_M){p.entry="apq:"+APQ_M;try{await tx("photos","readwrite",st=>st.put(p))}catch(e){}}}
   await apqSauver(true);toast(`${orph.length} photo(s) n'étaient plus rattachées à une case : elles sont dans « Photos retrouvées » (en haut). Glissez-les vers leur case.`,12000)}
 
-// v1.90 : équipement(s) concerné(s) — choisis dans la liste des équipements de la mission, + précision libre
+// v1.90 : équipement(s) concerné(s) — choisis dans la liste des équipements du projet, + précision libre
 function apqEquip(a){const box=$("apqEq");box.innerHTML="";a.equip=a.equip||[];
   const l=(EQ||[]);if(l.length){const g=apqE("div",{class:"apqeq"});
     for(const e of l){const b=apqE("button",{type:"button","aria-pressed":String(a.equip.includes(e.code)),"data-noi18n":true,title:e.code},e.nom);
       b.onclick=()=>{const i=a.equip.indexOf(e.code);if(i<0) a.equip.push(e.code);else a.equip.splice(i,1);b.setAttribute("aria-pressed",String(i<0));apqSauver()};g.append(b)}
     box.append(g)}
-  else box.append(apqE("p",{class:"hint",text:"Aucun équipement dans la mission active (Réglages) : ajoutez-le ci-dessous."}));
+  else box.append(apqE("p",{class:"hint",text:"Aucun équipement dans le projet actif (Réglages) : ajoutez-le ci-dessous."}));
   // v2.00 : équipements non listés, ajoutés au rapport (a.equipPlus), retirables par ✕
   a.equipPlus=a.equipPlus||[];
   if(a.equipPlus.length){const g2=apqE("div",{class:"apqeq"});
@@ -3317,7 +3317,7 @@ async function apqSauvegarder(){const a=await apqCharger();await apqSauver(true)
     const now=new Date(),h={schema:"releve-apq/1",cree:now.toISOString(),version:APP_VERSION,mission:{no:m.no,client:m.client||""},apq:a,photos};
     const nom=nomSur(`Sauvegarde APQ ${m.no} - ${today()} ${pad(now.getHours())}h${pad(now.getMinutes())}`)+".jpg";
     const c=document.createElement("canvas");c.width=900;c.height=360;const g=c.getContext("2d");g.fillStyle="#1d2a33";g.fillRect(0,0,900,360);g.fillStyle="#c9a227";g.fillRect(0,0,14,360);
-    g.fillStyle="#fff";g.font="bold 40px sans-serif";g.fillText("Sauvegarde – préqualification",50,90);g.font="28px sans-serif";g.fillText(`Mission ${m.no} ${(m.client||"").slice(0,40)}`,50,140);
+    g.fillStyle="#fff";g.font="bold 40px sans-serif";g.fillText("Sauvegarde – préqualification",50,90);g.font="28px sans-serif";g.fillText(`Projet ${m.no} ${(m.client||"").slice(0,40)}`,50,140);
     g.fillStyle="#c9d3d9";g.font="24px sans-serif";g.fillText(`${(a.sessions||[]).length} session(s) · ${photos.length} photo(s) · ${fmtDT(h.cree)}`,50,200);
     g.font="20px sans-serif";g.fillText("The 982 Inspector Toolbox : Préqualification › Restaurer",50,300);
     busyMaj("Assemblage du fichier…",95);await repos();
@@ -3333,7 +3333,7 @@ async function apqSauvegarder(){const a=await apqCharger();await apqSauver(true)
       seg(pd,len,...mx)}
     parts.push(jpg.subarray(2));const f=new File(parts,nom,{type:"image/jpeg"});busyFin();
     try{await kvSet("apqSauveLe:"+APQ_M,h.cree)}catch(e){}
-    await partagerImage(f,`« ${f.name} » est dans Téléchargements : gardez-le (dossier de la mission par exemple). Pour le recharger : Préqualification › 📂 Restaurer.`);apqInfoSauve()}
+    await partagerImage(f,`« ${f.name} » est dans Téléchargements : gardez-le (dossier du projet par exemple). Pour le recharger : Préqualification › 📂 Restaurer.`);apqInfoSauve()}
   catch(e){toast("Sauvegarde impossible : "+(e&&e.message||e),8000)}finally{busyFin()}}
 async function apqLireSauvegarde(file){const rd=async(a,b)=>new Uint8Array(await file.slice(a,b).arrayBuffer());
   const s0=await rd(0,2);if(s0[0]!==0xFF||s0[1]!==0xD8) return null;
@@ -3352,8 +3352,8 @@ let APQ_REST=null;
 async function apqChoisirSauvegarde(file){busy("Lecture de la sauvegarde…",`${file.name} · ${taille(file.size)}`);await repos();
   try{const h=await apqLireSauvegarde(file);busyFin();if(!h){toast("Ce fichier n'est pas une sauvegarde de préqualification.",6000);return}
     APQ_REST=h;const a=h.apq||{},n=(a.sessions||[]).length;
-    $("apqRestTxt").textContent=`Sauvegarde du ${fmtDT(h.cree)} – mission ${h.mission&&h.mission.no||"?"} : ${n} session(s), ${(h.photos||[]).length} photo(s).`
-      +(h.mission&&h.mission.no!==CFG.mission.no?` Attention : la mission active est la ${CFG.mission.no}.`:"")+" Le rapport de préqualification actuel de la mission active sera remplacé.";
+    $("apqRestTxt").textContent=`Sauvegarde du ${fmtDT(h.cree)} – projet ${h.mission&&h.mission.no||"?"} : ${n} session(s), ${(h.photos||[]).length} photo(s).`
+      +(h.mission&&h.mission.no!==CFG.mission.no?` Attention : le projet actif est le ${CFG.mission.no}.`:"")+" Le rapport de préqualification actuel du projet actif sera remplacé.";
     $("apqRestCard").hidden=false;$("apqRestCard").scrollIntoView({block:"center"})}
   catch(e){busyFin();toast("Lecture impossible : "+(e&&e.message||e),6000)}}
 async function apqRestaurer(){const h=APQ_REST;APQ_REST=null;$("apqRestCard").hidden=true;if(!h) return;
@@ -3371,7 +3371,7 @@ function initApqSauve(){$("bApqSave").onclick=apqSauvegarder;$("bApqRest").oncli
   $("iApqRest").addEventListener("cancel",busyFin);$("bApqRestOk").onclick=apqRestaurer;$("bApqRestNo").onclick=()=>{APQ_REST=null;$("apqRestCard").hidden=true}}
 
 
-// v1.88 : le rapport de préqualification de la mission apparaît en tête du Journal (ouvrir pour le compléter, PDF)
+// v1.88 : le rapport de préqualification du projet apparaît en tête du Journal (ouvrir pour le compléter, PDF)
 async function apqCarteJournal(j){let a=null;try{a=await apqCharger()}catch(e){return}
   if(!a||!((a.sessions||[]).length||(a.materiaux||[]).length||(a.personnes||[]).length||(a.intro||"").trim())) return;
   const tous=(a.sessions||[]).flatMap(s=>s.applicateurs||[]),nv=tous.filter(p=>p.verdict).length;
@@ -3416,7 +3416,7 @@ async function apqSectionGalerie(g){let a=null;try{a=await apqCharger()}catch(e)
 async function apqVoir(x){const p=await getPhoto(x.pid);if(!p) return;const u=URL.createObjectURL(p.blob);
   const ov=apqE("div",{class:"apqlb",onclick:()=>{ov.remove();URL.revokeObjectURL(u)}},apqE("img",{src:u,alt:""}),apqE("p",{"data-noi18n":true,text:x.fichier}));document.body.append(ov)}
 
-// v1.91 : fiche technique (TDS, PDF) par matériau, mémorisée par produit (toutes missions), annexée au PDF du rapport
+// v1.91 : fiche technique (TDS, PDF) par matériau, mémorisée par produit (tous projets), annexée au PDF du rapport
 let APQ_TDSMEM=null,APQ_TDS_CIBLE=null;
 const apqTdsCle=p=>String(p||"").trim().toLowerCase();
 async function apqTdsMem(){if(APQ_TDSMEM) return APQ_TDSMEM;let v=null;try{v=await kvGet("apqTds")}catch(e){}APQ_TDSMEM=v&&typeof v==="object"?v:{};return APQ_TDSMEM}
@@ -3441,7 +3441,7 @@ async function apqTdsAjouter(f){const m=APQ_TDS_CIBLE;APQ_TDS_CIBLE=null;if(!m||
   try{const id="apqdoc_"+newId();await tx("photos","readwrite",s=>s.put({id,entry:"apqtds",type:"application/pdf",prise:null,blob:f,thumb:""}));
     m.tds={id,nom:f.name,taille:f.size};m.tdsAnnexe=true;
     const mem=await apqTdsMem();if(apqTdsCle(m.produit)){mem[apqTdsCle(m.produit)]={...m.tds};try{await kvSet("apqTds",mem)}catch(e){}}
-    await apqSauver(true);toast(`Fiche technique ajoutée${m.produit?" pour "+m.produit:""} : elle sera reproposée pour ce produit dans les autres missions.`,6000)}
+    await apqSauver(true);toast(`Fiche technique ajoutée${m.produit?" pour "+m.produit:""} : elle sera reproposée pour ce produit dans les autres projets.`,6000)}
   catch(e){toast("Fiche non ajoutée : "+(e&&e.message||e),6000)}finally{busyFin();renderApq()}}
 // module d'assemblage des PDF (chargé seulement si besoin, gardé hors connexion par le service worker)
 async function apqPdfLib(){if(window.PDFLib) return window.PDFLib;
@@ -3652,7 +3652,7 @@ async function sauverBrouillon(){clearTimeout(BR.minuterie);if(!DB||!BR.charge) 
 async function effacerBrouillon(){clearTimeout(BR.minuterie);BR.photos=false;BR.session=false;try{await tx("kv","readwrite",s=>{s.delete("brouillonTexte");s.delete("brouillonPhotos")})}catch(e){}afficherBrouillon()}
 async function afficherBrouillon(){let t=null,ph=null;try{t=await kvGet("brouillonTexte");ph=await kvGet("brouillonPhotos")}catch(e){}
   const vide=document.querySelectorAll(".brCard");
-  // proposé seulement pour la mission active, et pas si ce brouillon est déjà dans le formulaire
+  // proposé seulement pour la projet actif, et pas si ce brouillon est déjà dans le formulaire
   if(!t||t.mission!==CFG.mission.id||BR.session){vide.forEach(c=>c.hidden=true);return}
   const n=ph&&ph.mission===t.mission?ph.photos.length:0,d=new Date(t.t);
   const quoi=t.editId?"Une modification de constat":"Un constat en cours";
@@ -3677,7 +3677,7 @@ function initBrouillon(){document.querySelectorAll(".brGo").forEach(b=>b.onclick
   BR.charge=true;afficherBrouillon()}
 /* ---------- PDF rapide, partage de photos, étiquettes des photos (v1.50) ----------
    Le PDF est fabriqué sur le téléphone (aucune bibliothèque, fonctionne hors réseau) :
-   polices standard Helvetica (WinAnsi), photos en JPEG, intitulés dans la langue de la mission. */
+   polices standard Helvetica (WinAnsi), photos en JPEG, intitulés dans la langue du projet. */
 const LOGO_QUARTIS="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOwAAABqAgMAAADCVFVCAAAADFBMVEX////6///9/P6rT3D/kUHnAAAI60lEQVR42u2Yb4xU1RnGf+dwZ7k7Vr3WGVhThIsVhV3SkKaxpjFy2NjECoaxnYtEG7ukNTHCh23abDeWsAeiLW7TZGOkodrQ0Wiy7iww0drQatmjTU2jaYoJLKSQMCg1hF3lKhauO5d7+uHO7C67dpvxQ9MmPd/unPPM+57n/XtekVn7Nw0k779Socnl1CpZRs+y2tD0EsqQVwDlprESP6MAbKbYPHanR2bvt/au84RqFvs6iDv/cO+ZnYpcs9hEdueuVOR/v6bSPFvt7UPWWjvR/nzQrI0YHcoAZHTSNFf6m3gAFGTT2KUOKb9OZJq2USLADoNwUc1ipQPDR4ZB6SYFy9OOxye0W4M3UmoS66N4Qh/XIdzW9H1bsYs3DPgxTltXk9iqSyz+pLJ9fIY4upFQGIQygkLTMQjJcwyHITjN+obm10O2tmQCOpvFOgO0tfHiThlD1CQ2wjpIMHDRbTZ+Yet7JNL24nlNxqALZLY52/ToZ7ARKNquOWYu4jaPTaoAVJuW60jkd7qA8g3Q1rzOkxL95rGfdf1vY6ug/8/VfwS7XUEpSOnO9svHOjNBIILis0F7Xg4id6m55GafKUgeBrLtJX9wwNMYCz8F/ZDUg3gz6+9lq8pLjB0PyvyoZjLq/euXrc1uyOq3el96eeGRM3s75sJGjuDa6w3q7OlDwBsPkWUI3PmZHx9CbumbQ2d7cMBmOpfV8DTkA3tDvQVpA8irFTvn5vmjO+EhA8vuVknxWKNQRHC3gp/PeV+Vby3a4ZDR9isLdpi0e7n0x6/97vntRcp687+Wq0EVEarEMgoI9VzjTBTrHBS8OXUWAshl2CSAXF2pBLFKKMhU58TGDiASx3cAUZ084zkAD86JPeABdBrHA9iYNiAT2LRkeHourK8oV/BEVdlyBbf8wkpe6KjAaSgP/5tYENTGaiR6KXH5aa4O31dcUgIiVdu83ziDs7CHh579yeBdA6CX+oQcNC1GE+KZDCEQWhgkVISit2smVuDeKH3AdaH0s6e6UacZufYVeGuRIj4jEQJ7xRBkQzHDN9ZtP1wvDtv/zh7dpYV+ygJh/cyGETQmJP6U+7qKCgMGPsG3j1SJ0wgOJ40EVQTXaJLZXJ0BuxXA6FS+pzmBfrWedPvBsdsUls7Z2IUU4uRQ6pU3DaKpknhqUVg3aA/AWQeFvcz/JRArA6Ju92O9rMInJgJCXT8To4CyCWf0KlQ0hMYFdkOpbgbT74KHAXYC4s9Q5dgsna3uTlmYP21j/AIf1+/bA9DNrJ5CAkSaX6bN1pTDquWiy3oNrnz8eGwfjpyF/e4JlhmAaQnp5ghvqrj1ojz8jbPlriv4JI2mXU/3mmqD53MAbnFGHOn0Hu95EVRRZEuywIcg3zul4tRG/eCQ29muX+eg0PX/98HpTYPcr9yKiPwhyC4HhxZ0BkDh0jPCo0btIHnixBdfW3pfAYag+kbFMcsQTl3HZOdjIiCAEBEAYUptPxAS1Cp4ZDa+GYAVjC2uyKiRkwBRvfxCr07u1WLI3D6eYKwCBOQmkNO5c269DGvDBslwEVjQJ8RkshAtSE1i8BHEzKxVDc77gQMGRPf0B5RCatK4vKzvTj/E4Umdd60fBx5ET704J5AglReB6wEGWza1YVxsuWymHIOu6GRHBU9FMFI2tTJjuKn6VVhdc0FoTZKqOjGqt+CJqK7z7pNPt7+EA5oPNhBFJETICPD3Iw+J9L5SnVP4yBVqMzJpxML51x8VkWHgNMghXJfEgDxNmr5iCJkHIM4AyYkqRspJrjxLHIqtFgr3EYEF5JKQ0wcdXO2wJwReq5fbuKpD9GTYyR1BEtNaAh6dioVfsVFjWoBF4QDAwcmoqCfUHsiLVbx9AKpQ0dhS/T3o0/qsogXPkqBxkKlZ7W9iuhtcsTKOvjef2wE+B3Gqsz6J510d8jiceOL7oGy9k//qhYate4AVX/nBKcWpv6SGvwMHkDVIwIguFb8J4E2mdCokmFTupmIpDTw9tY3EMy2RcxubgC0W1ERtZr1LwBGRUAZCuOryenTs2xfxOMdyTwvkrFd/Lyxi25PHP6GEho+nsCak7x4XB6JIExIyE9wPkMVz8RXTqpJkIsYHAweuegB9iNnDhgQ0Sus7qKaxO4n9CK5LCLGtrQt2oWxteOaYY0caWGtgoQ+ilOJcJLaPthZiBPc8GUEc3jxTbgTn8ch5Fou8QzR+lQUgWaUtFKC1QDgiP0XnxGRYowhTz05DHwm3m5bFHUCmmC+CmT2Y6QcJxRyxgUxQAMjTgsOld0B/SQBCQW3bjIKVrisqSijCrAO0THHVR7fYPllXnS/rWSOwHnDHAUamJ6bdSFrbNKuLML198gFBAbSCg0Oga4Aliaf2lyMrPXtiFgYFLhqgwm/T+ussKeXgpsdhvgvuSacCZ8crj2tIi1AtwgH61v/DqzF/bcmJxavduhzUuO1gFexIdMbfT9RVqkSDy6klI0LZsrC5kMr6fSEOEO5794fOcHyXPjZ4KQQ01nYfXT18eAdofanwBskhObgcuW5vEm8g8/UqPbJ1LfOAb3R4HWLBO0cX9CHYDLuofviAcDfKdueqpd4H7y7piI4dP1+A+8WNK1i9+Av3j610HhkdTfmt5FVOQKXj7XnAli3zwlOAHX5xt49BVGohXbXK+fajCawZO1JxutW9y5FAQjSOuKVo/3rIxsDqxc99AJEl2X1WW2ylRhchRNpaXia/mmTg0lAvEjAXnIuwRAxvTy0wovs6rysfwBShetSMz2Me1IANgt0lLmzFqU0NUXND+60dotHiZvvJDkH9Ww7mO0siKECBIAgKGeWQLTV6FfmLagxJ0Kinvq99SrRTIAeuPGeA7JBwqECmYGK558GgiEy9xLfGTs3NRjUkm+rNOBd07GJNBFArHynvhWTj5Ijt84PtQTZ+Ppg2vc6WMgpRIN/4IVOAHNCefuaDQprrOulgz77jKyfPBcEtm9YbUQSCIFAAtUygxhWM5gPIPzz28sap98LewUHbCAfv8jdbDqGgAhhAoVDoJuc3/y3rn9XMZKghUGAnAAAAAElFTkSuQmCC";
 const PDF_W={R:[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,0,556,0,222,556,333,1000,556,556,333,1000,667,333,1000,0,611,0,0,222,222,333,333,350,556,1000,333,1000,500,333,944,0,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,552,400,549,333,333,333,576,537,333,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,549,611,556,556,556,556,500,556,500],B:[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,0,556,0,278,556,500,1000,556,556,333,1000,667,333,1000,0,611,0,0,278,278,500,500,350,556,1000,333,1000,556,333,944,0,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,552,400,549,333,333,333,576,556,333,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,549,611,611,611,611,611,556,611,556]};
 const CP1252={0x20AC:128,0x201A:130,0x0192:131,0x201E:132,0x2026:133,0x2020:134,0x2021:135,0x02C6:136,0x2030:137,0x0160:138,0x2039:139,0x0152:140,0x017D:142,
@@ -3686,10 +3686,11 @@ function pdfOctet(c){const o=c.codePointAt(0);if(o===0x202F||o===0x2009||o===0x0
 function pdfLargeur(t,f,s){let w=0;const tab=PDF_W[f==="B"||f==="BI"?"B":"R"];for(const c of t){const b=pdfOctet(c);w+=b>=32?tab[b-32]||500:0}return w*s/1000}
 function pdfInfo(t){let h="<FEFF";for(const c of String(t)){const o=c.codePointAt(0);if(o>0xFFFF){const v=o-0x10000;h+=(0xD800+(v>>10)).toString(16).padStart(4,"0")+(0xDC00+(v&1023)).toString(16).padStart(4,"0")}else h+=o.toString(16).padStart(4,"0")}return h+">"}
 function pdfChaine(t){let o="(";for(const c of t){const b=pdfOctet(c);o+=b===40||b===41||b===92?"\\"+String.fromCharCode(b):String.fromCharCode(b)}return o+")"}
-// intitulés du PDF dans la langue de la mission
+// intitulés du PDF dans la langue du projet
 const PDFL={titre:["RAPPORT RAPIDE D'INSPECTION","QUICK INSPECTION REPORT","INFORME RÁPIDO DE INSPECCIÓN","KURZER INSPEKTIONSBERICHT"],
   prelim:["Préliminaire – pas un rapport officiel","Preliminary – not a formal report","Preliminar – no es un informe oficial","Vorläufig – kein offizieller Bericht"],
-  mission:["Mission","Job","Misión","Auftrag"],client:["Client / site","Client / site","Cliente / sitio","Kunde / Standort"],
+  notif:["Notification immédiate de constat, pour information – ce document ne remplace pas les rapports d'inspection.","Immediate finding notification, for information only – this document does not replace the inspection reports.","Notificación inmediata de hallazgo, solo para información – este documento no sustituye a los informes de inspección.","Sofortige Befundmeldung, nur zur Information – dieses Dokument ersetzt nicht die Inspektionsberichte."],
+  mission:["Projet","Project","Proyecto","Projekt"],client:["Client / site","Client / site","Cliente / sitio","Kunde / Standort"],
   date:["Date d'inspection","Inspection date","Fecha de inspección","Inspektionsdatum"],rep:["Repère","Tag","Referencia","Markierung"],
   grav:["Gravité","Severity","Gravedad","Schweregrad"],acces:["Accès au revêtement","Access to the lining","Acceso al revestimiento","Zugang zur Auskleidung"],
   surf:["Surface estimée à réparer","Estimated area to be repaired","Superficie estimada a reparar","Geschätzte Reparaturfläche"],
@@ -3804,14 +3805,19 @@ class PdfRapide{
     this.pages.forEach((pg,i)=>{const ops=pg.ops,dd=pg.d;pg.ops=[];pg.d=[];this.page=pg;
       // en-tête : logo, société, titre ; pied : inspecteur, date, page
       const G=this.grandEntete&&i===0;
-      let x=M;if(logo){const h=G?64:38,w=h*logo.w/logo.h;this.image(logo,M,M,w,h);x=M+w+10}
-      if(G){this.txt(x,M+26,nomSoc,"B",13);this.txt(x,M+42,actSoc,"R",9.5,"0.40 0.40 0.40")}else{this.txt(x,M+15,nomSoc,"B",11);this.txt(x,M+29,actSoc,"R",8.5,"0.40 0.40 0.40")}
+      const rap=!this.titre1;
+      let x=M;if(logo){const h=G?64:(rap?40:38),w=h*logo.w/logo.h;this.image(logo,M,M,w,h);x=M+w+10}
+      if(rap){const t1=pdfL(this.prog?"titreAv":"titre",l);this.txt(W-M-pdfLargeur(t1,"B",10.5),M+13,t1,"B",10.5,"0.42 0.16 0.08");
+        const larg=Math.max(140,W-M-x-24),mots=pdfL("notif",l).split(" "),li=[];let c="";
+        for(const w of mots){const t=c?c+" "+w:w;if(pdfLargeur(t,"I",8)>larg&&c){li.push(c);c=w}else c=t}if(c) li.push(c);
+        li.slice(0,3).forEach((t,k)=>this.txt(W-M-pdfLargeur(t,"I",8),M+26+k*9.5,t,"I",8,"0.70 0.15 0.12"))}
+      else if(G){this.txt(x,M+26,nomSoc,"B",13);this.txt(x,M+42,actSoc,"R",9.5,"0.40 0.40 0.40")}else{this.txt(x,M+15,nomSoc,"B",11);this.txt(x,M+29,actSoc,"R",8.5,"0.40 0.40 0.40")}
       const t1=this.titre1||pdfL(this.prog?"titreAv":"titre",l);
-      if(G){const fin=x+Math.max(pdfLargeur(nomSoc,"B",13),pdfLargeur(actSoc,"R",9.5))+18,fs=Math.max(10,Math.min(16,10*(W-M-fin)/pdfLargeur(t1,"B",10)));
+      if(rap){}else if(G){const fin=x+Math.max(pdfLargeur(nomSoc,"B",13),pdfLargeur(actSoc,"R",9.5))+18,fs=Math.max(10,Math.min(16,10*(W-M-fin)/pdfLargeur(t1,"B",10)));
         this.txt(W-M-pdfLargeur(t1,"B",fs),M+30,t1,"B",fs,"0.42 0.16 0.08")}
       else this.txt(W-M-pdfLargeur(t1,"B",10),M+13,t1,"B",10,"0.42 0.16 0.08");
-      if(!this.sansMission){const t2=`${pdfL("mission",l)} ${this.m.no||""}`;this.txt(W-M-pdfLargeur(t2,"R",8.5),M+26,t2,"R",8.5,"0.40 0.40 0.40")}
-      if(this.soc!=="FTA"){const t3=pdfL("prelim",l);this.txt(W-M-pdfLargeur(t3,"I",8),G?M+46:(this.sansMission?M+28:M+38),t3,"I",8,"0.70 0.15 0.12")}
+      if(!rap&&!this.sansMission){const t2=`${pdfL("mission",l)} ${this.m.no||""}`;this.txt(W-M-pdfLargeur(t2,"R",8.5),M+26,t2,"R",8.5,"0.40 0.40 0.40")}
+      if(!rap&&this.soc!=="FTA"){const t3=pdfL("prelim",l);this.txt(W-M-pdfLargeur(t3,"I",8),G?M+46:(this.sansMission?M+28:M+38),t3,"I",8,"0.70 0.15 0.12")}
       this.trait(M,G?M+72:M+48,W-M,G?M+72:M+48,"0.42 0.16 0.08",1);
       const pied=this.pied||[this.m.inspecteur?`${pdfL("insp",l)} : ${this.m.inspecteur}`:"",gen].filter(Boolean).join(" · ");
       this.trait(M,this.H-M-14,W-M,this.H-M-14,"0.85 0.85 0.85",0.5);this.txt(M,this.H-M-3,pied,"R",7.5,"0.45 0.45 0.45");
@@ -3950,7 +3956,7 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
     for(const p of lot){const d=document.createElement("div");d.className="pdfit";const h=new Date(p.cree);
       d.innerHTML=`<span class="ic" aria-hidden="true">📄</span><div><div class="t"></div><div class="m"></div><div class="acts"></div></div>`;
       d.querySelector(".t").textContent=p.nom;
-      const n=(p.constats||[]).length;d.querySelector(".m").textContent=[h.toTimeString().slice(0,5),toutes&&p.mission?`Mission ${p.mission.no}`:"",`${n} constat${n>1?"s":""}`,fmtTaille(p.taille||0)].filter(Boolean).join(" · ");
+      const n=(p.constats||[]).length;d.querySelector(".m").textContent=[h.toTimeString().slice(0,5),toutes&&p.mission?`Projet ${p.mission.no}`:"",`${n} constat${n>1?"s":""}`,fmtTaille(p.taille||0)].filter(Boolean).join(" · ");
       d.title=(p.titres||[]).join("\n");
       const acts=d.querySelector(".acts"),bt=(t,f,cl)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(cl) b.className=cl;b.onclick=()=>f(b);acts.append(b);return b};
       const fichier=()=>p.blob instanceof File?p.blob:new File([p.blob],p.nom,{type:"application/pdf"});
@@ -3964,7 +3970,7 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
     box.append(c)}}
 /* ---------- langue de l'interface (v1.49) ---------- */
 /* ---------- langue de l'interface (v1.49) : [français, anglais, espagnol, allemand] ----------
-   Les listes de la mission (équipements, activités, accès, dégâts courants) gardent la langue de la mission.
+   Les listes du projet (équipements, activités, accès, dégâts courants) gardent la langue du projet.
    {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
 const TRAD_UI=[
 ["Navette reçue","Shuttle file received","Lanzadera recibida","Shuttle-Datei empfangen"],
@@ -3972,30 +3978,30 @@ const TRAD_UI=[
 ["🔄 Créer la navette","🔄 Create the shuttle file","🔄 Crear la lanzadera","🔄 Shuttle-Datei erstellen"],
 ["Préparation de la navette…","Preparing the shuttle file…","Preparando la lanzadera…","Shuttle-Datei wird vorbereitet…"],
 ["Navette complète (sinon : seulement ce qui est nouveau ou modifié depuis la dernière navette)","Full shuttle file (otherwise: only what is new or changed since the last one)","Lanzadera completa (si no: solo lo nuevo o modificado desde la última)","Vollständige Shuttle-Datei (sonst: nur Neues oder Geändertes seit der letzten)"],
-["« Créer la navette » met dans une image les constats (photos complètes), les constats prévus et les listes de la mission. Dépose-la dans OneDrive (982 Toolbox › Navette) ou envoie-la par Quick Share, puis sur l'autre appareil : « Charger une navette ». Les deux appareils sont alors à jour, sans doublon.","“Create the shuttle file” puts the findings (full photos), planned findings and job lists into an image. Put it in OneDrive (982 Toolbox › Navette) or send it via Quick Share, then on the other device: “Load a shuttle file”. Both devices are then up to date, without duplicates.","«Crear la lanzadera» guarda en una imagen las constataciones (fotos completas), las previstas y las listas de la misión. Déjala en OneDrive (982 Toolbox › Navette) o envíala por Quick Share; luego en el otro dispositivo: «Cargar una lanzadera». Ambos quedan al día, sin duplicados.","„Shuttle-Datei erstellen“ packt Befunde (volle Fotos), geplante Befunde und Auftragslisten in ein Bild. In OneDrive ablegen (982 Toolbox › Navette) oder per Quick Share senden, dann auf dem anderen Gerät: „Shuttle-Datei laden“. Beide Geräte sind danach aktuell, ohne Duplikate."],
-["Navette de la mission {a}, créée sur « {b} » le {c}.","Shuttle file for job {a}, created on “{b}” on {c}.","Lanzadera de la misión {a}, creada en «{b}» el {c}.","Shuttle-Datei für Auftrag {a}, erstellt auf „{b}“ am {c}."],
-["La mission {a} n'est pas sur cet appareil : elle sera ajoutée.","Job {a} is not on this device: it will be added.","La misión {a} no está en este dispositivo: se añadirá.","Auftrag {a} ist nicht auf diesem Gerät: Er wird hinzugefügt."],
+["« Créer la navette » met dans une image les constats (photos complètes), les constats prévus et les listes du projet. Dépose-la dans OneDrive (982 Toolbox › Navette) ou envoie-la par Quick Share, puis sur l'autre appareil : « Charger une navette ». Les deux appareils sont alors à jour, sans doublon.","“Create the shuttle file” puts the findings (full photos), planned findings and project lists into an image. Put it in OneDrive (982 Toolbox › Navette) or send it via Quick Share, then on the other device: “Load a shuttle file”. Both devices are then up to date, without duplicates.","«Crear la lanzadera» guarda en una imagen las constataciones (fotos completas), las previstas y las listas del proyecto. Déjala en OneDrive (982 Toolbox › Navette) o envíala por Quick Share; luego en el otro dispositivo: «Cargar una lanzadera». Ambos quedan al día, sin duplicados.","„Shuttle-Datei erstellen“ packt Befunde (volle Fotos), geplante Befunde und Projektlisten in ein Bild. In OneDrive ablegen (982 Toolbox › Navette) oder per Quick Share senden, dann auf dem anderen Gerät: „Shuttle-Datei laden“. Beide Geräte sind danach aktuell, ohne Duplikate."],
+["Navette du projet {a}, créée sur « {b} » le {c}.","Shuttle file for project {a}, created on “{b}” on {c}.","Lanzadera del proyecto {a}, creada en «{b}» el {c}.","Shuttle-Datei für Projekt {a}, erstellt auf „{b}“ am {c}."],
+["Le projet {a} n'est pas sur cet appareil : il sera ajouté.","Project {a} is not on this device: it will be added.","El proyecto {a} no está en este dispositivo: se añadirá.","Projekt {a} ist nicht auf diesem Gerät: Es wird hinzugefügt."],
 ["Constats : {a} nouveau(x), {b} mis à jour, {c} déjà à jour.","Findings: {a} new, {b} updated, {c} already up to date.","Constataciones: {a} nueva(s), {b} actualizada(s), {c} ya al día.","Befunde: {a} neu, {b} aktualisiert, {c} bereits aktuell."],
 ["Constats prévus : {a} faits ou supprimés sur l'autre appareil (retirés ici), {b} ajouté(s).","Planned findings: {a} done or deleted on the other device (removed here), {b} added.","Previstas: {a} hechas o borradas en el otro dispositivo (retiradas aquí), {b} añadida(s).","Geplante Befunde: {a} auf dem anderen Gerät erledigt oder gelöscht (hier entfernt), {b} hinzugefügt."],
-["Les listes de la mission (équipements, activités) seront remplacées par la version plus récente de la navette.","The job lists (equipment, activities) will be replaced by the newer version from the shuttle file.","Las listas de la misión (equipos, actividades) se sustituirán por la versión más reciente de la lanzadera.","Die Auftragslisten (Ausrüstungen, Tätigkeiten) werden durch die neuere Version aus der Shuttle-Datei ersetzt."],
+["Les listes du projet (équipements, activités) seront remplacées par la version plus récente de la navette.","The project lists (equipment, activities) will be replaced by the newer version from the shuttle file.","Las listas del proyecto (equipos, actividades) se sustituirán por la versión más reciente de la lanzadera.","Die Projektlisten (Ausrüstungen, Tätigkeiten) werden durch die neuere Version aus der Shuttle-Datei ersetzt."],
 ["Navette créée : {a} constat(s), {b} photo(s), {c} constat(s) prévu(s).","Shuttle file created: {a} finding(s), {b} photo(s), {c} planned finding(s).","Lanzadera creada: {a} constatación(es), {b} foto(s), {c} prevista(s).","Shuttle-Datei erstellt: {a} Befund(e), {b} Foto(s), {c} geplante(r) Befund(e)."],
 ["Navette fusionnée : {a} constat(s) ({b} photo(s)), {c} constat(s) prévu(s) retiré(s), {d} ajouté(s).","Shuttle file merged: {a} finding(s) ({b} photo(s)), {c} planned finding(s) removed, {d} added.","Lanzadera fusionada: {a} constatación(es) ({b} foto(s)), {c} prevista(s) retirada(s), {d} añadida(s).","Shuttle-Datei zusammengeführt: {a} Befund(e) ({b} Foto(s)), {c} geplante(r) Befund(e) entfernt, {d} hinzugefügt."],
 ["Dernière navette créée sur cet appareil : {a}.","Last shuttle file created on this device: {a}.","Última lanzadera creada en este dispositivo: {a}.","Letzte auf diesem Gerät erstellte Shuttle-Datei: {a}."],
-["Aucune navette créée sur cet appareil pour cette mission : la première sera complète.","No shuttle file created on this device for this job yet: the first one will be full.","Ninguna lanzadera creada en este dispositivo para esta misión: la primera será completa.","Noch keine Shuttle-Datei auf diesem Gerät für diesen Auftrag: Die erste ist vollständig."],
-["« {a} » est dans Téléchargements : dépose-le dans OneDrive (982 Toolbox › Navette) depuis Mes fichiers, ou envoie-le par Quick Share. Sur l'autre appareil : Missions > Charger une navette.","“{a}” is in Downloads: put it in OneDrive (982 Toolbox › Navette) from My Files, or send it via Quick Share. On the other device: Jobs > Load a shuttle file.","«{a}» está en Descargas: déjalo en OneDrive (982 Toolbox › Navette) desde Mis archivos, o envíalo por Quick Share. En el otro dispositivo: Misiones > Cargar una lanzadera.","„{a}“ ist in Downloads: Aus Eigene Dateien in OneDrive ablegen (982 Toolbox › Navette) oder per Quick Share senden. Auf dem anderen Gerät: Aufträge > Shuttle-Datei laden."],
+["Aucune navette créée sur cet appareil pour ce projet : la première sera complète.","No shuttle file created on this device for this project yet: the first one will be full.","Ninguna lanzadera creada en este dispositivo para este proyecto: la primera será completa.","Noch keine Shuttle-Datei auf diesem Gerät für dieses Projekt: Die erste ist vollständig."],
+["« {a} » est dans Téléchargements : dépose-le dans OneDrive (982 Toolbox › Navette) depuis Mes fichiers, ou envoie-le par Quick Share. Sur l'autre appareil : Projets > Charger une navette.","“{a}” is in Downloads: put it in OneDrive (982 Toolbox › Navette) from My Files, or send it via Quick Share. On the other device: Projects > Load a shuttle file.","«{a}» está en Descargas: déjalo en OneDrive (982 Toolbox › Navette) desde Mis archivos, o envíalo por Quick Share. En el otro dispositivo: Proyectos > Cargar una lanzadera.","„{a}“ ist in Downloads: Aus Eigene Dateien in OneDrive ablegen (982 Toolbox › Navette) oder per Quick Share senden. Auf dem anderen Gerät: Projekte > Shuttle-Datei laden."],
 ["Tout déplier","Expand all","Desplegar todo","Alle aufklappen"],
 ["Programme d'arrêt","Turnaround programme","Programa de parada","Stillstandsprogramm"],
 ["Charger le programme","Load the programme","Cargar el programa","Programm laden"],
 ["Programme d'arrêt {a} : {b} constats prévus en {c} visites.","Turnaround programme {a}: {b} planned findings in {c} visits.","Programa de parada {a}: {b} constataciones previstas en {c} visitas.","Stillstandsprogramm {a}: {b} geplante Befunde in {c} Begehungen."],
-["Ajouté aux listes de la mission : {a} équipement(s), {b} sous-équipement(s).","Added to the job lists: {a} equipment item(s), {b} sub-item(s).","Añadido a las listas de la misión: {a} equipo(s), {b} subequipo(s).","Zu den Auftragslisten hinzugefügt: {a} Ausrüstung(en), {b} Unterbereich(e)."],
+["Ajouté aux listes du projet : {a} équipement(s), {b} sous-équipement(s).","Added to the project lists: {a} equipment item(s), {b} sub-item(s).","Añadido a las listas del proyecto: {a} equipo(s), {b} subequipo(s).","Zu den Projektlisten hinzugefügt: {a} Ausrüstung(en), {b} Unterbereich(e)."],
 ["Les {a} constats prévus du programme précédent, pas encore faits, seront remplacés.","The {a} planned findings of the previous programme not yet done will be replaced.","Las {a} constataciones previstas del programa anterior aún no hechas se sustituirán.","Die {a} noch nicht erledigten geplanten Befunde des vorherigen Programms werden ersetzt."],
 ["Activité inconnue ({a}) : remplacée par « {b} ».","Unknown activity ({a}): replaced by “{b}”.","Actividad desconocida ({a}): sustituida por «{b}».","Unbekannte Tätigkeit ({a}): ersetzt durch „{b}“."],
 ["Programme chargé : {a} constats prévus. Saisie > Constats prévus > Commencer.","Programme loaded: {a} planned findings. Entry > Planned findings > Start.","Programa cargado: {a} constataciones previstas. Registro > Constataciones previstas > Empezar.","Programm geladen: {a} geplante Befunde. Erfassung > Geplante Befunde > Starten."],
-["Programme de la mission {a} : cette mission n'est pas sur cet appareil. Charge-la ou crée-la d'abord (même n°), puis recharge le programme.","Programme for job {a}: this job is not on this device. Load or create it first (same no.), then load the programme again.","Programa de la misión {a}: esta misión no está en este dispositivo. Cárgala o créala primero (mismo n.º) y vuelve a cargar el programa.","Programm für Auftrag {a}: Dieser Auftrag ist nicht auf diesem Gerät. Zuerst laden oder anlegen (gleiche Nr.), dann das Programm erneut laden."],
+["Programme du projet {a} : ce projet n'est pas sur cet appareil. Charge-le ou crée-le d'abord (même n°), puis recharge le programme.","Programme for project {a}: this project is not on this device. Load or create it first (same no.), then load the programme again.","Programa del proyecto {a}: este proyecto no está en este dispositivo. Cárgalo o créalo primero (mismo n.º) y vuelve a cargar el programa.","Programm für Projekt {a}: Dieses Projekt ist nicht auf diesem Gerät. Zuerst laden oder anlegen (gleiche Nr.), dann das Programm erneut laden."],
 ["Ce programme ne contient aucune zone prévue (colonne Prévu).","This programme contains no planned area (Prévu column).","Este programa no contiene ninguna zona prevista (columna Prévu).","Dieses Programm enthält keinen geplanten Bereich (Spalte Prévu)."],
-["« Charger une mission » accepte aussi l'image « programme-N°.jpg » préparée sur le PC (Préparer l'arrêt) : elle crée les constats prévus de l'arrêt.","“Load a job” also accepts the “programme-No.jpg” image prepared on the PC (Prepare the turnaround): it creates the planned findings of the turnaround.","«Cargar una misión» también acepta la imagen «programme-N.º.jpg» preparada en el PC (Preparar la parada): crea las constataciones previstas de la parada.","„Auftrag laden“ akzeptiert auch das auf dem PC erstellte Bild „programme-Nr.jpg“ (Stillstand vorbereiten): Es legt die geplanten Befunde des Stillstands an."],
+["« Charger un projet » accepte aussi l'image « programme-N°.jpg » préparée sur le PC (Préparer l'arrêt) : elle crée les constats prévus de l'arrêt.","“Load a project” also accepts the “programme-No.jpg” image prepared on the PC (Prepare the turnaround): it creates the planned findings of the turnaround.","«Cargar un proyecto» también acepta la imagen «programme-N.º.jpg» preparada en el PC (Preparar la parada): crea las constataciones previstas de la parada.","„Projekt laden“ akzeptiert auch das auf dem PC erstellte Bild „programme-Nr.jpg“ (Stillstand vorbereiten): Es legt die geplanten Befunde des Stillstands an."],
 // en-tête, navigation, accueil
-["Mission active","Active job","Misión activa","Aktiver Auftrag"],
+["Projet actif","Active project","Proyecto activo","Aktives Projekt"],
 ["Nouveau constat","New finding","Nuevo hallazgo","Neuer Befund"],
 ["Photos, constat, observation","Photos, finding, observation","Fotos, hallazgo, observación","Fotos, Befund, Beobachtung"],
 ["Préparer","Prepare","Preparar","Vorbereiten"],
@@ -4007,11 +4013,11 @@ const TRAD_UI=[
 ["Rien à envoyer","Nothing to send","Nada que enviar","Nichts zu senden"],
 ["Galerie","Gallery","Galería","Galerie"],
 ["Légendes, ordre, annotations","Captions, order, annotations","Leyendas, orden, anotaciones","Bildtexte, Reihenfolge, Anmerkungen"],
-["Missions","Jobs","Misiones","Aufträge"],
+["Projets","Projects","Proyectos","Projekte"],
 ["PDF préliminaires","Preliminary PDFs","PDF preliminares","Vorläufige PDFs"],
 ["{a} PDF","{a} PDF","{a} PDF","{a} PDF"],
 ["Les PDF rapides créés depuis le Journal sont gardés ici, sur le téléphone. Touche un PDF pour l'ouvrir, le partager à nouveau ou le supprimer.","Quick PDFs created from the Log are kept here, on the phone. Open, share again or delete them.","Los PDF rápidos creados desde el Registro se guardan aquí, en el teléfono. Ábrelos, compártelos de nuevo o elimínalos.","Die im Protokoll erstellten Kurz-PDFs werden hier auf dem Telefon aufbewahrt. Öffnen, erneut teilen oder löschen."],
-["Afficher toutes les missions","Show all jobs","Mostrar todas las misiones","Alle Aufträge anzeigen"],
+["Afficher tous les projets","Show all projects","Mostrar todos los proyectos","Alle Projekte anzeigen"],
 ["{a} PDF · {b}","{a} PDF · {b}","{a} PDF · {b}","{a} PDF · {b}"],
 ["Aucun PDF préliminaire pour l'instant. Crée-en un depuis le Journal (bouton « 📄 PDF » d'un constat, ou « PDF rapide de la sélection »).","No preliminary PDF yet. Create one from the Log (“📄 PDF” button of a finding, or “Quick PDF of the selection”).","Aún no hay PDF preliminares. Crea uno desde el Registro (botón «📄 PDF» de un hallazgo o «PDF rápido de la selección»).","Noch keine vorläufigen PDFs. Im Protokoll erstellen („📄 PDF“ bei einem Befund oder „Kurz-PDF der Auswahl“)."],
 ["Ouvrir","Open","Abrir","Öffnen"],
@@ -4047,7 +4053,7 @@ const TRAD_UI=[
 ["Dictée indisponible sans réseau : utilise le micro du clavier du téléphone.", "Dictation unavailable without network: use the phone keyboard's microphone.", "Dictado no disponible sin red: usa el micrófono del teclado del teléfono.", "Diktat ohne Netz nicht verfügbar: Mikrofon der Telefontastatur verwenden."],
 ["■ Arrêter", "■ Stop", "■ Detener", "■ Stoppen"],
 ["Supprimer ce constat prévu", "Delete this planned finding", "Eliminar este hallazgo previsto", "Diesen geplanten Befund löschen"],
-["Ouvre le fichier « Observations_releve.csv » du dossier de la mission. Les traductions sont ajoutées dans des colonnes à part : le texte d'origine n'est jamais modifié. La traduction se fait sur ce PC, sans envoyer le texte sur internet.", "Open the “Observations_releve.csv” file in the job folder. Translations are added in separate columns: the original text is never changed. Translation runs on this PC, without sending the text over the internet.", "Abre el archivo «Observations_releve.csv» de la carpeta de la misión. Las traducciones se añaden en columnas aparte: el texto original nunca se modifica. La traducción se hace en este PC, sin enviar el texto por internet.", "Die Datei „Observations_releve.csv“ im Auftragsordner öffnen. Übersetzungen kommen in eigene Spalten: der Originaltext wird nie geändert. Die Übersetzung läuft auf diesem PC, ohne den Text ins Internet zu senden."],
+["Ouvre le fichier « Observations_releve.csv » du dossier du projet. Les traductions sont ajoutées dans des colonnes à part : le texte d'origine n'est jamais modifié. La traduction se fait sur ce PC, sans envoyer le texte sur internet.", "Open the “Observations_releve.csv” file in the project folder. Translations are added in separate columns: the original text is never changed. Translation runs on this PC, without sending the text over the internet.", "Abre el archivo «Observations_releve.csv» de la carpeta del proyecto. Las traducciones se añaden en columnas aparte: el texto original nunca se modifica. La traducción se hace en este PC, sin enviar el texto por internet.", "Die Datei „Observations_releve.csv“ im Projektsordner öffnen. Übersetzungen kommen in eigene Spalten: der Originaltext wird nie geändert. Die Übersetzung läuft auf diesem PC, ohne den Text ins Internet zu senden."],
 ["Langue du texte saisi", "Language of the entered text", "Idioma del texto escrito", "Sprache des eingegebenen Textes"],
 ["Français (FR)", "French (FR)", "Francés (FR)", "Französisch (FR)"],
 ["Anglais (EN)", "English (EN)", "Inglés (EN)", "Englisch (EN)"],
@@ -4086,7 +4092,7 @@ const TRAD_UI=[
 ["Impossible de rouvrir le fichier : ouvre-le à nouveau.", "Cannot reopen the file: open it again.", "No se puede reabrir el archivo: ábrelo de nuevo.", "Datei kann nicht wieder geöffnet werden: erneut öffnen."],
 ["Fichier enregistré.", "File saved.", "Archivo guardado.", "Datei gespeichert."],
 ["Écriture impossible ({a}). Le fichier est-il ouvert dans Excel ?", "Cannot write ({a}). Is the file open in Excel?", "No se puede escribir ({a}). ¿Está el archivo abierto en Excel?", "Schreiben nicht möglich ({a}). Ist die Datei in Excel geöffnet?"],
-["Fichier enregistré dans Téléchargements : remplace l'ancien dans le dossier de la mission.", "File saved to Downloads: replace the old one in the job folder.", "Archivo guardado en Descargas: sustituye el antiguo en la carpeta de la misión.", "Datei in Downloads gespeichert: die alte im Auftragsordner ersetzen."],
+["Fichier enregistré dans Téléchargements : remplace l'ancien dans le dossier du projet.", "File saved to Downloads: replace the old one in the project folder.", "Archivo guardado en Descargas: sustituye el antiguo en la carpeta del proyecto.", "Datei in Downloads gespeichert: die alte im Projektsordner ersetzen."],
 ["Sélection", "Select", "Selección", "Auswahl"],
 ["Crayon", "Pencil", "Lápiz", "Stift"],
 ["Ligne", "Line", "Línea", "Linie"],
@@ -4109,7 +4115,7 @@ const TRAD_UI=[
 ["Préqualification des applicateurs", "Applicator prequalification", "Precualificación de aplicadores", "Präqualifikation der Verarbeiter"],
 ["Préqualification", "Prequalification", "Precualificación", "Präqualifikation"],
 ["Applicateurs, panneaux, verdicts", "Applicators, panels, results", "Aplicadores, paneles, resultados", "Verarbeiter, Paneele, Ergebnisse"],
-["Un rapport par mission : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.", "One report per job: materials, conditions, one session per method and date (measurements, guided photos, applicators with checks and result), then the results. Everything is saved as you go.", "Un informe por misión: materiales, condiciones, una sesión por método y fecha (mediciones, fotos guiadas, aplicadores con controles y resultado) y los resultados. Todo se guarda sobre la marcha.", "Ein Bericht pro Auftrag: Materialien, Bedingungen, eine Sitzung je Verfahren und Datum (Messwerte, geführte Fotos, Verarbeiter mit Prüfungen und Ergebnis), dann die Ergebnisse. Alles wird laufend gespeichert."],
+["Un rapport par projet : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.", "One report per project: materials, conditions, one session per method and date (measurements, guided photos, applicators with checks and result), then the results. Everything is saved as you go.", "Un informe por proyecto: materiales, condiciones, una sesión por método y fecha (mediciones, fotos guiadas, aplicadores con controles y resultado) y los resultados. Todo se guarda sobre la marcha.", "Ein Bericht pro Projekt: Materialien, Bedingungen, eine Sitzung je Verfahren und Datum (Messwerte, geführte Fotos, Verarbeiter mit Prüfungen und Ergebnis), dann die Ergebnisse. Alles wird laufend gespeichert."],
 ["📄 Créer le PDF", "📄 Create the PDF", "📄 Crear el PDF", "📄 PDF erstellen"],
 ["1. Matériaux", "1. Materials", "1. Materiales", "1. Materialien"],
 ["2. Conditions générales", "2. General conditions", "2. Condiciones generales", "2. Allgemeine Bedingungen"],
@@ -4176,7 +4182,7 @@ const TRAD_UI=[
 ["Certificat de l'eau", "Water certificate", "Certificado del agua", "Wasserzertifikat"],
 ["Équipement non listé", "Unlisted equipment", "Equipo no listado", "Nicht gelistete Ausrüstung"],
 ["Précision (zone, repère…)", "Details (area, mark…)", "Detalle (zona, marca…)", "Präzisierung (Bereich, Markierung…)"],
-["Aucun équipement dans la mission active (Réglages) : ajoutez-le ci-dessous.", "No equipment in the active mission (Settings): add it below.", "Ningún equipo en la misión activa (Ajustes): añádalo abajo.", "Keine Ausrüstung in der aktiven Mission (Einstellungen): unten hinzufügen."],
+["Aucun équipement dans le projet actif (Réglages) : ajoutez-le ci-dessous.", "No equipment in the active project (Settings): add it below.", "Ningún equipo en el proyecto activo (Ajustes): añádalo abajo.", "Keine Ausrüstung im aktiven Projekt (Einstellungen): unten hinzufügen."],
 ["Heure", "Time", "Hora", "Uhrzeit"],
 ["＋ Autre relevé de températures", "＋ Another temperature reading", "＋ Otra lectura de temperaturas", "＋ Weitere Temperaturmessung"],
 [" Certificat de l'eau conforme", " Water certificate compliant", " Certificado del agua conforme", " Wasserzertifikat konform"],
@@ -4196,7 +4202,7 @@ const TRAD_UI=[
 ["Ajout de la fiche technique…", "Adding the data sheet…", "Añadiendo la ficha técnica…", "Datenblatt wird hinzugefügt…"],
 ["Équipement(s) concerné(s)", "Equipment concerned", "Equipo(s) afectado(s)", "Betroffene Ausrüstung"],
 ["Précision / autre équipement", "Details / other equipment", "Detalle / otro equipo", "Präzisierung / andere Ausrüstung"],
-["Aucun équipement dans la mission active (Réglages) : précisez-le ci-dessous.", "No equipment in the active mission (Settings): specify it below.", "Ningún equipo en la misión activa (Ajustes): indíquelo abajo.", "Keine Ausrüstung in der aktiven Mission (Einstellungen): unten angeben."],
+["Aucun équipement dans le projet actif (Réglages) : précisez-le ci-dessous.", "No equipment in the active project (Settings): specify it below.", "Ningún equipo en el proyecto activo (Ajustes): indíquelo abajo.", "Keine Ausrüstung im aktiven Projekt (Einstellungen): unten angeben."],
 [" Échantillons envoyés au laboratoire", " Samples sent to laboratory", " Muestras enviadas al laboratorio", " Proben an das Labor gesendet"],
 ["Début des travaux en attente des résultats", "Start of works pending results", "Inicio de trabajos a la espera de resultados", "Arbeitsbeginn vor Vorliegen der Ergebnisse"],
 ["Réf. du rapport de preshipment test", "Preshipment test report ref.", "Ref. del informe de preshipment test", "Ref. Preshipment-Testbericht"],
@@ -4212,7 +4218,7 @@ const TRAD_UI=[
 ["{a} session(s), {b} applicateur(s) dont {c} avec verdict", "{a} session(s), {b} applicator(s), {c} with a result", "{a} sesión(es), {b} aplicador(es), {c} con resultado", "{a} Sitzung(en), {b} Verarbeiter, {c} mit Ergebnis"],
 ["{a} session(s), {b} applicateur(s) dont {c} avec verdict – modifié le {d}", "{a} session(s), {b} applicator(s), {c} with a result – changed on {d}", "{a} sesión(es), {b} aplicador(es), {c} con resultado – modificado el {d}", "{a} Sitzung(en), {b} Verarbeiter, {c} mit Ergebnis – geändert am {d}"],
 ["Logo du rapport", "Report logo", "Logotipo del informe", "Berichtslogo"],
-["Société de la mission", "Job company", "Empresa de la misión", "Firma des Auftrags"],
+["Société du projet", "Project company", "Empresa del proyecto", "Firma des Projekts"],
 ["Image choisie…", "Chosen image…", "Imagen elegida…", "Gewähltes Bild…"],
 ["{a} photo(s) n'étaient plus rattachées à une case : elles sont dans « Photos retrouvées » (en haut). Glissez-les vers leur case.", "{a} photo(s) were no longer attached to a box: they are in “Recovered photos” (at the top). Drag them to their box.", "{a} foto(s) ya no estaban en ninguna casilla: están en «Fotos recuperadas» (arriba). Arrástralas a su casilla.", "{a} Foto(s) waren keinem Feld mehr zugeordnet: Sie sind unter „Wiedergefundene Fotos“ (oben). Auf ihr Feld ziehen."],
 ["Photos retrouvées", "Recovered photos", "Fotos recuperadas", "Wiedergefundene Fotos"],
@@ -4456,11 +4462,11 @@ const TRAD_UI=[
 ["Stockage indisponible.", "Storage unavailable.", "Almacenamiento no disponible.", "Speicher nicht verfügbar."],
 ["Ouvre l'appli dans Chrome (pas en navigation privée).", "Open the app in the browser (not in private browsing).", "Abre la app en el navegador (no en navegación privada).", "App im Browser öffnen (nicht im privaten Modus)."],
 ["Rien d'autre à afficher.", "Nothing else to show.", "Nada más que mostrar.", "Sonst nichts anzuzeigen."],
-["Archiver la mission {a} ?", "Archive job {a}?", "¿Archivar la misión {a}?", "Auftrag {a} archivieren?"],
-["Archiver la mission {a} ? Attention : {b} constat(s) pas encore envoyé(s) au PC.", "Archive job {a}? Warning: {b} finding(s) not yet sent to the PC.", "¿Archivar la misión {a}? Atención: {b} hallazgo(s) aún no enviado(s) al PC.", "Auftrag {a} archivieren? Achtung: {b} Befund(e) noch nicht an den PC gesendet."],
-["Archiver la mission {a} ? Ses constats restent sur le téléphone tant que tu ne libères pas la place.", "Archive job {a}? Its findings stay on the phone until you free up space.", "¿Archivar la misión {a}? Sus hallazgos se quedan en el teléfono mientras no liberes espacio.", "Auftrag {a} archivieren? Seine Befunde bleiben auf dem Telefon, bis Platz freigegeben wird."],
-["« {a} » est dans Téléchargements : glisse-le dans la fenêtre Quick Share, ou clic droit > Envoyer avec Quick Share. Sur le téléphone : Missions > Charger une mission.", "“{a}” is in Downloads: drag it into the Quick Share window, or right-click > Send with Quick Share. On the phone: Jobs > Load a job.", "«{a}» está en Descargas: arrástralo a la ventana de Quick Share, o clic derecho > Enviar con Quick Share. En el teléfono: Misiones > Cargar una misión.", "„{a}“ ist in Downloads: in das Quick-Share-Fenster ziehen oder Rechtsklick > Mit Quick Share senden. Auf dem Telefon: Aufträge > Auftrag laden."],
-["La mission {a} a été modifiée sur cet appareil le {b}, après la version du fichier ({c}). La remplacer quand même ?", "Job {a} was changed on this device on {b}, after the file's version ({c}). Replace it anyway?", "La misión {a} se modificó en este dispositivo el {b}, después de la versión del archivo ({c}). ¿Reemplazarla de todos modos?", "Auftrag {a} wurde auf diesem Gerät am {b} geändert, nach der Dateiversion ({c}). Trotzdem ersetzen?"],
+["Archiver le projet {a} ?", "Archive project {a}?", "¿Archivar el proyecto {a}?", "Projekt {a} archivieren?"],
+["Archiver le projet {a} ? Attention : {b} constat(s) pas encore envoyé(s) au PC.", "Archive project {a}? Warning: {b} finding(s) not yet sent to the PC.", "¿Archivar el proyecto {a}? Atención: {b} hallazgo(s) aún no enviado(s) al PC.", "Projekt {a} archivieren? Achtung: {b} Befund(e) noch nicht an den PC gesendet."],
+["Archiver le projet {a} ? Ses constats restent sur le téléphone tant que tu ne libères pas la place.", "Archive project {a}? Its findings stay on the phone until you free up space.", "¿Archivar el proyecto {a}? Sus hallazgos se quedan en el teléfono mientras no liberes espacio.", "Projekt {a} archivieren? Seine Befunde bleiben auf dem Telefon, bis Platz freigegeben wird."],
+["« {a} » est dans Téléchargements : glisse-le dans la fenêtre Quick Share, ou clic droit > Envoyer avec Quick Share. Sur le téléphone : Projets > Charger un projet.", "“{a}” is in Downloads: drag it into the Quick Share window, or right-click > Send with Quick Share. On the phone: Projects > Load a project.", "«{a}» está en Descargas: arrástralo a la ventana de Quick Share, o clic derecho > Enviar con Quick Share. En el teléfono: Proyectos > Cargar un proyecto.", "„{a}“ ist in Downloads: in das Quick-Share-Fenster ziehen oder Rechtsklick > Mit Quick Share senden. Auf dem Telefon: Projekte > Projekt laden."],
+["Le projet {a} a été modifié sur cet appareil le {b}, après la version du fichier ({c}). Le remplacer quand même ?", "Project {a} was changed on this device on {b}, after the file's version ({c}). Replace it anyway?", "El proyecto {a} se modificó en este dispositivo el {b}, después de la versión del archivo ({c}). ¿Reemplazarlo de todos modos?", "Projekt {a} wurde auf diesem Gerät am {b} geändert, nach der Dateiversion ({c}). Trotzdem ersetzen?"],
 ["{a} équipement(s), {b} sous-équipement(s) : {c}", "{a} equipment item(s), {b} sub-equipment item(s): {c}", "{a} equipo(s), {b} subequipo(s): {c}", "{a} Ausrüstung(en), {b} Unterausrüstung(en): {c}"],
 ["Je ne reconnais pas ce tableau : il faut au moins une colonne Équipement.", "I don't recognise this table: at least one Equipment column is needed.", "No reconozco esta tabla: se necesita al menos una columna Equipo.", "Diese Tabelle wird nicht erkannt: mindestens eine Spalte Ausrüstung nötig."],
 ["{a} constat(s) pas encore envoyé(s) utilisent l'ancien nom. « Mettre à jour » les renomme (photos et dossier de rangement compris). Les photos déjà rangées sur le PC se renomment avec l'outil « Renommer-Equipement » du dossier PC.", "{a} finding(s) not yet sent use the old name. “Update” renames them (photos and filing folder included). Photos already filed on the PC are renamed with the “Renommer-Equipement” tool in the PC folder.", "{a} hallazgo(s) aún no enviado(s) usan el nombre antiguo. «Actualizar» los renombra (fotos y carpeta de archivo incluidas). Las fotos ya archivadas en el PC se renombran con la herramienta «Renommer-Equipement» de la carpeta PC.", "{a} noch nicht gesendete(r) Befund(e) verwenden den alten Namen. „Aktualisieren“ benennt sie um (Fotos und Ablageordner inbegriffen). Bereits auf dem PC abgelegte Fotos werden mit dem Werkzeug „Renommer-Equipement“ im PC-Ordner umbenannt."],
@@ -4482,7 +4488,7 @@ const TRAD_UI=[
 ["Accueil","Home","Inicio","Start"],
 ["Saisie","Entry","Captura","Erfassung"],
 ["Journal","Log","Registro","Protokoll"],
-["Changer de mission","Change job","Cambiar de misión","Auftrag wechseln"],
+["Changer de projet","Change project","Cambiar de proyecto","Projekt wechseln"],
 ["Thème : automatique","Theme: automatic","Tema: automático","Design: automatisch"],
 ["Langue de l'appli","App language","Idioma de la app","App-Sprache"],
 ["version {a}","version {a}","versión {a}","Version {a}"],
@@ -4510,14 +4516,14 @@ const TRAD_UI=[
 ["Recharger","Reload","Recargar","Neu laden"],
 ["Plus tard","Later","Más tarde","Später"],
 ["Langue des listes (équipements, activités)","Language of the lists (equipment, activities)","Idioma de las listas (equipos, actividades)","Sprache der Listen (Ausrüstungen, Tätigkeiten)"],
-["Saisis la traduction de chaque nom (laisse-le tel quel s'il ne change pas). Elle est mémorisée dans la mission, envoyée avec elle aux autres appareils et au PC pour les rapports : la prochaine fois, la traduction sera automatique.","Enter the translation of each name (leave it as it is if it does not change). It is saved in the job, sent with it to the other devices and to the PC for the reports: next time the translation will be automatic.","Escribe la traducción de cada nombre (déjalo igual si no cambia). Se guarda en la misión, se envía con ella a los otros equipos y al PC para los informes: la próxima vez la traducción será automática.","Übersetzung jedes Namens eingeben (unverändert lassen, wenn er gleich bleibt). Sie wird im Auftrag gespeichert, mit ihm an die anderen Geräte und an den PC für die Berichte gesendet: beim nächsten Mal wird automatisch übersetzt."],
+["Saisis la traduction de chaque nom (laisse-le tel quel s'il ne change pas). Elle est mémorisée dans le projet, envoyée avec lui aux autres appareils et au PC pour les rapports : la prochaine fois, la traduction sera automatique.","Enter the translation of each name (leave it as it is if it does not change). It is saved in the project, sent with it to the other devices and to the PC for the reports: next time the translation will be automatic.","Escribe la traducción de cada nombre (déjalo igual si no cambia). Se guarda en el proyecto, se envía con ella a los otros equipos y al PC para los informes: la próxima vez la traducción será automática.","Übersetzung jedes Namens eingeben (unverändert lassen, wenn er gleich bleibt). Sie wird im Projekt gespeichert, mit ihm an die anderen Geräte und an den PC für die Berichte gesendet: beim nächsten Mal wird automatisch übersetzt."],
 ["Enregistrer les traductions","Save the translations","Guardar las traducciones","Übersetzungen speichern"],
 ["{a} nom sans traduction en {b}","{a} name without translation in {b}","{a} nombre sin traducción en {b}","{a} Name ohne Übersetzung in {b}"],
 ["{a} noms sans traduction en {b}","{a} names without translation in {b}","{a} nombres sin traducción en {b}","{a} Namen ohne Übersetzung in {b}"],
-["{a} traduction enregistrée dans la mission.","{a} translation saved in the job.","{a} traducción guardada en la misión.","{a} Übersetzung im Auftrag gespeichert."],
-["{a} traductions enregistrées dans la mission.","{a} translations saved in the job.","{a} traducciones guardadas en la misión.","{a} Übersetzungen im Auftrag gespeichert."],
-["Dictionnaire de la mission : {a} nom traduit à la main.","Job dictionary: {a} name translated by hand.","Diccionario de la misión: {a} nombre traducido a mano.","Auftragswörterbuch: {a} Name von Hand übersetzt."],
-["Dictionnaire de la mission : {a} noms traduits à la main.","Job dictionary: {a} names translated by hand.","Diccionario de la misión: {a} nombres traducidos a mano.","Auftragswörterbuch: {a} Namen von Hand übersetzt."],
+["{a} traduction enregistrée dans le projet.","{a} translation saved in the project.","{a} traducción guardada en el proyecto.","{a} Übersetzung im Projekt gespeichert."],
+["{a} traductions enregistrées dans le projet.","{a} translations saved in the project.","{a} traducciones guardadas en el proyecto.","{a} Übersetzungen im Projekt gespeichert."],
+["Dictionnaire du projet : {a} nom traduit à la main.","Project dictionary: {a} name translated by hand.","Diccionario del proyecto: {a} nombre traducido a mano.","Projektwörterbuch: {a} Name von Hand übersetzt."],
+["Dictionnaire du projet : {a} noms traduits à la main.","Project dictionary: {a} names translated by hand.","Diccionario del proyecto: {a} nombres traducidos a mano.","Projektwörterbuch: {a} Namen von Hand übersetzt."],
 ["🗑 Effacer le texte","🗑 Clear the text","🗑 Borrar el texto","🗑 Text löschen"],["Confirmer : effacer","Confirm: clear","Confirmar: borrar","Bestätigen: löschen"],
 ["Texte effacé.","Text cleared.","Texto borrado.","Text gelöscht."],["Rien à effacer.","Nothing to clear.","Nada que borrar.","Nichts zu löschen."],
 ["Préparer une visite","Prepare a visit","Preparar una visita","Besuch vorbereiten"],
@@ -4549,7 +4555,7 @@ const TRAD_UI=[
 ["Nouvelle sous-activité de {a}","New sub-activity of {a}","Nueva subactividad de {a}","Neue Untertätigkeit von {a}"],
 ["Nom","Name","Nombre","Name"],
 ["Code (court)","Code (short)","Código (corto)","Code (kurz)"],
-["Ajouter à la mission","Add to the job","Añadir a la misión","Zum Auftrag hinzufügen"],
+["Ajouter au projet","Add to the project","Añadir al proyecto","Zum Projekt hinzufügen"],
 ["Annuler","Cancel","Cancelar","Abbrechen"],
 ["Repère (optionnel)","Tag (optional)","Referencia (opcional)","Markierung (optional)"],
 ["MH1, section 402…","MH1, section 402…","MH1, sección 402…","MH1, Abschnitt 402…"],
@@ -4596,7 +4602,7 @@ const TRAD_UI=[
 ["Avancement","Progress","Avance","Fortschritt"],
 ["Coche la ou les étapes contrôlées et saisis l'avancement cumulé à ce jour, en % ou en quantité (fait / total).","Tick the step(s) checked and enter the cumulative progress to date, in % or as a quantity (done / total).","Marca el o los pasos controlados e introduce el avance acumulado hasta hoy, en % o en cantidad (hecho / total).","Geprüfte Schritte ankreuzen und den kumulierten Fortschritt bis heute eingeben, in % oder als Menge (erledigt / gesamt)."],
 ["Étapes du plan de réparation de cette zone (constat du {a}).","Steps of the repair plan for this area (finding of {a}).","Pasos del plan de reparación de esta zona (hallazgo del {a}).","Schritte des Reparaturplans dieses Bereichs (Befund vom {a})."],
-["Pas de plan de réparation pour cette zone : toutes les étapes de la mission sont proposées.","No repair plan for this area: all the mission steps are offered.","No hay plan de reparación para esta zona: se proponen todos los pasos de la misión.","Kein Reparaturplan für diesen Bereich: alle Schritte der Mission werden angeboten."],
+["Pas de plan de réparation pour cette zone : toutes les étapes du projet sont proposées.","No repair plan for this area: all the project steps are offered.","No hay plan de reparación para esta zona: se proponen todos los pasos del proyecto.","Kein Reparaturplan für diesen Bereich: alle Schritte des Projekts werden angeboten."],
 ["Quantité (fait / total)","Quantity (done / total)","Cantidad (hecho / total)","Menge (erledigt / gesamt)"],
 ["fait","done","hecho","erledigt"],["total","total","total","gesamt"],
 ["Avancement en %","Progress in %","Avance en %","Fortschritt in %"],["Quantité faite","Quantity done","Cantidad hecha","Erledigte Menge"],["Quantité totale","Total quantity","Cantidad total","Gesamtmenge"],["Unité","Unit","Unidad","Einheit"],
@@ -4607,7 +4613,7 @@ const TRAD_UI=[
 ["Commentaire","Comment","Comentario","Kommentar"],
 ["Mise en forme du commentaire","Comment formatting","Formato del comentario","Formatierung des Kommentars"],
 ["(n'existe plus dans la liste)","(no longer in the list)","(ya no está en la lista)","(nicht mehr in der Liste)"],
-["Aucune étape de réparation dans les activités de la mission (à ajouter dans l'onglet Missions, après les inspections).","No repair step in the mission activities (add them in the Missions tab, after the inspections).","Ningún paso de reparación en las actividades de la misión (añádelos en la pestaña Misiones, después de las inspecciones).","Keine Reparaturschritte in den Tätigkeiten der Mission (im Reiter Missionen nach den Inspektionen hinzufügen)."],
+["Aucune étape de réparation dans les activités du projet (à ajouter dans l'onglet Projets, après les inspections).","No repair step in the project activities (add them in the Projects tab, after the inspections).","Ningún paso de reparación en las actividades del proyecto (añádelos en la pestaña Proyectos, después de las inspecciones).","Keine Reparaturschritte in den Tätigkeiten des Projekts (im Reiter Projekte nach den Inspektionen hinzufügen)."],
 ["Décision client attendue","Client decision required","Decisión del cliente pendiente","Kundenentscheidung erforderlich"],
 ["Enregistrer le constat","Save finding","Guardar el hallazgo","Befund speichern"],
 ["Enregistrer les modifications","Save changes","Guardar los cambios","Änderungen speichern"],
@@ -4630,7 +4636,7 @@ const TRAD_UI=[
 ["Ce sous-équipement existe déjà.","This sub-equipment already exists.","Este subequipo ya existe.","Diese Unterausrüstung gibt es schon."],
 ["Cette activité existe déjà.","This activity already exists.","Esta actividad ya existe.","Diese Tätigkeit gibt es schon."],
 ["Cette sous-activité existe déjà.","This sub-activity already exists.","Esta subactividad ya existe.","Diese Untertätigkeit gibt es schon."],
-["« {a} » ajouté à la mission. Pense à envoyer la mission à tes autres appareils.","“{a}” added to the job. Remember to send the job to your other devices.","«{a}» añadido a la misión. Recuerda enviar la misión a tus otros dispositivos.","„{a}“ zum Auftrag hinzugefügt. Auftrag an die anderen Geräte senden."],
+["« {a} » ajouté au projet. Pense à envoyer le projet à tes autres appareils.","“{a}” added to the project. Remember to send the project to your other devices.","«{a}» añadido al proyecto. Recuerda enviar el proyecto a tus otros dispositivos.","„{a}“ zum Projekt hinzugefügt. Projekt an die anderen Geräte senden."],
 ["Ajouté à l'observation : {a}","Added to the observation: {a}","Añadido a la observación: {a}","Zur Beobachtung hinzugefügt: {a}"],
 ["Termine ou annule d'abord la modification en cours.","Finish or cancel the current edit first.","Termina o cancela primero la modificación en curso.","Zuerst die laufende Bearbeitung beenden oder abbrechen."],
 // journal
@@ -4638,10 +4644,10 @@ const TRAD_UI=[
 ["Envoyer au PC (Quick Share)","Send to PC (Quick Share)","Enviar al PC (Quick Share)","An PC senden (Quick Share)"],
 ["Enregistrer pour le PC (DeX : Téléchargements)","Save for the PC (DeX: Downloads)","Guardar para el PC (DeX: Descargas)","Für den PC speichern (DeX: Downloads)"],
 ["Enregistrer dans Téléchargements (secours)","Save to Downloads (backup)","Guardar en Descargas (alternativa)","In Downloads speichern (Notlösung)"],
-["Mission {a} : {b} constat(s) et {c} photo(s) pas encore envoyés au PC.","Job {a}: {b} finding(s) and {c} photo(s) not yet sent to the PC.","Misión {a}: {b} hallazgo(s) y {c} foto(s) aún no enviados al PC.","Auftrag {a}: {b} Befund(e) und {c} Foto(s) noch nicht an den PC gesendet."],
-["Mission {a} : tout a été envoyé au PC.","Job {a}: everything has been sent to the PC.","Misión {a}: todo se ha enviado al PC.","Auftrag {a}: alles wurde an den PC gesendet."],
-["Mission {a} : {b} constat(s) et {c} photo(s) pas encore envoyés au PC. Il reste aussi des constats à envoyer pour la mission {d}.","Job {a}: {b} finding(s) and {c} photo(s) not yet sent to the PC. There are also findings to send for job {d}.","Misión {a}: {b} hallazgo(s) y {c} foto(s) aún no enviados al PC. También quedan hallazgos por enviar de la misión {d}.","Auftrag {a}: {b} Befund(e) und {c} Foto(s) noch nicht an den PC gesendet. Für Auftrag {d} sind ebenfalls Befunde zu senden."],
-["Mission {a} : tout a été envoyé au PC. Il reste aussi des constats à envoyer pour la mission {d}.","Job {a}: everything has been sent to the PC. There are also findings to send for job {d}.","Misión {a}: todo se ha enviado al PC. También quedan hallazgos por enviar de la misión {d}.","Auftrag {a}: alles wurde an den PC gesendet. Für Auftrag {d} sind ebenfalls Befunde zu senden."],
+["Projet {a} : {b} constat(s) et {c} photo(s) pas encore envoyés au PC.","Project {a}: {b} finding(s) and {c} photo(s) not yet sent to the PC.","Proyecto {a}: {b} hallazgo(s) y {c} foto(s) aún no enviados al PC.","Projekt {a}: {b} Befund(e) und {c} Foto(s) noch nicht an den PC gesendet."],
+["Projet {a} : tout a été envoyé au PC.","Project {a}: everything has been sent to the PC.","Proyecto {a}: todo se ha enviado al PC.","Projekt {a}: alles wurde an den PC gesendet."],
+["Projet {a} : {b} constat(s) et {c} photo(s) pas encore envoyés au PC. Il reste aussi des constats à envoyer pour le projet {d}.","Project {a}: {b} finding(s) and {c} photo(s) not yet sent to the PC. There are also findings to send for project {d}.","Proyecto {a}: {b} hallazgo(s) y {c} foto(s) aún no enviados al PC. También quedan hallazgos por enviar del proyecto {d}.","Projekt {a}: {b} Befund(e) und {c} Foto(s) noch nicht an den PC gesendet. Für Projekt {d} sind ebenfalls Befunde zu senden."],
+["Projet {a} : tout a été envoyé au PC. Il reste aussi des constats à envoyer pour le projet {d}.","Project {a}: everything has been sent to the PC. There are also findings to send for project {d}.","Proyecto {a}: todo se ha enviado al PC. También quedan hallazgos por enviar del proyecto {d}.","Projekt {a}: alles wurde an den PC gesendet. Für Projekt {d} sind ebenfalls Befunde zu senden."],
 ["Le PC a-t-il bien reçu les fichiers ?","Did the PC receive the files?","¿Recibió el PC los archivos?","Hat der PC die Dateien erhalten?"],
 ["Oui, marquer envoyé","Yes, mark as sent","Sí, marcar como enviado","Ja, als gesendet markieren"],
 ["Non","No","No","Nein"],
@@ -4695,7 +4701,7 @@ const TRAD_UI=[
 ["Marqué comme envoyé","Marked as sent","Marcado como enviado","Als gesendet markiert"],
 ["{a} constat(s) supprimé(s) du téléphone","{a} finding(s) deleted from the phone","{a} hallazgo(s) eliminado(s) del teléfono","{a} Befund(e) vom Telefon gelöscht"],
 ["Aucun constat envoyé à supprimer.","No sent findings to delete.","No hay hallazgos enviados que eliminar.","Keine gesendeten Befunde zum Löschen."],
-["Supprimer du téléphone {a} constat(s) de la mission {b} déjà envoyé(s) au PC ? Vérifie d'abord qu'ils sont bien rangés sur le PC.","Delete from the phone {a} finding(s) of job {b} already sent to the PC? First check they are filed on the PC.","¿Eliminar del teléfono {a} hallazgo(s) de la misión {b} ya enviado(s) al PC? Comprueba antes que están archivados en el PC.","{a} bereits an den PC gesendete(n) Befund(e) des Auftrags {b} vom Telefon löschen? Zuerst prüfen, ob sie auf dem PC abgelegt sind."],
+["Supprimer du téléphone {a} constat(s) du projet {b} déjà envoyé(s) au PC ? Vérifie d'abord qu'ils sont bien rangés sur le PC.","Delete from the phone {a} finding(s) of project {b} already sent to the PC? First check they are filed on the PC.","¿Eliminar del teléfono {a} hallazgo(s) del proyecto {b} ya enviado(s) al PC? Comprueba antes que están archivados en el PC.","{a} bereits an den PC gesendete(n) Befund(e) des Projekts {b} vom Telefon löschen? Zuerst prüfen, ob sie auf dem PC abgelegt sind."],
 ["Fichiers enregistrés dans Téléchargements : envoie-les au PC depuis « Mes fichiers » > Téléchargements > Partager > Quick Share.","Files saved to Downloads: send them to the PC from “My Files” > Downloads > Share > Quick Share.","Archivos guardados en Descargas: envíalos al PC desde «Mis archivos» > Descargas > Compartir > Quick Share.","Dateien in Downloads gespeichert: über „Eigene Dateien“ > Downloads > Teilen > Quick Share an den PC senden."],
 ["La fenêtre de partage s'est fermée toute seule (fréquent en DeX) : utilise « Enregistrer dans Téléchargements », puis Mes fichiers > Téléchargements > Partager > Quick Share.","The share window closed by itself (common in DeX): use “Save to Downloads”, then My Files > Downloads > Share > Quick Share.","La ventana de compartir se cerró sola (frecuente en DeX): usa «Guardar en Descargas» y luego Mis archivos > Descargas > Compartir > Quick Share.","Das Teilen-Fenster hat sich selbst geschlossen (häufig in DeX): „In Downloads speichern“ verwenden, dann Eigene Dateien > Downloads > Teilen > Quick Share."],
 ["Partage impossible ({a}) : {b}. Utilise le bouton « Enregistrer dans Téléchargements ».","Sharing failed ({a}): {b}. Use the “Save to Downloads” button.","No se puede compartir ({a}): {b}. Usa el botón «Guardar en Descargas».","Teilen nicht möglich ({a}): {b}. Schaltfläche „In Downloads speichern“ verwenden."],
@@ -4705,7 +4711,7 @@ const TRAD_UI=[
 ["{a} photo(s) affichée(s), dont {b} dans le rapport.","{a} photo(s) shown, {b} in the report.","{a} foto(s) mostrada(s), {b} en el informe.","{a} Foto(s) angezeigt, davon {b} im Bericht."],
 ["Touche une photo pour l'agrandir, la légender, l'annoter ou la retirer du rapport. Appui long puis glisser : change l'ordre des photos d'un constat.","Tap a photo to enlarge, caption, annotate or remove it from the report. Long press then drag: change the order of a finding's photos.","Toca una foto para ampliarla, ponerle leyenda, anotarla o quitarla del informe. Mantén pulsado y arrastra: cambia el orden de las fotos de un hallazgo.","Foto antippen zum Vergrößern, Beschriften, Anmerken oder Entfernen aus dem Bericht. Lange drücken und ziehen: Reihenfolge der Fotos eines Befunds ändern."],
 ["{a}/{b} au rapport","{a}/{b} in report","{a}/{b} en el informe","{a}/{b} im Bericht"],
-["Aucune photo enregistrée pour la mission {a}. Les photos des constats enregistrés (onglet Saisie) apparaissent ici, jusqu'à ce qu'ils soient supprimés du téléphone.","No photos saved for job {a}. Photos of saved findings (Entry tab) appear here until they are deleted from the phone.","No hay fotos guardadas para la misión {a}. Las fotos de los hallazgos guardados (pestaña Captura) aparecen aquí hasta que se eliminan del teléfono.","Keine Fotos für Auftrag {a} gespeichert. Fotos gespeicherter Befunde (Erfassung) erscheinen hier, bis sie vom Telefon gelöscht werden."],
+["Aucune photo enregistrée pour le projet {a}. Les photos des constats enregistrés (onglet Saisie) apparaissent ici, jusqu'à ce qu'ils soient supprimés du téléphone.","No photos saved for project {a}. Photos of saved findings (Entry tab) appear here until they are deleted from the phone.","No hay fotos guardadas paral proyecto {a}. Las fotos de los hallazgos guardados (pestaña Captura) aparecen aquí hasta que se eliminan del teléfono.","Keine Fotos für Projekt {a} gespeichert. Fotos gespeicherter Befunde (Erfassung) erscheinen hier, bis sie vom Telefon gelöscht werden."],
 ["photo {a}","photo {a}","foto {a}","Foto {a}"],
 ["Photo {a} de {b} (hors rapport)","Photo {a} of {b} (not in report)","Foto {a} de {b} (fuera del informe)","Foto {a} von {b} (nicht im Bericht)"],
 ["Photo {a} de {b}","Photo {a} of {b}","Foto {a} de {b}","Foto {a} von {b}"],
@@ -4723,27 +4729,27 @@ const TRAD_UI=[
 ["Légende (facultative), ex. : Spalling at MH1, lower part","Caption (optional), e.g. Spalling at MH1, lower part","Leyenda (opcional), p. ej.: Spalling at MH1, lower part","Bildtext (optional), z. B. Spalling at MH1, lower part"],
 ["Ce constat est ouvert dans l'onglet Saisie : enregistre-le ou annule la modification d'abord.","This finding is open in the Entry tab: save it or cancel the edit first.","Este hallazgo está abierto en la pestaña Captura: guárdalo o cancela la modificación primero.","Dieser Befund ist in „Erfassung“ geöffnet: zuerst speichern oder die Bearbeitung abbrechen."],
 // missions
-["Mission","Job","Misión","Auftrag"],
-["Mission {a} active","Job {a} active","Misión {a} activa","Auftrag {a} aktiv"],
-["Nouvelle mission","New job","Nueva misión","Neuer Auftrag"],
+["Projet","Project","Proyecto","Projekt"],
+["Projet {a} actif","Project {a} active","Proyecto {a} activo","Projekt {a} aktiv"],
+["Nouveau projet","New project","Nuevo proyecto","Neues Projekt"],
 ["Archiver","Archive","Archivar","Archivieren"],
 ["Désarchiver","Unarchive","Desarchivar","Wiederherstellen"],
-["Afficher les missions archivées","Show archived jobs","Mostrar misiones archivadas","Archivierte Aufträge anzeigen"],
+["Afficher les projets archivés","Show archived projects","Mostrar proyectos archivados","Archivierte Projekte anzeigen"],
 ["Partir de","Start from","Partir de","Ausgehend von"],
-["Copie de la mission {a}","Copy of job {a}","Copia de la misión {a}","Kopie des Auftrags {a}"],
+["Copie du projet {a}","Copy of project {a}","Copia del proyecto {a}","Kopie des Projekts {a}"],
 ["Langue des listes","Language of the lists","Idioma de las listas","Sprache der Listen"],
-["N° mission","Job no.","N.º de misión","Auftragsnr."],
+["N° projet","Project no.","N.º de proyecto","Projektnr."],
 ["Client / site","Client / site","Cliente / sitio","Kunde / Standort"],
 ["Rapports émis au nom de","Reports issued on behalf of","Informes emitidos en nombre de","Berichte ausgestellt im Namen von"],
 ["QUARTIS (consultant)","QUARTIS (consultant)","QUARTIS (consultor)","QUARTIS (Berater)"],
 ["Mon entreprise (compte propre)","My company (own account)","Mi empresa (cuenta propia)","Mein Unternehmen (eigene Rechnung)"],
 ["Activité affichée","Activity shown","Actividad mostrada","Angezeigte Tätigkeit"],
 ["Activité affichée dans l'en-tête","Activity shown in the header","Actividad mostrada en el encabezado","Tätigkeit in der Kopfzeile"],
-["Change le logo et l'en-tête des IPR / IR générés sur le PC pour cette mission (dossier 982 Toolbox\\Sociétés).","Changes the logo and header of the IPR / IR generated on the PC for this job (982 Toolbox\\Sociétés folder).","Cambia el logotipo y el encabezado de los IPR / IR generados en el PC para esta misión (carpeta 982 Toolbox\\Sociétés).","Ändert Logo und Kopfzeile der auf dem PC erzeugten IPR / IR für diesen Auftrag (Ordner 982 Toolbox\\Sociétés)."],
-["Créer la mission","Create job","Crear la misión","Auftrag anlegen"],
-["Informations de la mission","Job information","Información de la misión","Auftragsinformationen"],
+["Change le logo et l'en-tête des IPR / IR générés sur le PC pour ce projet (dossier 982 Toolbox\\Sociétés).","Changes the logo and header of the IPR / IR generated on the PC for this project (982 Toolbox\\Sociétés folder).","Cambia el logotipo y el encabezado de los IPR / IR generados en el PC para este proyecto (carpeta 982 Toolbox\\Sociétés).","Ändert Logo und Kopfzeile der auf dem PC erzeugten IPR / IR für dieses Projekt (Ordner 982 Toolbox\\Sociétés)."],
+["Créer le projet","Create project","Crear el proyecto","Projekt anlegen"],
+["Informations du projet","Project information","Información del proyecto","Projektinformationen"],
 ["Inspecteur","Inspector","Inspector","Inspektor"],
-["Dossier de la mission sur le PC","Job folder on the PC","Carpeta de la misión en el PC","Auftragsordner auf dem PC"],
+["Dossier du projet sur le PC","Project folder on the PC","Carpeta del proyecto en el PC","Projektordner auf dem PC"],
 ["Langue des listes (activités, sous-activités)","Language of the lists (activities, sub-activities)","Idioma de las listas (actividades, subactividades)","Sprache der Listen (Tätigkeiten, Untertätigkeiten)"],
 ["Les photos seront rangées dans ce dossier, sous « Dossier Photo\\Équipement\\Sous-équipement\\Activité\\Date ».","Photos will be filed in this folder, under “Dossier Photo\\Equipment\\Sub-equipment\\Activity\\Date”.","Las fotos se archivarán en esta carpeta, en «Dossier Photo\\Equipo\\Subequipo\\Actividad\\Fecha».","Die Fotos werden in diesem Ordner abgelegt, unter „Dossier Photo\\Ausrüstung\\Unterausrüstung\\Tätigkeit\\Datum“."],
 ["Équipements et sous-équipements","Equipment and sub-equipment","Equipos y subequipos","Ausrüstungen und Unterausrüstungen"],
@@ -4759,14 +4765,14 @@ const TRAD_UI=[
 ["Renommage détecté","Renaming detected","Cambio de nombre detectado","Umbenennung erkannt"],
 ["Enregistrer et mettre à jour les constats","Save and update the findings","Guardar y actualizar los hallazgos","Speichern und Befunde aktualisieren"],
 ["Enregistrer sans modifier les constats","Save without changing the findings","Guardar sin modificar los hallazgos","Speichern ohne Befunde zu ändern"],
-["Enregistrer la mission","Save job","Guardar la misión","Auftrag speichern"],
-["Partager une mission","Share a job","Compartir una misión","Auftrag teilen"],
+["Enregistrer le projet","Save project","Guardar el proyecto","Projekt speichern"],
+["Partager un projet","Share a project","Compartir un proyecto","Projekt teilen"],
 ["Remplacer","Replace","Reemplazar","Ersetzen"],
 ["Garder celle de cet appareil","Keep this device's version","Conservar la de este dispositivo","Version dieses Geräts behalten"],
-["Envoyer cette mission","Send this job","Enviar esta misión","Diesen Auftrag senden"],
-["Charger une mission","Load a job","Cargar una misión","Auftrag laden"],
+["Envoyer ce projet","Send this project","Enviar este proyecto","Dieses Projekt senden"],
+["Charger un projet","Load a project","Cargar un proyecto","Projekt laden"],
 ["Version de l'appli : {a}","App version: {a}","Versión de la app: {a}","App-Version: {a}"],
-["Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Une mission déjà présente (même n°) est mise à jour, sinon elle est ajoutée.","Send the “mission-No.jpg” image via Quick Share, then load it on the other phone. A job already present (same no.) is updated, otherwise it is added.","Envía la imagen «mission-N.º.jpg» por Quick Share y cárgala en el otro teléfono. Una misión ya existente (mismo n.º) se actualiza; si no, se añade.","Bild „mission-Nr.jpg“ per Quick Share senden und auf dem anderen Telefon laden. Ein vorhandener Auftrag (gleiche Nr.) wird aktualisiert, sonst hinzugefügt."],
+["Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Un projet déjà présent (même n°) est mis à jour, sinon il est ajouté.","Send the “mission-No.jpg” image via Quick Share, then load it on the other phone. A project already present (same no.) is updated, otherwise it is added.","Envía la imagen «mission-N.º.jpg» por Quick Share y cárgala en el otro teléfono. Un proyecto ya existente (mismo n.º) se actualiza; si no, se añade.","Bild „mission-Nr.jpg“ per Quick Share senden und auf dem anderen Telefon laden. Ein vorhandenes Projekt (gleiche Nr.) wird aktualisiert, sonst hinzugefügt."],
 ["Réglage de ce téléphone","Settings of this phone","Ajustes de este teléfono","Einstellungen dieses Telefons"],
 ["Sélecteur de photos (bouton « Choisir dans la galerie »)","Photo picker (“Choose from gallery” button)","Selector de fotos (botón «Elegir de la galería»)","Fotoauswahl (Schaltfläche „Aus der Galerie wählen“)"],
 ["1 – Standard","1 – Standard","1 – Estándar","1 – Standard"],
@@ -4779,25 +4785,25 @@ const TRAD_UI=[
 ["Toujours enregistrer dans Téléchargements (DeX)","Always save to Downloads (DeX)","Guardar siempre en Descargas (DeX)","Immer in Downloads speichern (DeX)"],
 ["Toujours ouvrir le partage (Quick Share)","Always open sharing (Quick Share)","Abrir siempre compartir (Quick Share)","Immer Teilen öffnen (Quick Share)"],
 ["En DeX, la fenêtre de partage peut s'ouvrir et se fermer aussitôt : choisis « Toujours enregistrer dans Téléchargements », puis envoie depuis Mes fichiers > Téléchargements > Partager > Quick Share. Navigateur détecté :","In DeX, the share window may open and close immediately: choose “Always save to Downloads”, then send from My Files > Downloads > Share > Quick Share. Browser detected:","En DeX, la ventana de compartir puede abrirse y cerrarse enseguida: elige «Guardar siempre en Descargas» y envía desde Mis archivos > Descargas > Compartir > Quick Share. Navegador detectado:","In DeX kann sich das Teilen-Fenster sofort wieder schließen: „Immer in Downloads speichern“ wählen und über Eigene Dateien > Downloads > Teilen > Quick Share senden. Erkannter Browser:"],
-["Cette mission n'a pas encore été envoyée à un autre appareil.","This job has not been sent to another device yet.","Esta misión aún no se ha enviado a otro dispositivo.","Dieser Auftrag wurde noch an kein anderes Gerät gesendet."],
+["Ce projet n'a pas encore été envoyé à un autre appareil.","This project has not been sent to another device yet.","Este proyecto aún no se ha enviado a otro dispositivo.","Dieses Projekt wurde noch an kein anderes Gerät gesendet."],
 ["✓ À jour : version du {a} envoyée le {b}.","✓ Up to date: version of {a} sent on {b}.","✓ Al día: versión del {a} enviada el {b}.","✓ Aktuell: Version vom {a}, gesendet am {b}."],
 ["✓ Version du {a}, reçue le {b}.","✓ Version of {a}, received on {b}.","✓ Versión del {a}, recibida el {b}.","✓ Version vom {a}, empfangen am {b}."],
-["⚠ Modifiée le {a} et pas encore envoyée aux autres appareils. Touche « Envoyer cette mission », puis charge-la sur tes téléphones.","⚠ Changed on {a} and not yet sent to the other devices. Tap “Send this job”, then load it on your phones.","⚠ Modificada el {a} y aún no enviada a los otros dispositivos. Toca «Enviar esta misión» y cárgala en tus teléfonos.","⚠ Geändert am {a} und noch nicht an die anderen Geräte gesendet. „Diesen Auftrag senden“ antippen und auf den Telefonen laden."],
-["Mission enregistrée. Pense à l'envoyer à tes autres appareils.","Job saved. Remember to send it to your other devices.","Misión guardada. Recuerda enviarla a tus otros dispositivos.","Auftrag gespeichert. An die anderen Geräte senden."],
+["⚠ Modifié le {a} et pas encore envoyé aux autres appareils. Touche « Envoyer ce projet », puis charge-le sur tes téléphones.","⚠ Changed on {a} and not yet sent to the other devices. Tap “Send this project”, then load it on your phones.","⚠ Modificado el {a} y aún no enviado a los otros dispositivos. Toca «Enviar este proyecto» y cárgalo en tus teléfonos.","⚠ Geändert am {a} und noch nicht an die anderen Geräte gesendet. „Dieses Projekt senden“ antippen und auf den Telefonen laden."],
+["Projet enregistré. Pense à l'envoyer à tes autres appareils.","Project saved. Remember to send it to your other devices.","Proyecto guardado. Recuerda enviarlo a tus otros dispositivos.","Projekt gespeichert. An die anderen Geräte senden."],
 ["Aucun changement","No changes","Ningún cambio","Keine Änderung"],
 ["Il faut au moins un équipement et une activité.","At least one equipment and one activity are needed.","Se necesita al menos un equipo y una actividad.","Mindestens eine Ausrüstung und eine Tätigkeit sind nötig."],
-["Indique le n° de mission.","Enter the job number.","Indica el n.º de misión.","Auftragsnummer eingeben."],
-["Indique le n° de la nouvelle mission.","Enter the number of the new job.","Indica el n.º de la nueva misión.","Nummer des neuen Auftrags eingeben."],
-["La mission {a} existe déjà.","Job {a} already exists.","La misión {a} ya existe.","Auftrag {a} existiert bereits."],
-["Mission {a} créée : vérifie le dossier PC et complète les listes","Job {a} created: check the PC folder and complete the lists","Misión {a} creada: comprueba la carpeta del PC y completa las listas","Auftrag {a} angelegt: PC-Ordner prüfen und Listen ergänzen"],
-["Mission {a} désarchivée","Job {a} unarchived","Misión {a} desarchivada","Auftrag {a} wiederhergestellt"],
-["Crée d'abord une autre mission : il faut au moins une mission active.","Create another job first: at least one active job is needed.","Crea primero otra misión: se necesita al menos una misión activa.","Zuerst einen anderen Auftrag anlegen: mindestens ein aktiver Auftrag ist nötig."],
-["Mission enregistrée et {a} constat(s) mis à jour.","Job saved and {a} finding(s) updated.","Misión guardada y {a} hallazgo(s) actualizado(s).","Auftrag gespeichert und {a} Befund(e) aktualisiert."],
-["Ce fichier n'est pas un fichier de mission valide.","This file is not a valid job file.","Este archivo no es un archivo de misión válido.","Diese Datei ist keine gültige Auftragsdatei."],
-["Ce fichier ne contient pas de n° de mission.","This file contains no job number.","Este archivo no contiene n.º de misión.","Diese Datei enthält keine Auftragsnummer."],
-["Mission {a} mise à jour","Job {a} updated","Misión {a} actualizada","Auftrag {a} aktualisiert"],
-["Mission {a} ajoutée","Job {a} added","Misión {a} añadida","Auftrag {a} hinzugefügt"],
-["Liste mise à jour : vérifie-la puis « Enregistrer la mission ».","List updated: check it, then “Save job”.","Lista actualizada: compruébala y luego «Guardar la misión».","Liste aktualisiert: prüfen und dann „Auftrag speichern“."],
+["Indique le n° de projet.","Enter the project number.","Indica el n.º de proyecto.","Projektnummer eingeben."],
+["Indique le n° du nouveau projet.","Enter the number of the new project.","Indica el n.º del nuevo proyecto.","Nummer des neuen Projekts eingeben."],
+["Le projet {a} existe déjà.","Project {a} already exists.","El proyecto {a} ya existe.","Projekt {a} existiert bereits."],
+["Projet {a} créé : vérifie le dossier PC et complète les listes","Project {a} created: check the PC folder and complete the lists","Proyecto {a} creado: comprueba la carpeta del PC y completa las listas","Projekt {a} angelegt: PC-Ordner prüfen und Listen ergänzen"],
+["Projet {a} désarchivé","Project {a} unarchived","Proyecto {a} desarchivado","Projekt {a} wiederhergestellt"],
+["Crée d'abord un autre projet : il faut au moins un projet actif.","Create another project first: at least one active project is needed.","Crea primero otro proyecto: se necesita al menos un proyecto activo.","Zuerst ein anderes Projekt anlegen: mindestens ein aktives Projekt ist nötig."],
+["Projet enregistré et {a} constat(s) mis à jour.","Project saved and {a} finding(s) updated.","Proyecto guardado y {a} hallazgo(s) actualizado(s).","Projekt gespeichert und {a} Befund(e) aktualisiert."],
+["Ce fichier n'est pas un fichier de projet valide.","This file is not a valid project file.","Este archivo no es un archivo de proyecto válido.","Diese Datei ist keine gültige Projektdatei."],
+["Ce fichier ne contient pas de n° de projet.","This file contains no project number.","Este archivo no contiene n.º de proyecto.","Diese Datei enthält keine Projektnummer."],
+["Projet {a} mis à jour","Project {a} updated","Proyecto {a} actualizado","Projekt {a} aktualisiert"],
+["Projet {a} ajouté","Project {a} added","Proyecto {a} añadido","Projekt {a} hinzugefügt"],
+["Liste mise à jour : vérifie-la puis « Enregistrer le projet ».","List updated: check it, then “Save project”.","Lista actualizada: compruébala y luego «Guardar el proyecto».","Liste aktualisiert: prüfen und dann „Projekt speichern“."],
 ["Réglage d'envoi enregistré","Sending setting saved","Ajuste de envío guardado","Sendeeinstellung gespeichert"],
 ["Sélecteur de photos : variante {a}. Essaie « Choisir dans la galerie ».","Photo picker: variant {a}. Try “Choose from gallery”.","Selector de fotos: variante {a}. Prueba «Elegir de la galería».","Fotoauswahl: Variante {a}. „Aus der Galerie wählen“ testen."],
 // préparer, traduction (titres)
@@ -4812,7 +4818,7 @@ const TRAD_UI=[
 ["Glossaire réfractaire","Refractory glossary","Glosario de refractarios","Feuerfest-Glossar"],
 // v1.70 : onglet Constats, Journal en lignes, navette, sablier
 ["Constats","Findings","Hallazgos","Befunde"],
-["Constats de la mission","Job findings","Hallazgos de la misión","Befunde des Auftrags"],
+["Constats du projet","Project findings","Hallazgos del proyecto","Befunde des Projekts"],
 ["Statut","Status","Estado","Status"],
 ["Prévus","Planned","Previstos","Geplant"],
 ["À envoyer","To send","Por enviar","Zu senden"],
@@ -4820,16 +4826,16 @@ const TRAD_UI=[
 ["prévu","planned","previsto","geplant"],
 ["Autres","Others","Otros","Andere"],
 ["(général)","(general)","(general)","(allgemein)"],
-["Tous les constats de la mission, par équipement et sous-zone, dans l'ordre de la liste. Les constats prévus (pas encore commencés) sont en grisé. L'envoi au PC se fait depuis le Journal.","All the job findings, by equipment and sub-area, in list order. Planned findings (not started yet) are greyed out. Sending to the PC is done from the Log.","Todos los hallazgos de la misión, por equipo y subzona, en el orden de la lista. Los previstos (aún no empezados) aparecen en gris. El envío al PC se hace desde el Diario.","Alle Befunde des Auftrags, nach Ausrüstung und Unterbereich, in Listenreihenfolge. Geplante (noch nicht begonnene) Befunde sind ausgegraut. Das Senden an den PC erfolgt im Journal."],
+["Tous les constats du projet, par équipement et sous-zone, dans l'ordre de la liste. Les constats prévus (pas encore commencés) sont en grisé. L'envoi au PC se fait depuis le Journal.","All the project findings, by equipment and sub-area, in list order. Planned findings (not started yet) are greyed out. Sending to the PC is done from the Log.","Todos los hallazgos del proyecto, por equipo y subzona, en el orden de la lista. Los previstos (aún no empezados) aparecen en gris. El envío al PC se hace desde el Diario.","Alle Befunde des Projekts, nach Ausrüstung und Unterbereich, in Listenreihenfolge. Geplante (noch nicht begonnene) Befunde sind ausgegraut. Das Senden an den PC erfolgt im Journal."],
 ["{a} constat(s) : {b} prévu(s), {c} à envoyer, {d} envoyé(s)","{a} finding(s): {b} planned, {c} to send, {d} sent","{a} hallazgo(s): {b} previsto(s), {c} por enviar, {d} enviado(s)","{a} Befund(e): {b} geplant, {c} zu senden, {d} gesendet"],
 ["{a} constat(s), dont {b} prévu(s)","{a} finding(s), including {b} planned","{a} hallazgo(s), de ellos {b} previsto(s)","{a} Befund(e), davon {b} geplant"],
 ["Aucun constat ne correspond à ces filtres.","No finding matches these filters.","Ningún hallazgo coincide con estos filtros.","Kein Befund entspricht diesen Filtern."],
-["Aucun constat pour cette mission. Les constats enregistrés depuis l'onglet Saisie et les constats prévus apparaissent ici, par équipement.","No finding for this job yet. Findings saved from the Entry tab and planned findings appear here, by equipment.","Ningún hallazgo para esta misión. Los hallazgos guardados desde la pestaña Captura y los previstos aparecen aquí, por equipo.","Noch keine Befunde für diesen Auftrag. In „Erfassung“ gespeicherte und geplante Befunde erscheinen hier, nach Ausrüstung."],
+["Aucun constat pour ce projet. Les constats enregistrés depuis l'onglet Saisie et les constats prévus apparaissent ici, par équipement.","No finding for this project yet. Findings saved from the Entry tab and planned findings appear here, by equipment.","Ningún hallazgo para este proyecto. Los hallazgos guardados desde la pestaña Captura y los previstos aparecen aquí, por equipo.","Noch keine Befunde für dieses Projekt. In „Erfassung“ gespeicherte und geplante Befunde erscheinen hier, nach Ausrüstung."],
 ["Voir ce constat dans l'onglet Constats","See this finding in the Findings tab","Ver este hallazgo en la pestaña Hallazgos","Diesen Befund im Reiter Befunde anzeigen"],
 ["Coche les constats à envoyer au PC (un constat déjà envoyé peut être renvoyé). Touche une ligne pour voir le constat dans l'onglet Constats.","Tick the findings to send to the PC (a finding already sent can be sent again). Tap a line to see the finding in the Findings tab.","Marca los hallazgos que enviar al PC (uno ya enviado se puede reenviar). Toca una línea para ver el hallazgo en la pestaña Hallazgos.","Die an den PC zu sendenden Befunde ankreuzen (ein bereits gesendeter kann erneut gesendet werden). Eine Zeile antippen, um den Befund im Reiter Befunde zu sehen."],
 ["Navette téléphone ⇄ tablette","Phone ⇄ tablet shuttle file","Lanzadera teléfono ⇄ tableta","Shuttle-Datei Telefon ⇄ Tablet"],
 ["📥 Charger une navette","📥 Load a shuttle file","📥 Cargar una lanzadera","📥 Shuttle-Datei laden"],
-["Ce fichier n'est pas une navette. Mission ou programme d'arrêt : « Charger une mission ».","This file is not a shuttle file. Job or turnaround programme: “Load a job”.","Este archivo no es una lanzadera. Misión o programa de parada: «Cargar una misión».","Diese Datei ist keine Shuttle-Datei. Auftrag oder Stillstandsprogramm: „Auftrag laden“."],
+["Ce fichier n'est pas une navette. Projet ou programme d'arrêt : « Charger un projet ».","This file is not a shuttle file. Project or turnaround programme: “Load a project”.","Este archivo no es una lanzadera. Proyecto o programa de parada: «Cargar un proyecto».","Diese Datei ist keine Shuttle-Datei. Projekt oder Stillstandsprogramm: „Projekt laden“."],
 ["Réception du fichier…","Receiving the file…","Recibiendo el archivo…","Datei wird empfangen…"],
 ["Un fichier pris dans OneDrive est d'abord téléchargé sur l'appareil : cela peut prendre quelques secondes.","A file taken from OneDrive is first downloaded to the device: this can take a few seconds.","Un archivo de OneDrive se descarga primero en el dispositivo: puede tardar unos segundos.","Eine Datei aus OneDrive wird zuerst auf das Gerät geladen: Das kann einige Sekunden dauern."],
 ["Lecture du fichier…","Reading the file…","Leyendo el archivo…","Datei wird gelesen…"],
@@ -4908,7 +4914,7 @@ function tradUI(fr,interne){const k=normUI(fr);if(!k) return null;const i=LANGUI
   for(const p of interne?[...LANGUI.pats,...LANGUI.parts]:LANGUI.pats){const m=k.match(p.re);if(!m) continue;
     const v={};p.noms.forEach((n,j)=>{const x=m[j+1];v[n]=tradUI(x,true)??x});return p.tr[i].replace(/\{([a-z])\}/g,(q,n)=>v[n]??q)}
   return null}
-// zones à ne jamais traduire : textes saisis, noms des listes de la mission, données
+// zones à ne jamais traduire : textes saisis, noms des listes du projet, données
 const UI_EXCLU='[data-noi18n],.rte,[contenteditable],textarea,input,script,style,#fEq,#fSub,#fAct,#fSubAct,#fAcces,#mSel,#degats,#degParam,.apercu dd,figcaption,#accMission,#hMission,#prepLive,#gvInfo,#gvLeg,.gt .lg,#renTxt,#pastePreview,#fPath,#uaInfo';
 function traduireNoeudUI(n){
   if(n.nodeType===3){const el=n.parentElement;if(!el||el.closest(UI_EXCLU)) return;
@@ -4961,7 +4967,7 @@ async function start(){
   $("bSentYes").onclick=markSent;
   $("bDl").onclick=async()=>{const list=(PREP&&PREP.list.length)?PREP.list:await selectionEnvoi();if(!list.length) return;downloadFiles(list,(PREP&&PREP.files.length)?PREP.files:await buildFiles(list))};$("bSentNo").onclick=()=>{$("sentConfirm").hidden=true;pendingSent=[]};
   $("bPurge").onclick=async()=>{const n=(await allEntries()).filter(e=>e.envoye&&belongs(e)).length;if(!n){toast("Aucun constat envoyé à supprimer.");return}
-    $("purgeTxt").textContent=`Supprimer du téléphone ${n} constat(s) de la mission ${CFG.mission.no} déjà envoyé(s) au PC ? Vérifie d'abord qu'ils sont bien rangés sur le PC.`;$("purgeConfirm").hidden=false};
+    $("purgeTxt").textContent=`Supprimer du téléphone ${n} constat(s) du projet ${CFG.mission.no} déjà envoyé(s) au PC ? Vérifie d'abord qu'ils sont bien rangés sur le PC.`;$("purgeConfirm").hidden=false};
   $("bPurgeYes").onclick=purge;$("bPurgeNo").onclick=()=>$("purgeConfirm").hidden=true;
   $("bCfgSave").onclick=saveCfg;
   $("mSel").onchange=e=>switchMission(e.target.value);$("mShowArch").onchange=renderCfg;$("hMission").onclick=()=>showView("reglages");
