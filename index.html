@@ -319,6 +319,8 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqmatadd{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}.apqn{color:var(--muted);font-weight:500}
 .apqtitre{font-size:13px;font-weight:600;text-align:center}
 .apqbt{display:grid;grid-template-columns:1fr 1fr;gap:4px}.apqbt button{min-height:40px;font-size:12px;padding:2px 4px}
+.plAutreL{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:4px 0}.plAutreL input[type=text]{margin:0}.plAutreL input[type=checkbox]{width:24px;height:24px;margin:0 2px}.plAutreL button{min-height:40px;padding:0 10px}#plAutreAdd{margin-top:6px}
+.apqgg figure{position:relative}.apqgg figure.annotee::before{content:"annotée";position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px;pointer-events:none}
 .apqgg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px}
 .apqgg figure{margin:0;cursor:pointer}.apqgg img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
 .apqgg figcaption{font-size:12px;text-align:center}
@@ -824,7 +826,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.13";
+const APP_VERSION="2.14";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1890,12 +1892,35 @@ function etapesPlan(){const out=[];for(const a of ACT){if(estInitiale(a)) contin
 let PLAN_SIG=null,PLAN_N=0;
 const PLAN_BARRE="<div class=\"rtebar\" role=\"toolbar\" aria-label=\"Mise en forme du commentaire\"><button type=\"button\" data-cmd=\"bold\" aria-label=\"Gras\"><b>G</b></button><button type=\"button\" data-cmd=\"italic\" aria-label=\"Italique\"><i>I</i></button><button type=\"button\" data-cmd=\"underline\" aria-label=\"Souligné\"><u>S</u></button><button type=\"button\" data-cmd=\"insertUnorderedList\" aria-label=\"Liste à puces\">• Liste</button><button type=\"button\" data-cmd=\"insertOrderedList\" aria-label=\"Liste numérotée\">1. Liste</button><button type=\"button\" data-cmd=\"outdent\" aria-label=\"Remonter d'un niveau\">⇤</button><button type=\"button\" data-cmd=\"indent\" aria-label=\"Descendre d'un niveau\">⇥</button></div>";
 function lirePlan(){return [...document.querySelectorAll("#planList .plStep")].filter(d=>d.querySelector(".plOn").checked)
-  .map(d=>({code:d.dataset.code,nom:d.dataset.nom,groupe:d.dataset.groupe,arret:d.querySelector(".plArret").checked,commentaire:$(d.dataset.ed).value}))}
+  .map(d=>({code:d.dataset.code,nom:d.classList.contains("plAutre")?(d.querySelector(".plAutreNom").value.trim()||"Autre"):d.dataset.nom,groupe:d.dataset.groupe,arret:d.querySelector(".plArret").checked,commentaire:$(d.dataset.ed).value,...(d.classList.contains("plAutre")?{autre:true}:{})}))}
+// v2.14 : étapes « Autre » (texte libre), 5 au maximum, codes AUTRE1…AUTRE5
+const PL_AUTRE_MAX=5;
+function plEstAutre(x){return /^AUTRE\d+$/.test(String(x&&x.code||""))}
+const PL_DET=n=>`<div class="plDet" hidden><label class="toggle"><input type="checkbox" class="plArret"> ⛔ Point d'arrêt (hold point)</label>`
+  +`<div class="rtewrap"><span class="rtelab" id="lPl${n}">Commentaire</span>${PLAN_BARRE}<div class="rte" id="fPl${n}" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lPl${n}"></div></div></div>`;
+function plAutres(box,autres){const g=document.createElement("p");g.className="plGrp";g.textContent="Autres étapes";box.append(g);
+  const zone=document.createElement("div");zone.id="plAutres";box.append(zone);
+  for(const x of autres) plAutreLigne(x);
+  const b=document.createElement("button");b.type="button";b.id="plAutreAdd";b.className="ghost";
+  b.onclick=()=>{const d=plAutreLigne(null);if(d) d.querySelector(".plAutreNom").focus()};box.append(b);plAutreMaj()}
+function plAutreLigne(x){const zone=$("plAutres");if(!zone) return null;const pris=[...zone.querySelectorAll(".plStep")].map(d=>d.dataset.code);
+  if(pris.length>=PL_AUTRE_MAX){toast("5 étapes « Autre » au maximum.");return null}
+  let code=x&&x.code;if(!code||pris.includes(code)) for(let k=1;k<=PL_AUTRE_MAX;k++) if(!pris.includes("AUTRE"+k)){code="AUTRE"+k;break}
+  const n=++PLAN_N;const d=document.createElement("div");d.className="plStep plAutre";d.dataset.code=code;d.dataset.nom="";d.dataset.groupe="";d.dataset.ed="fPl"+n;
+  d.innerHTML=`<div class="plAutreL"><input type="checkbox" class="plOn" aria-label="Étape prévue"><input type="text" class="plAutreNom" maxlength="120" autocomplete="off" placeholder="Autre étape (ex. : séchage, contrôle d'épaisseur…)" aria-label="Nom de l'étape"><button type="button" class="ghost plAutreDel" aria-label="Supprimer cette étape">🗑</button></div>`+PL_DET(n);
+  zone.append(d);initEditeur("fPl"+n);
+  const on=d.querySelector(".plOn"),det=d.querySelector(".plDet");on.onchange=()=>{det.hidden=!on.checked};
+  d.querySelector(".plAutreDel").onclick=()=>{d.remove();plAutreMaj();planifierBrouillon(false)};
+  on.checked=true;det.hidden=false;
+  if(x){d.querySelector(".plAutreNom").value=x.nom&&x.nom!=="Autre"?x.nom:"";d.querySelector(".plArret").checked=!!x.arret;$("fPl"+n).value=x.commentaire||""}
+  plAutreMaj();return d}
+function plAutreMaj(){const b=$("plAutreAdd"),z=$("plAutres");if(!b||!z) return;const k=z.querySelectorAll(".plStep").length;b.disabled=k>=PL_AUTRE_MAX;
+  b.textContent=k>=PL_AUTRE_MAX?"5 étapes « Autre » au maximum":"＋ Autre étape"}
 function renderPlan(sel){sel=Array.isArray(sel)?sel:[];const box=$("planList");if(!box) return;const et=etapesPlan();PLAN_SIG=JSON.stringify(et);
   const cle=x=>x.code+"|"+x.nom;const liste=et.slice();
-  for(const s of sel) if(!liste.some(x=>cle(x)===cle(s))) liste.push({...s,absent:true});
+  for(const s of sel) if(!plEstAutre(s)&&!liste.some(x=>cle(x)===cle(s))) liste.push({...s,absent:true});
   box.innerHTML="";
-  if(!liste.length){box.innerHTML='<p class="hint">Aucune étape de réparation dans les activités de la mission (à ajouter dans l\'onglet Missions, après les inspections).</p>';return}
+  if(!liste.length) box.innerHTML='<p class="hint">Aucune étape de réparation dans les activités de la mission (à ajouter dans l\'onglet Missions, après les inspections).</p>';
   let grp=null;
   for(const x of liste){const s=sel.find(y=>cle(y)===cle(x));
     if(!x.absent&&(x.groupe||"")!==grp){grp=x.groupe||"";if(grp){const g=document.createElement("p");g.className="plGrp";g.dataset.noi18n="";g.textContent=grp;box.append(g)}}
@@ -1905,7 +1930,8 @@ function renderPlan(sel){sel=Array.isArray(sel)?sel:[];const box=$("planList");i
       +`<div class="rtewrap"><span class="rtelab" id="lPl${n}">Commentaire</span>${PLAN_BARRE}<div class="rte" id="fPl${n}" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lPl${n}"></div></div></div>`;
     d.querySelector(".plNom").textContent=x.nom;box.append(d);initEditeur("fPl"+n);
     const on=d.querySelector(".plOn"),det=d.querySelector(".plDet");on.onchange=()=>{det.hidden=!on.checked};
-    if(s){on.checked=true;det.hidden=false;d.querySelector(".plArret").checked=!!s.arret;$("fPl"+n).value=s.commentaire||""}}}
+    if(s){on.checked=true;det.hidden=false;d.querySelector(".plArret").checked=!!s.arret;$("fPl"+n).value=s.commentaire||""}}
+  plAutres(box,sel.filter(plEstAutre))}
 function majPlan(){const c=$("planCard");if(!c) return;c.hidden=!estInitiale(curAct());if(JSON.stringify(etapesPlan())!==PLAN_SIG) renderPlan(lirePlan())}
 /* ---------- avancement (v1.61) ----------
    Activités d'avancement (tout ce qui n'est pas inspection initiale / complémentaire) : étapes du plan de réparation de la zone
@@ -3028,10 +3054,10 @@ function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
     g.append(box)}
   return g}
 // v2.13 : annotation des photos de préqualification avec l'éditeur des constats (photo d'origine gardée, comme pour les constats)
-async function apqAnnoter(ph,i){if(i<0) return;const src=ph.map(x=>({pid:x.pid}));
+async function apqAnnoter(ph,i,quandFini){if(i<0) return;const src=ph.map(x=>({pid:x.pid}));
   await ouvrirEditeur(i,{src,
     charger:async j=>{const it=src[j];const p=await getPhoto(it.pid);if(p) Object.assign(it,{blob:p.blob,orig:p.orig||null,annot:p.annot||null,thumb:p.thumb,type:p.type,prise:p.prise||null})},
-    rendu:()=>{},fin:()=>{renderApq()},
+    rendu:()=>{},fin:()=>{if(quandFini) quandFini();else renderApq()},
     apres:async j=>{const it=src[j];
       await tx("photos","readwrite",s=>{const r=s.get(it.pid);r.onsuccess=()=>{const p=r.result;if(!p) return;Object.assign(p,{blob:it.blob,orig:it.orig||null,annot:it.annot||null,thumb:it.thumb,type:it.type||"image/jpeg"});s.put(p)}});
       apqSauver(true)}})}
@@ -3368,8 +3394,9 @@ async function apqSectionGalerie(g){let a=null;try{a=await apqCharger()}catch(e)
   const c=apqE("div",{class:"card c-jaune apqgal"},apqE("div",{class:"dayhead"},apqE("h3",{text:"🧪 Préqualification des applicateurs"}),apqE("span",{class:"stat",text:`${l.length} photo(s)`})));
   let gr=null,box=null;
   for(const x of l){if(x.groupe!==gr){gr=x.groupe;c.append(apqE("p",{class:"apqst","data-noi18n":true,text:gr}));box=apqE("div",{class:"apqgg"});c.append(box)}
-    const im=apqE("img",{alt:""});getPhoto(x.pid).then(p=>{if(p) im.src=p.thumb});
-    box.append(apqE("figure",{title:x.fichier,onclick:()=>apqVoir(x)},im,apqE("figcaption",{"data-noi18n":true,text:x.slot==="Autre"?(x.leg||"Autre"):x.slot+(x.leg?" – "+x.leg:"")})))}
+    const im=apqE("img",{alt:""});
+    const fig=apqE("figure",{title:x.fichier+" · toucher pour annoter",onclick:()=>apqAnnoter(l,l.indexOf(x),()=>{chargerGalerie().then(renderGalerie)})},im,apqE("figcaption",{"data-noi18n":true,text:x.slot==="Autre"?(x.leg||"Autre"):x.slot+(x.leg?" – "+x.leg:"")}));
+    getPhoto(x.pid).then(p=>{if(p){im.src=p.thumb;if(p.annot) fig.classList.add("annotee")}});box.append(fig)}
   c.append(apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:()=>showView("apq")},"Ouvrir / compléter"),apqE("button",{type:"button",onclick:apqExporterPhotos},`⬇️ Exporter les photos (${l.length})`)));
   galPliable(c,"apq",c.querySelector(".dayhead"));g.append(c)}
 async function apqVoir(x){const p=await getPhoto(x.pid);if(!p) return;const u=URL.createObjectURL(p.blob);
@@ -4833,7 +4860,11 @@ const TRAD_UI=[
 [" · {a} cochée(s)", " · {a} selected", " · {a} marcada(s)", " · {a} ausgewählt"],
 ["Tous les constats sont repliés : déplie ceux dont tu veux les photos.", "All findings are collapsed: expand the ones whose photos you want.", "Todos los hallazgos están plegados: despliega aquellos cuyas fotos quieres.", "Alle Befunde sind eingeklappt: die gewünschten Befunde aufklappen."],
 ["Préciser l'accès (texte libre)", "Specify the access (free text)", "Precisar el acceso (texto libre)", "Zugang angeben (Freitext)"],
-["Toucher pour annoter · glisser vers une autre case pour déplacer la photo", "Tap to annotate · drag to another box to move the photo", "Toca para anotar · arrastra a otra casilla para mover la foto", "Antippen zum Anmerken · in ein anderes Feld ziehen, um das Foto zu verschieben"]
+["Toucher pour annoter · glisser vers une autre case pour déplacer la photo", "Tap to annotate · drag to another box to move the photo", "Toca para anotar · arrastra a otra casilla para mover la foto", "Antippen zum Anmerken · in ein anderes Feld ziehen, um das Foto zu verschieben"],
+["Autres étapes", "Other steps", "Otras etapas", "Weitere Schritte"],
+["＋ Autre étape", "＋ Other step", "＋ Otra etapa", "＋ Weiterer Schritt"],
+["5 étapes « Autre » au maximum", "5 “Other” steps maximum", "5 etapas «Otra» como máximo", "Höchstens 5 weitere Schritte"],
+["5 étapes « Autre » au maximum.", "5 “Other” steps maximum.", "5 etapas «Otra» como máximo.", "Höchstens 5 weitere Schritte."]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
