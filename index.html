@@ -203,7 +203,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .thumb.hors img{opacity:.38}.thumb .hr{position:absolute;right:4px;bottom:4px;font:600 10px var(--font);background:#555;color:#fff;padding:1px 5px;border-radius:4px}
 .gt{-webkit-touch-callout:none;user-select:none;cursor:pointer}.gt img{-webkit-user-drag:none;pointer-events:none}.gt .no{position:absolute;left:4px;top:4px;font:600 11px var(--mono);background:rgba(0,0,0,.65);color:#fff;padding:1px 6px;border-radius:4px}
 .gt .lg{position:absolute;left:0;right:0;bottom:0;font:11px var(--font);background:rgba(0,0,0,.62);color:#fff;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gt .ck{position:absolute;right:4px;top:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.5);border:2px solid #fff;color:transparent;display:grid;place-items:center;font:700 15px var(--font);line-height:1}.gt.sel{outline:3px solid var(--accent);outline-offset:-1px}.gt.sel .ck{background:var(--accent);color:#fff}.gt.sel img{opacity:.85}.gselbar{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--surface);color:var(--fg);border:2px solid var(--accent);border-radius:14px;padding:10px 12px;margin:10px 0;box-shadow:0 6px 20px rgba(0,0,0,.3);display:grid;gap:6px}.gselbar[hidden]{display:none}.gselbar .gsl1{display:flex;align-items:center;justify-content:space-between;gap:8px}.gselbar .gsl1 button{min-height:36px;padding:4px 10px;font-size:14px}.gselbar .gsl2{display:grid;grid-template-columns:2fr 1fr;gap:8px}.gselbar select{margin:0}.gt.hors .lg{right:auto;max-width:55%}.gt.drag{outline:3px solid var(--accent);transform:scale(1.05);z-index:2}.gt.cible{outline:3px dashed var(--accent)}
+.gt .ck{position:absolute;right:4px;top:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.5);border:2px solid #fff;color:transparent;display:grid;place-items:center;font:700 15px var(--font);line-height:1}.gt.sel{outline:3px solid var(--accent);outline-offset:-1px}.gt.sel .ck{background:var(--accent);color:#fff}.gt.sel img{opacity:.85}.gselbar{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--surface);color:var(--fg);border:2px solid var(--accent);border-radius:14px;padding:10px 12px;margin:10px 0;box-shadow:0 6px 20px rgba(0,0,0,.3);display:grid;gap:6px}.gselbar[hidden]{display:none}.gselbar .gsl1{display:flex;align-items:center;justify-content:space-between;gap:8px}.gselbar .gsl1 button{min-height:36px;padding:4px 10px;font-size:14px}.gselbar .gsl2{display:grid;grid-template-columns:2fr 1fr;gap:8px}.gselbar select{margin:0}.gselbar .gsl3{display:grid;grid-template-columns:auto 1fr;gap:8px}.gselbar .hint{margin:0}.gt.hors .lg{right:auto;max-width:55%}.gt.drag{outline:3px solid var(--accent);transform:scale(1.05);z-index:2}.gt.cible{outline:3px dashed var(--accent)}
 .ghead{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}.ghead h3{margin:0;font-size:15px}
 #gv{position:fixed;inset:0;z-index:35;background:#0e1316;color:#e6ecef;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 #pretCard{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:30;max-width:560px;margin:0 auto;box-shadow:0 6px 24px rgba(0,0,0,.35);overflow-wrap:anywhere}#pretCard[hidden]{display:none}#pretCard .hint{margin:4px 0 0}
@@ -549,7 +549,8 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <div id="galerie"></div>
   <div class="gselbar" id="gSelBar" hidden>
     <div class="gsl1"><b id="gSelN"></b><button type="button" class="ghost" id="gSelTout">Tout sélectionner</button></div>
-    <select id="gSelDest" aria-label="Ajouter à"></select>
+    <div class="gsl3"><select id="gSelMode" aria-label="Copier ou déplacer"><option value="copie">Copier</option><option value="dep">Déplacer</option></select><select id="gSelDest" aria-label="Ajouter à"></select></div>
+    <p class="hint" id="gSelModeTxt" hidden>Déplacer : les photos quitteront leur constat d'origine quand tu enregistreras le constat de destination.</p>
     <div class="gsl2"><button class="primary" type="button" id="gSelOk">Ajouter au constat</button><button class="ghost" type="button" id="gSelAnn">Annuler</button></div>
   </div>
 </section>
@@ -819,7 +820,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.10";
+const APP_VERSION="2.11";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1091,7 +1092,8 @@ async function saveEntry(){
     await tx("photos","readwrite",s=>{if(old) for(const n of old.photos) s.delete(n);for(const r of photoRecs) s.put(r)});
     await tx("entries","readwrite",s=>s.put(entry));
   }catch(err){toast("Enregistrement impossible : "+(err&&err.name==="QuotaExceededError"?"mémoire du navigateur pleine. Envoie puis libère la place dans le Journal.":err));return}
-  toast(old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`);
+  const depl=form.deplacer||[];const nDep=depl.length?await retirerDeplacees(depl,id):0;
+  toast((old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`)+(nDep?` · ${nDep} photo(s) retirée(s) de leur constat d'origine`:""),nDep?4500:2600);
   const fini=!old?await prevuTermine():null;
   resetForm(true);effacerBrouillon();refreshBadge();if(fini) proposerSuivant(fini);
 }
@@ -2008,10 +2010,10 @@ function galGlisser(d){let t=null,x0=0,y0=0,bouge=false;
   d.addEventListener("contextmenu",ev=>ev.preventDefault())}
 /* v2.10 : sélection de photos de la Galerie → ajout (copie) dans un constat */
 function galBasculer(d){const it=GAL.vis[+d.dataset.i];if(!it||!GAL.sel) return;if(GAL.sel.has(it.n)) GAL.sel.delete(it.n);else GAL.sel.add(it.n);d.classList.toggle("sel",GAL.sel.has(it.n));galMajSel()}
-function galEntrerSel(){GAL.sel=new Set();$("gSelBtn").hidden=true;galDestinations().then(()=>{renderGalerie();toast("Touche les photos à reprendre, choisis le constat, puis « Ajouter au constat ». Elles sont copiées avec légende et annotations : elles restent aussi dans leur constat d'origine.",6000)})}
+function galEntrerSel(){GAL.sel=new Set();$("gSelMode").value="copie";$("gSelBtn").hidden=true;galDestinations().then(()=>{renderGalerie();toast("Touche les photos à reprendre, choisis le constat, puis « Ajouter au constat ». Elles sont copiées avec légende et annotations : elles restent aussi dans leur constat d'origine.",6000)})}
 function galQuitterSel(rendre){GAL.sel=null;$("gSelBar").hidden=true;$("gSelBtn").hidden=false;if(rendre!==false&&!$("v-galerie").hidden) renderGalerie()}
 function galMajSel(){const bar=$("gSelBar");if(!GAL.sel){bar.hidden=true;$("gSelBtn").hidden=false;return}bar.hidden=false;$("gSelBtn").hidden=true;
-  const n=GAL.sel.size;$("gSelN").textContent=n?`${n} photo(s) sélectionnée(s)`:"Aucune photo sélectionnée";$("gSelOk").disabled=!n;
+  const n=GAL.sel.size;$("gSelN").textContent=n?`${n} photo(s) sélectionnée(s)`:"Aucune photo sélectionnée";$("gSelOk").disabled=!n;const dep=$("gSelMode").value==="dep";$("gSelOk").textContent=dep?"Déplacer vers le constat":"Copier dans le constat";$("gSelModeTxt").hidden=!dep;
   const tout=GAL.vis.length&&GAL.vis.every(x=>GAL.sel.has(x.n));$("gSelTout").textContent=tout?"Tout désélectionner":"Tout sélectionner"}
 async function galDestinations(){const sel=$("gSelDest"),v=sel.value;sel.innerHTML="";
   const ajout=(val,txt)=>{const o=document.createElement("option");o.value=val;o.textContent=txt;sel.append(o)};
@@ -2026,15 +2028,26 @@ async function galAjouterSel(){if(!GAL.sel) return;const choix=GAL.items.filter(
     if(!vide){toast("Un constat est déjà en cours dans la Saisie : enregistre-le ou annule-le d'abord, ou choisis « Constat en cours ».",6000);return}
     await editEntry(dest);if(form.editId!==dest){toast("Constat introuvable.");return}}
   const copie=x=>{if(!x) return null;try{return structuredClone(x)}catch(e){return JSON.parse(JSON.stringify(x))}};
+  const dep=$("gSelMode").value==="dep";if(dep) form.deplacer=form.deplacer||[];
   let n=0,deja=0;busy("Ajout des photos au constat…",`0 / ${choix.length}`,0);
   try{for(const [i,it] of choix.entries()){
       if(form.photos.some(p=>p.id===it.n)){deja++;continue}
       const p=await getPhoto(it.n);if(!p) continue;
       form.photos.push({id:null,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:copie(p.annot),leg:it.leg||"",inc:true});n++;
+      if(dep&&it.eid!==form.editId&&!form.deplacer.some(x=>x.n===it.n)) form.deplacer.push({eid:it.eid,n:it.n});
       busyMaj(`${i+1} / ${choix.length}`,(i+1)/choix.length*100)}}
   finally{busyFin()}
   galQuitterSel(false);showView("saisie");renderThumbs();ouvrirCarte($("thumbs"));setTimeout(()=>{try{$("thumbs").scrollIntoView({block:"center"})}catch(e){}},50);
-  toast(deja?`${n} photo(s) ajoutée(s) au constat (${deja} déjà dedans). Enregistre le constat pour valider.`:`${n} photo(s) ajoutée(s) au constat. Enregistre le constat pour valider.`,5000)}
+  if(dep) toast(`${n} photo(s) à déplacer : elles quitteront leur constat d'origine quand tu enregistreras ce constat.`,6000);
+  else toast(deja?`${n} photo(s) ajoutée(s) au constat (${deja} déjà dedans). Enregistre le constat pour valider.`:`${n} photo(s) ajoutée(s) au constat. Enregistre le constat pour valider.`,5000)}
+// v2.11 : après l'enregistrement du constat de destination, retire les photos déplacées de leur constat d'origine (qui repasse « à envoyer »)
+async function retirerDeplacees(liste,dest){let k=0;
+  for(const {eid,n} of liste){if(eid===dest) continue;let ok=false;
+    try{await majEntree(eid,e=>{const L=e.photos.length,i=e.photos.indexOf(n);if(i<0) return;ok=true;
+        for(const key of ["photos","photosPrisesLe","legendes","rapport"]) if(Array.isArray(e[key])&&e[key].length===L) e[key].splice(i,1);
+        const o=n.replace(/\.jpg$/i,"_original.jpg");e.originaux=(e.originaux||[]).filter(y=>y!==o)});
+      if(ok){await tx("photos","readwrite",s=>s.delete(n));k++}}catch(err){}}
+  return k}
 function galVerrou(it){if(form.editId===it.eid){toast("Ce constat est ouvert dans l'onglet Saisie : enregistre-le ou annule la modification d'abord.",5000);return true}return false}
 // modifie un constat enregistré ; il repasse « à envoyer »
 async function majEntree(id,fn){const now=new Date().toISOString();
@@ -2055,7 +2068,7 @@ async function gvOuvrir(i){if(i<0||i>=GAL.vis.length) return;await galFlush();GA
 async function gvFermer(){await galFlush();$("gv").hidden=true;document.body.style.overflow="";if(GAL.url){URL.revokeObjectURL(GAL.url);GAL.url=null}renderGalerie()}
 function initGalerie(){
   $("gEq").onchange=renderGalerie;$("gDate").onchange=renderGalerie;
-  $("gSelBtn").onclick=galEntrerSel;$("gSelAnn").onclick=()=>galQuitterSel();$("gSelOk").onclick=galAjouterSel;
+  $("gSelBtn").onclick=galEntrerSel;$("gSelMode").onchange=galMajSel;$("gSelAnn").onclick=()=>galQuitterSel();$("gSelOk").onclick=galAjouterSel;
   $("gSelTout").onclick=()=>{if(!GAL.sel) return;const tout=GAL.vis.every(x=>GAL.sel.has(x.n));for(const x of GAL.vis){if(tout) GAL.sel.delete(x.n);else GAL.sel.add(x.n)}renderGalerie()};
   $("galerie").addEventListener("touchmove",ev=>{if(GAL.drag) ev.preventDefault()},{passive:false});
   $("gvClose").onclick=gvFermer;$("gvFirst").onclick=()=>gvOuvrir(0);$("gvPrev").onclick=()=>gvOuvrir(GAL.cur-1);$("gvNext").onclick=()=>gvOuvrir(GAL.cur+1);
@@ -4751,7 +4764,16 @@ const TRAD_UI=[
 ["Un constat est déjà en cours dans la Saisie : enregistre-le ou annule-le d'abord, ou choisis « Constat en cours ».", "A finding is already in progress in Entry: save or cancel it first, or choose “Finding in progress”.", "Ya hay un hallazgo en curso en Captura: guárdalo o cancélalo primero, o elige «Hallazgo en curso».", "In der Erfassung läuft bereits ein Befund: zuerst speichern oder abbrechen, oder „Laufender Befund“ wählen."],
 ["Constat introuvable.", "Finding not found.", "Hallazgo no encontrado.", "Befund nicht gefunden."],
 ["{a} photo(s) ajoutée(s) au constat. Enregistre le constat pour valider.", "{a} photo(s) added to the finding. Save the finding to confirm.", "{a} foto(s) añadida(s) al hallazgo. Guarda el hallazgo para confirmar.", "{a} Foto(s) zum Befund hinzugefügt. Befund zum Bestätigen speichern."],
-["{a} photo(s) ajoutée(s) au constat ({b} déjà dedans). Enregistre le constat pour valider.", "{a} photo(s) added to the finding ({b} already in it). Save the finding to confirm.", "{a} foto(s) añadida(s) al hallazgo ({b} ya incluida(s)). Guarda el hallazgo para confirmar.", "{a} Foto(s) zum Befund hinzugefügt ({b} bereits enthalten). Befund zum Bestätigen speichern."]
+["{a} photo(s) ajoutée(s) au constat ({b} déjà dedans). Enregistre le constat pour valider.", "{a} photo(s) added to the finding ({b} already in it). Save the finding to confirm.", "{a} foto(s) añadida(s) al hallazgo ({b} ya incluida(s)). Guarda el hallazgo para confirmar.", "{a} Foto(s) zum Befund hinzugefügt ({b} bereits enthalten). Befund zum Bestätigen speichern."],
+["Copier", "Copy", "Copiar", "Kopieren"],
+["Déplacer", "Move", "Mover", "Verschieben"],
+["Copier dans le constat", "Copy to finding", "Copiar al hallazgo", "In den Befund kopieren"],
+["Déplacer vers le constat", "Move to finding", "Mover al hallazgo", "In den Befund verschieben"],
+["Déplacer : les photos quitteront leur constat d'origine quand tu enregistreras le constat de destination.", "Move: the photos will leave their original finding when you save the destination finding.", "Mover: las fotos saldrán de su hallazgo de origen cuando guardes el hallazgo de destino.", "Verschieben: Die Fotos verlassen ihren ursprünglichen Befund, sobald du den Zielbefund speicherst."],
+["{a} photo(s) à déplacer : elles quitteront leur constat d'origine quand tu enregistreras ce constat.", "{a} photo(s) to move: they will leave their original finding when you save this finding.", "{a} foto(s) para mover: saldrán de su hallazgo de origen cuando guardes este hallazgo.", "{a} Foto(s) zum Verschieben: Sie verlassen ihren ursprünglichen Befund, sobald du diesen Befund speicherst."],
+["Constat enregistré ({a} photo) · {b} photo(s) retirée(s) de leur constat d'origine", "Finding saved ({a} photo) · {b} photo(s) removed from their original finding", "Hallazgo guardado ({a} foto) · {b} foto(s) quitada(s) de su hallazgo de origen", "Befund gespeichert ({a} Foto) · {b} Foto(s) aus dem ursprünglichen Befund entfernt"],
+["Constat enregistré ({a} photos) · {b} photo(s) retirée(s) de leur constat d'origine", "Finding saved ({a} photos) · {b} photo(s) removed from their original finding", "Hallazgo guardado ({a} fotos) · {b} foto(s) quitada(s) de su hallazgo de origen", "Befund gespeichert ({a} Fotos) · {b} Foto(s) aus dem ursprünglichen Befund entfernt"],
+["Constat modifié · {a} photo(s) retirée(s) de leur constat d'origine", "Finding updated · {a} photo(s) removed from their original finding", "Hallazgo modificado · {a} foto(s) quitada(s) de su hallazgo de origen", "Befund geändert · {a} Foto(s) aus dem ursprünglichen Befund entfernt"]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
