@@ -337,6 +337,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqslot>button{min-height:42px;font-size:13px;white-space:normal;padding:4px 6px}
 .apqth{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;align-items:center}
 .apqth img{grid-column:1/-1;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;background:var(--bg)}
+.apqth{position:relative}.apqth img{cursor:pointer}.apqth.annotee::before{content:"annotée";position:absolute;left:4px;top:4px;z-index:1;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px;pointer-events:none}
 .apqth input{font-size:13px;min-height:34px;padding:2px 6px;min-width:0}.apqth button{min-height:34px;padding:0 10px}
 .apqv{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.apqv button{min-height:42px}.apqv button[aria-pressed=true]{color:#fff;border-color:transparent;font-weight:700}
 .apqbilan{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:4px}.apqbilan li{display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:4px 0;font-size:14px}
@@ -440,6 +441,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <h2>Constat</h2>
     <div class="chips" id="grav" role="group" aria-label="Gravité"></div>
     <label>Accès au revêtement inspecté<select id="fAcces"></select></label>
+    <label id="lAccesLibre" hidden>Préciser l'accès (texte libre)<input type="text" id="fAccesLibre" autocomplete="off" maxlength="160" placeholder="ex. : depuis la nacelle, par la trappe de visite…"></label>
     <div class="degats"><span class="rtelab" id="lDeg">Dégâts courants – inspection initiale / complémentaire (ajoutés à l'observation)</span><div class="chips" id="degats" role="group" aria-labelledby="lDeg"></div>
       <div id="degParam" class="degParam" hidden><label><span id="degParamLab"></span><span class="degVal"><input type="text" id="degVal" inputmode="decimal" autocomplete="off" aria-describedby="degParamLab"><span>mm</span></span></label>
         <button type="button" class="primary" id="degOk">Ajouter</button><button type="button" class="ghost" id="degNo">Annuler</button></div></div>
@@ -822,7 +824,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.12";
+const APP_VERSION="2.13";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1059,7 +1061,7 @@ async function addFiles(files){const nouv=[];const im=files.filter(f=>f.type.sta
   // v1.57 : la date reste celle du jour ; si les photos sont d'un autre jour, la date de prise de vue est seulement PROPOSÉE
   majPropDate();
   renderThumbs()}
-function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";$("fSurf").value="";$("fMarq").checked=false;if($("fAcces").options.length) $("fAcces").value="";
+function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";$("fSurf").value="";$("fMarq").checked=false;if($("fAcces").options.length){$("fAcces").value="";majAccesLibre(false)}
   renderPlan([]);majAv([]);$("fDate").value=today();/* v1.57 : chaque nouveau constat repart sur la date du jour */majPropDate();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
 async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
@@ -1086,7 +1088,7 @@ async function saveEntry(){
   const originaux=photoRecs.filter(r=>r.orig).map(r=>r.id.replace(/\.jpg$/i,"_original.jpg"));
   const entry={schema:"releve-refractaire/1",id,hms:old?old.hms:hms,creeLe:old?old.creeLe:now.toISOString(),modifieLe:now.toISOString(),
     mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa?{code:sa.code,nom:sa.nom}:null,
-    repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,surface:$("fSurf").value.trim().replace(/\s*m²?$/i,""),zonesMarquees:$("fMarq").checked,acces:$("fAcces").value?{code:$("fAcces").value,nom:$("fAcces").selectedOptions[0].textContent}:null,
+    repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,surface:$("fSurf").value.trim().replace(/\s*m²?$/i,""),zonesMarquees:$("fMarq").checked,acces:accesSaisi(),
     planReparation:estInitiale(a)?lirePlan():[],
     avancement:estInitiale(a)?[]:lireAv(),
     photos:names,photosPrisesLe:prises,legendes:form.photos.map(p=>p.leg||""),rapport:form.photos.map(p=>p.inc!==false),originaux,dossierCible:targetDir(),envoye:false,envoyeLe:null};
@@ -1095,6 +1097,7 @@ async function saveEntry(){
     await tx("entries","readwrite",s=>s.put(entry));
   }catch(err){toast("Enregistrement impossible : "+(err&&err.name==="QuotaExceededError"?"mémoire du navigateur pleine. Envoie puis libère la place dans le Journal.":err));return}
   const depl=form.deplacer||[];const nDep=depl.length?await retirerDeplacees(depl,id):0;
+  {const a=accesSaisi();if(a&&a.code==="LIBRE") memoAccesLibre(a.nom)}
   toast((old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`)+(nDep?` · ${nDep} photo(s) retirée(s) de leur constat d'origine`:""),nDep?4500:2600);
   const fini=!old?await prevuTermine():null;
   resetForm(true);effacerBrouillon();refreshBadge();if(fini) proposerSuivant(fini);
@@ -1108,7 +1111,7 @@ async function editEntry2(en,id){
   else{const e=curEq();const sub=e?.enfants.find(x=>x.nom===en.sousEquipement);if(sub) $("fSub").value=sub.code;
     else if(e&&e.enfants.length){absent($("fSub"),en.sousEquipement);toast("Le sous-équipement de ce constat n'existe plus : choisis-le à nouveau avant d'enregistrer.",6000)}}
   if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
-  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;$("fAcces").value=en.acces?en.acces.code:"";renderPlan(en.planReparation||[]);majAv(en.avancement||[]);
+  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;poserAcces(en.acces);renderPlan(en.planReparation||[]);majAv(en.avancement||[]);
   form={photos:[],gravite:en.gravite,editId:id};
   for(const [k,n] of en.photos.entries()){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null,leg:(en.legendes||[])[k]||"",inc:(en.rapport||[])[k]!==false})}
   renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";ouvrirCarte($("formTitle"));$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
@@ -1807,7 +1810,28 @@ const ACCES={
  en:[["","(not specified)"],["FULL","Full access, hammer test possible (scaffolding)"],["PART","Partial access, hammer test on accessible areas only"],["MH","Visual inspection from manhole / opening"],["DIST","Visual inspection from distance only"],["NA","Area not accessible"]],
  es:[["","(no indicado)"],["FULL","Acceso completo, prueba de martillo posible (andamio)"],["PART","Acceso parcial, prueba de martillo en zonas accesibles"],["MH","Inspección visual desde boca de hombre / abertura"],["DIST","Inspección visual a distancia únicamente"],["NA","Zona no accesible"]],
  de:[["","(nicht angegeben)"],["FULL","Voller Zugang, Hammerprüfung möglich (Gerüst)"],["PART","Teilweiser Zugang, Hammerprüfung nur an zugänglichen Stellen"],["MH","Sichtprüfung vom Mannloch / einer Öffnung"],["DIST","Nur Sichtprüfung aus der Ferne"],["NA","Bereich nicht zugänglich"]]};
-function renderAcces(){const s=$("fAcces"),v=s.value;s.innerHTML="";for(const [c,n] of (ACCES[langueMission()]||ACCES.en)){const o=document.createElement("option");o.value=c;o.textContent=n;s.append(o)}s.value=v||""}
+// v2.13 : « Autre (saisie libre) » + textes libres déjà utilisés (mémorisés sur cet appareil, kv « accesLibres »)
+const ACCES_AUTRE={fr:"✎ Autre (saisie libre)…",en:"✎ Other (free text)…",es:"✎ Otro (texto libre)…",de:"✎ Andere (Freitext)…"};
+let ACCES_LIBRES=[];
+function renderAcces(){const s=$("fAcces"),v=s.value;s.innerHTML="";const l=langueMission();
+  const opt=(c,n)=>{const o=document.createElement("option");o.value=c;o.textContent=n;s.append(o)};
+  for(const [c,n] of (ACCES[l]||ACCES.en)) opt(c,n);
+  for(const t of ACCES_LIBRES) opt("L:"+t,t);
+  opt("LIBRE",ACCES_AUTRE[l]||ACCES_AUTRE.en);
+  s.value=[...s.options].some(o=>o.value===v)?v:"";majAccesLibre(false)}
+function majAccesLibre(remplir){const v=$("fAcces").value,lib=v==="LIBRE"||v.startsWith("L:");$("lAccesLibre").hidden=!lib;
+  if(remplir){$("fAccesLibre").value=v.startsWith("L:")?v.slice(2):"";if(v==="LIBRE") setTimeout(()=>$("fAccesLibre").focus(),50)}
+  if(!lib) $("fAccesLibre").value=""}
+function accesSaisi(){const v=$("fAcces").value;if(!v) return null;
+  if(v==="LIBRE"||v.startsWith("L:")){const t=$("fAccesLibre").value.trim();return t?{code:"LIBRE",nom:t}:null}
+  return {code:v,nom:$("fAcces").selectedOptions[0].textContent}}
+// place un accès dans la liste (accès libre : ajouté à la liste s'il n'y est pas)
+function poserAcces(a,libre){const s=$("fAcces");
+  if(a&&a.code==="LIBRE"&&a.nom){const v="L:"+a.nom;if(![...s.options].some(o=>o.value===v)){const o=document.createElement("option");o.value=v;o.textContent=a.nom;s.insertBefore(o,s.lastElementChild)}
+    s.value=v;majAccesLibre(false);$("lAccesLibre").hidden=false;$("fAccesLibre").value=libre||a.nom;return}
+  s.value=a&&[...s.options].some(o=>o.value===a.code)?a.code:"";majAccesLibre(false)}
+async function memoAccesLibre(t){if(!t) return;ACCES_LIBRES=[t,...ACCES_LIBRES.filter(x=>x.toLowerCase()!==t.toLowerCase())].slice(0,15);try{await kvSet("accesLibres",ACCES_LIBRES)}catch(e){}renderAcces()}
+async function chargerAccesLibres(){try{const l=await kvGet("accesLibres");if(Array.isArray(l)) ACCES_LIBRES=l.filter(x=>typeof x==="string"&&x.trim())}catch(e){}renderAcces()}
 /* ---------- dégâts courants (inspection) ---------- */
 // t = phrase insérée (« {v} » = valeur saisie), c = phrase sans valeur ; q = question si une valeur est demandée
 const DEGATS={
@@ -2087,6 +2111,7 @@ async function gvOuvrir(i){if(i<0||i>=GAL.vis.length) return;await galFlush();GA
 async function gvFermer(){await galFlush();$("gv").hidden=true;document.body.style.overflow="";if(GAL.url){URL.revokeObjectURL(GAL.url);GAL.url=null}renderGalerie()}
 function initGalerie(){
   $("gEq").onchange=renderGalerie;$("gDate").onchange=renderGalerie;
+  $("fAcces").addEventListener("change",()=>majAccesLibre(true));
   $("gSelBtn").onclick=galEntrerSel;$("gSelMode").onchange=galMajSel;$("gSelAnn").onclick=()=>galQuitterSel();$("gSelOk").onclick=galAjouterSel;
   $("gSelTout").onclick=()=>{if(!GAL.sel) return;const ci=galCiblesSel();if(!ci.length){toast("Tous les constats sont repliés : déplie ceux dont tu veux les photos.");return}
     const tout=ci.every(x=>GAL.sel.has(x.n));for(const x of ci){if(tout) GAL.sel.delete(x.n);else GAL.sel.add(x.n)}renderGalerie()};
@@ -2992,7 +3017,8 @@ function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
     const cam=()=>{APQ_CIBLE={liste,slot:sl};choisirFichier($("iApqCam"))};
     if(APQ_MOBILE){box.append(apqE("div",{class:"apqtitre",text:ph.length?`✓ ${nomC} (${ph.length})`:nomC}),apqE("div",{class:"apqbt"},apqE("button",{type:"button",onclick:cam},"📷 Photo"),apqE("button",{type:"button",onclick:ajout},"🖼️ Galerie")))}
     else box.append(apqE("button",{type:"button",title:"Ajouter une ou plusieurs photos",onclick:ajout},ph.length?apqE("span",{},"✓ ",nomC,apqE("span",{class:"apqn",text:` (${ph.length})`})):"📷 "+nomC));
-    for(const x of ph){const im=apqE("img",{alt:"",draggable:"true",title:"Glisser vers une autre case pour déplacer la photo"});getPhoto(x.pid).then(p=>{if(p) im.src=p.thumb});
+    for(const x of ph){const im=apqE("img",{alt:"",draggable:"true",title:"Toucher pour annoter · glisser vers une autre case pour déplacer la photo"});getPhoto(x.pid).then(p=>{if(p){im.src=p.thumb;if(p.annot) im.closest(".apqth")?.classList.add("annotee")}});
+      im.onclick=()=>apqAnnoter(ph,ph.indexOf(x));
       APQ_SRC.set(x.pid,liste);im.ondragstart=e=>{e.dataTransfer.setData("text/x-apq-photo",x.pid);e.dataTransfer.effectAllowed="move"};
       const lg=apqE("input",{type:"text",value:x.leg||"",placeholder:sl==="Autre"?"Légende":sl,"aria-label":"Légende de la photo"});lg.oninput=()=>{x.leg=lg.value;apqSauver()};
       const del=apqE("button",{type:"button",class:"ghost","aria-label":"Retirer la photo",onclick:async()=>{liste.splice(liste.indexOf(x),1);
@@ -3001,6 +3027,14 @@ function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
     if(ph.length&&!APQ_MOBILE) box.append(apqE("button",{type:"button",class:"ghost apqplus",onclick:ajout},"＋ Ajouter"));
     g.append(box)}
   return g}
+// v2.13 : annotation des photos de préqualification avec l'éditeur des constats (photo d'origine gardée, comme pour les constats)
+async function apqAnnoter(ph,i){if(i<0) return;const src=ph.map(x=>({pid:x.pid}));
+  await ouvrirEditeur(i,{src,
+    charger:async j=>{const it=src[j];const p=await getPhoto(it.pid);if(p) Object.assign(it,{blob:p.blob,orig:p.orig||null,annot:p.annot||null,thumb:p.thumb,type:p.type,prise:p.prise||null})},
+    rendu:()=>{},fin:()=>{renderApq()},
+    apres:async j=>{const it=src[j];
+      await tx("photos","readwrite",s=>{const r=s.get(it.pid);r.onsuccess=()=>{const p=r.result;if(!p) return;Object.assign(p,{blob:it.blob,orig:it.orig||null,annot:it.annot||null,thumb:it.thumb,type:it.type||"image/jpeg"});s.put(p)}});
+      apqSauver(true)}})}
 async function apqAjouterPhotos(files){const c=APQ_CIBLE;APQ_CIBLE=null;if(!c||!files.length) return;busy("Ajout des photos…","",0);
   try{let k=0;for(const f of files){if(!f.type.startsWith("image/")) continue;k++;busyMaj(`Photo ${k} / ${files.length}`,Math.round(k/files.length*100));
       const pid="apq_"+newId(),prise=(await exifDate(f))||localIso(f.lastModified||Date.now());
@@ -3565,7 +3599,7 @@ let MAJ=null;
    dans le téléphone (photos à chaque changement, textes 1 s après la frappe, et dès que l'appli passe en arrière-plan). */
 const BR={silence:false,minuterie:null,photos:false,charge:false,session:false};
 function etatTexte(){return {mission:CFG.mission.id,t:Date.now(),eq:$("fEq").value,sub:$("fSub").value,act:$("fAct").value,subact:$("fSubAct").value,rep:$("fRep").value,date:$("fDate").value,
-  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,plan:lirePlan(),av:lireAv()}}
+  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,accesLibre:$("fAccesLibre").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,plan:lirePlan(),av:lireAv()}}
 const aDuContenu=t=>!!(form.photos.length||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||(t.plan&&t.plan.length)||(t.av&&t.av.length)||t.editId);
 function planifierBrouillon(photos){if(BR.silence||!DB||!BR.charge) return;if(photos) BR.photos=true;clearTimeout(BR.minuterie);BR.minuterie=setTimeout(()=>sauverBrouillon().catch(()=>{}),photos?300:1000)}
 async function sauverBrouillon(){clearTimeout(BR.minuterie);if(!DB||!BR.charge) return;const t=etatTexte();
@@ -3586,7 +3620,7 @@ async function afficherBrouillon(){let t=null,ph=null;try{t=await kvGet("brouill
 async function reprendreBrouillon(){const t=await kvGet("brouillonTexte"),ph=await kvGet("brouillonPhotos");if(!t) return;
   BR.silence=true;try{showView("saisie");
     refreshSelects({eq:t.eq,act:t.act,subact:t.subact});if(t.sub) $("fSub").value=t.sub;fillSubAct(t.subact);
-    $("fRep").value=t.rep;$("fDate").value=t.date||today();$("fObs").value=t.obs;$("fReco").value=t.reco;$("fDec").checked=t.dec;$("fSurf").value=t.surf;$("fMarq").checked=t.marq;$("fAcces").value=t.acces||"";renderPlan(t.plan||[]);majAv(t.av||[]);
+    $("fRep").value=t.rep;$("fDate").value=t.date||today();$("fObs").value=t.obs;$("fReco").value=t.reco;$("fDec").checked=t.dec;$("fSurf").value=t.surf;$("fMarq").checked=t.marq;{const v=t.acces||"";if(v==="LIBRE"){$("fAcces").value="LIBRE";majAccesLibre(false);$("fAccesLibre").value=t.accesLibre||""}else if(v.startsWith("L:")) poserAcces({code:"LIBRE",nom:v.slice(2)},t.accesLibre);else poserAcces(v?{code:v}:null)}renderPlan(t.plan||[]);majAv(t.av||[]);
     form={photos:ph&&ph.mission===t.mission?ph.photos:[],gravite:t.gravite||"",editId:t.editId,prevuId:t.prevuId};
     const pv=t.prevuId&&PREVUS.find(x=>x.id===t.prevuId);if(pv){$("prevuBanner").hidden=false;$("prevuTxt").textContent=pv.note}else{form.prevuId=null;$("prevuBanner").hidden=true}
     if(t.editId){$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false}
@@ -4797,7 +4831,9 @@ const TRAD_UI=[
 ["Constat modifié · {a} photo(s) retirée(s) de leur constat d'origine", "Finding updated · {a} photo(s) removed from their original finding", "Hallazgo modificado · {a} foto(s) quitada(s) de su hallazgo de origen", "Befund geändert · {a} Foto(s) aus dem ursprünglichen Befund entfernt"],
 ["Touche le titre d'un constat pour replier ou déplier ses photos.", "Tap a finding's title to collapse or expand its photos.", "Toca el título de un hallazgo para plegar o desplegar sus fotos.", "Titel eines Befunds antippen, um seine Fotos ein- oder auszuklappen."],
 [" · {a} cochée(s)", " · {a} selected", " · {a} marcada(s)", " · {a} ausgewählt"],
-["Tous les constats sont repliés : déplie ceux dont tu veux les photos.", "All findings are collapsed: expand the ones whose photos you want.", "Todos los hallazgos están plegados: despliega aquellos cuyas fotos quieres.", "Alle Befunde sind eingeklappt: die gewünschten Befunde aufklappen."]
+["Tous les constats sont repliés : déplie ceux dont tu veux les photos.", "All findings are collapsed: expand the ones whose photos you want.", "Todos los hallazgos están plegados: despliega aquellos cuyas fotos quieres.", "Alle Befunde sind eingeklappt: die gewünschten Befunde aufklappen."],
+["Préciser l'accès (texte libre)", "Specify the access (free text)", "Precisar el acceso (texto libre)", "Zugang angeben (Freitext)"],
+["Toucher pour annoter · glisser vers une autre case pour déplacer la photo", "Tap to annotate · drag to another box to move the photo", "Toca para anotar · arrastra a otra casilla para mover la foto", "Antippen zum Anmerken · in ein anderes Feld ziehen, um das Foto zu verschieben"]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
@@ -4851,7 +4887,7 @@ async function start(){
   initEditeur("fObs");initEditeur("fReco");
   try{DB=await openDB()}catch(e){document.querySelector("main").innerHTML=`<div class="card"><strong>Stockage indisponible.</strong><p class="hint">Ouvre l'appli dans Chrome (pas en navigation privée).</p></div>`;return}
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
-  await loadCfg();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
+  await loadCfg();await chargerAccesLibres();renderHeader();$("fDate").value=today();refreshSelects();renderGrav();renderThumbs();refreshBadge();
   await chargerPrevus();renderPrevus();initDegats();renderAcces();
   $("fEq").onchange=()=>{fillSub();updatePath();majAv()};$("fSub").onchange=()=>{updatePath();majAv()};$("fAct").onchange=()=>fillSubAct();$("fSubAct").onchange=updatePath;$("fDate").onchange=()=>{updatePath();majPropDate()};$("bDatePrise").onclick=()=>{const j=$("bDatePrise").dataset.j;if(j){$("fDate").value=j;updatePath()}majPropDate()};
   // v1.57 : appli restée ouverte d'un jour à l'autre -> un formulaire vide repasse sur la date du jour
