@@ -319,6 +319,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqmatadd{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center}.apqn{color:var(--muted);font-weight:500}
 .apqtitre{font-size:13px;font-weight:600;text-align:center}
 .apqbt{display:grid;grid-template-columns:1fr 1fr;gap:4px}.apqbt button{min-height:40px;font-size:12px;padding:2px 4px}
+#bCtxPrec{width:100%;display:grid;gap:2px;justify-items:start;text-align:left;padding:8px 12px;margin-bottom:8px}#bCtxPrec small{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
 .plAutreL{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:4px 0}.plAutreL input[type=text]{margin:0}.plAutreL input[type=checkbox]{width:24px;height:24px;margin:0 2px}.plAutreL button{min-height:40px;padding:0 10px}#plAutreAdd{margin-top:6px}
 .apqgg figure{position:relative}.apqgg figure.annotee::before{content:"annotée";position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px;pointer-events:none}
 .apqgg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px}
@@ -406,6 +407,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <div class="card confirm suivCard" id="suivCard" hidden><strong id="suivTitre">Constat suivant</strong><span id="suivTxt" data-noi18n></span><span class="hint" id="suivVis"></span>
       <div class="btns"><button type="button" class="primary" id="suivGo">Commencer</button><button type="button" class="ghost" id="suivNon">Plus tard</button></div></div>
     <div id="prevuBanner" class="prevuBanner" hidden><span>Constat prévu : <i id="prevuTxt"></i></span><button type="button" class="ghost" id="prevuQuit" aria-label="Ne plus lier ce constat au prévu">✕</button></div>
+    <div id="ctxPrecRow" hidden><button type="button" class="ghost" id="bCtxPrec"><span>↺ Reprendre le précédent</span><small id="ctxPrecLib" data-noi18n></small></button></div>
     <div class="field"><span class="rtelab" id="l_fEq">Équipement</span><div class="selrow"><select id="fEq" aria-labelledby="l_fEq"></select><button type="button" class="plus" data-add="eq" aria-label="Ajouter : équipement">+</button></div></div>
     <div class="field"><span class="rtelab" id="l_fSub">Sous-équipement</span><div class="selrow"><select id="fSub" aria-labelledby="l_fSub"></select><button type="button" class="plus" data-add="sub" aria-label="Ajouter : sous-équipement">+</button></div></div>
     <div class="field"><span class="rtelab" id="l_fAct">Activité</span><div class="selrow"><select id="fAct" aria-labelledby="l_fAct"></select><button type="button" class="plus" data-add="act" aria-label="Ajouter : activité">+</button></div></div>
@@ -826,7 +828,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.14";
+const APP_VERSION="2.15";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1017,14 +1019,25 @@ function fillSelect(sel,items,keep){const v=keep??sel.value;sel.innerHTML="";for
   if(items.some(i=>i.code===v)) sel.value=v}
 function curEq(){return EQ.find(e=>e.code===$("fEq").value)}
 function curAct(){return ACT.find(a=>a.code===$("fAct").value)}
-function refreshSelects(keep={}){fillSelect($("fEq"),EQ,keep.eq);fillSub(keep.sub);fillSelect($("fAct"),ACT,keep.act);fillSubAct(keep.subact)}
-function fillSub(keep){const e=curEq();fillSelect($("fSub"),e&&e.enfants.length?e.enfants:[{nom:GENERAL[langueMission()]||"(général)",code:"GEN"}],keep)}
+// v2.15 : nouveau constat = équipement et activité à choisir (plus de reprise automatique du constat précédent)
+const CHOISIR={fr:"— choisir —",en:"— choose —",es:"— elegir —",de:"— auswählen —"};
+const choisirOpt=()=>({code:"",nom:CHOISIR[(typeof LANGUI!=="undefined"&&LANGUI.lang)||"fr"]||CHOISIR.fr});
+function refreshSelects(keep={}){fillSelect($("fEq"),[choisirOpt(),...EQ],keep.eq);fillSub(keep.sub);fillSelect($("fAct"),[choisirOpt(),...ACT],keep.act);fillSubAct(keep.subact)}
+function fillSub(keep){const e=curEq();fillSelect($("fSub"),!e?[{nom:"—",code:""}]:e.enfants.length?e.enfants:[{nom:GENERAL[langueMission()]||"(général)",code:"GEN"}],keep)}
 function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],keep);updatePath();if(typeof majDegats==="function") majDegats();if(typeof majPlan==="function") majPlan();if(typeof majAv==="function") majAv()}
 function subActObj(){if(!$("fSubAct").value) return null;const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
-function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=$("fSub").selectedOptions[0]?.textContent||"";
+function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=e?($("fSub").selectedOptions[0]?.textContent||""):"";
   const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
   return ["Dossier Photo",safeDir(e?.nom),safeDir(sub),safeDir(act),safeDir(sact),$("fDate").value].filter(Boolean).join("\\")}
-function updatePath(){$("fPath").textContent="→ "+targetDir()}
+function updatePath(){$("fPath").textContent="→ "+targetDir();majCtxPrec()}
+function lireCtxPrec(){try{return (JSON.parse(localStorage.getItem("ctxPrec")||"{}")||{})[CFG.mission.id]||null}catch(e){return null}}
+function memoCtxPrec(c){try{const o=JSON.parse(localStorage.getItem("ctxPrec")||"{}")||{};o[CFG.mission.id]=c;localStorage.setItem("ctxPrec",JSON.stringify(o))}catch(e){}}
+function majCtxPrec(){const r=$("ctxPrecRow");if(!r||!CFG) return;const c=lireCtxPrec();
+  const voir=!!c&&!form.editId&&!form.prevuId&&!$("fEq").value&&!$("fAct").value;r.hidden=!voir;if(voir) $("ctxPrecLib").textContent=c.lib||""}
+function reprendreCtxPrec(){const c=lireCtxPrec();if(!c) return;
+  if(!EQ.some(x=>x.code===c.eq)||!ACT.some(x=>x.code===c.act)){toast("L'équipement ou l'activité du constat précédent n'existe plus dans la liste.",4500);return}
+  refreshSelects({eq:c.eq,sub:c.sub,act:c.act,subact:c.subact});if(c.sub&&[...$("fSub").options].some(o=>o.value===c.sub)) $("fSub").value=c.sub;fillSubAct(c.subact);updatePath();majAv();planifierBrouillon(false)}
+function viderCtx(){refreshSelects({eq:"",sub:"",act:"",subact:""});updatePath()}
 function renderGrav(){planifierBrouillon(false);const g=$("grav");g.innerHTML="";for(const v of GRAVITES){const b=document.createElement("button");b.type="button";b.className="chip";b.dataset.g=v;b.textContent=v;
   b.setAttribute("aria-pressed",String(form.gravite===v));b.onclick=()=>{form.gravite=form.gravite===v?"":v;renderGrav()};g.append(b)}}
 async function makeThumb(blob){try{const bm=await createImageBitmap(blob);const w=Math.min(480,bm.width),h=Math.round(w*bm.height/bm.width);const c=document.createElement("canvas");c.width=w;c.height=h;
@@ -1064,7 +1077,7 @@ async function addFiles(files){const nouv=[];const im=files.filter(f=>f.type.sta
   majPropDate();
   renderThumbs()}
 function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";$("fSurf").value="";$("fMarq").checked=false;if($("fAcces").options.length){$("fAcces").value="";majAccesLibre(false)}
-  renderPlan([]);majAv([]);$("fDate").value=today();/* v1.57 : chaque nouveau constat repart sur la date du jour */majPropDate();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true}
+  renderPlan([]);majAv([]);$("fDate").value=today();/* v1.57 : chaque nouveau constat repart sur la date du jour */majPropDate();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true;majCtxPrec()}
 async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
   const e=curEq(),a=curAct();if(!e||!a){toast("Choisis un équipement et une activité dans la liste.");return}
@@ -1072,6 +1085,7 @@ async function saveEntry(){
   if(!form.photos.length&&!$("fObs").value.trim()){toast("Ajoute au moins une photo ou une observation.");return}
   const date=$("fDate").value||today();const now=new Date();const hms=`${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
   const sa=subActObj();const subNom=$("fSub").selectedOptions[0]?.textContent||"";
+  const ctxSauve={eq:e.code,sub:$("fSub").value,act:a.code,subact:$("fSubAct").value,lib:[e.nom,subNom,a.nom,sa&&sa.nom].filter(Boolean).join(" · ")};
   const old=form.editId?await tx("entries","readonly",s=>s.get(form.editId)):null;
   const id=old?old.id:`${CFG.mission.no}_${e.code}_${date.replaceAll("-","").slice(2)}_${hms}`;
   const actCode=sa?sa.code:a.code;
@@ -1102,7 +1116,7 @@ async function saveEntry(){
   {const a=accesSaisi();if(a&&a.code==="LIBRE") memoAccesLibre(a.nom)}
   toast((old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`)+(nDep?` · ${nDep} photo(s) retirée(s) de leur constat d'origine`:""),nDep?4500:2600);
   const fini=!old?await prevuTermine():null;
-  resetForm(true);effacerBrouillon();refreshBadge();if(fini) proposerSuivant(fini);
+  resetForm(true);memoCtxPrec(ctxSauve);viderCtx();effacerBrouillon();refreshBadge();if(fini) proposerSuivant(fini);
 }
 async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;BR.silence=true;try{await editEntry2(en,id)}finally{BR.silence=false}}
 async function editEntry2(en,id){
@@ -4864,7 +4878,9 @@ const TRAD_UI=[
 ["Autres étapes", "Other steps", "Otras etapas", "Weitere Schritte"],
 ["＋ Autre étape", "＋ Other step", "＋ Otra etapa", "＋ Weiterer Schritt"],
 ["5 étapes « Autre » au maximum", "5 “Other” steps maximum", "5 etapas «Otra» como máximo", "Höchstens 5 weitere Schritte"],
-["5 étapes « Autre » au maximum.", "5 “Other” steps maximum.", "5 etapas «Otra» como máximo.", "Höchstens 5 weitere Schritte."]
+["5 étapes « Autre » au maximum.", "5 “Other” steps maximum.", "5 etapas «Otra» como máximo.", "Höchstens 5 weitere Schritte."],
+["↺ Reprendre le précédent", "↺ Reuse the previous one", "↺ Retomar el anterior", "↺ Vorherigen übernehmen"],
+["L'équipement ou l'activité du constat précédent n'existe plus dans la liste.", "The equipment or activity of the previous finding is no longer in the list.", "El equipo o la actividad del hallazgo anterior ya no está en la lista.", "Ausrüstung oder Tätigkeit des vorherigen Befunds ist nicht mehr in der Liste."]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
@@ -4936,7 +4952,7 @@ async function start(){
   kvGet("picker").then(v=>appliquerPicker(v||"1")).catch(()=>appliquerPicker("1"));
   $("cPicker").onchange=e=>{appliquerPicker(e.target.value);kvSet("picker",e.target.value).catch(()=>{});toast("Sélecteur de photos : variante "+e.target.value+". Essaie « Choisir dans la galerie ».")};
   $("iCam").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};$("iGal").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};
-  $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>{resetForm(true);effacerBrouillon()};
+  $("bSave").onclick=saveEntry;$("bCancelEdit").onclick=()=>{resetForm(true);viderCtx();effacerBrouillon()};$("bCtxPrec").onclick=reprendreCtxPrec;
   $("bSend").onclick=async()=>{if(PREP&&PREP.files.length) sendEntries(PREP.list,PREP.files);else{const l=await selectionEnvoi();if(l.length) sendEntries(l)}};
   $("bPdfSel").onclick=async()=>pdfRapide(await selectionEnvoi());
   $("bPretPartager").onclick=async()=>{const f=FICHIERS_PRETS;if(!f) return;$("pretCard").hidden=true;
