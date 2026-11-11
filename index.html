@@ -322,6 +322,10 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 #bCtxPrec{width:100%;display:grid;gap:2px;justify-items:start;text-align:left;padding:8px 12px;margin-bottom:8px}#bCtxPrec small{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
 .c-rouge{background:var(--c-ambre);border-left:4px solid var(--crit)}#razBox{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}#razListe{margin:4px 0 8px 18px;padding:0}.razAlerte{color:var(--crit);font-weight:650}#razOk:not(:disabled){background:var(--crit);border-color:var(--crit);color:#fff}
 #ed [data-t="crop"].cropOk::after{content:" ✓";color:#7ee08a;font-weight:700}
+.docit .t{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.docref{font:650 14px var(--mono)}.revb{font:700 11px var(--mono);background:var(--accent);color:var(--accent-fg,#fff);padding:1px 6px;border-radius:4px}
+.docit .dt{font-weight:600;margin:2px 0}.aRev{color:var(--crit);font-size:13px;margin:4px 0}.revs{margin-top:6px;display:grid;gap:4px}.revOld{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--line);padding-top:4px}
+.revOld .rv{font:650 12px var(--mono);text-decoration:line-through}.revOld .wm{color:var(--crit);font-weight:700}.revOld button{min-height:32px;padding:2px 10px;font-size:13px}
+.motifOv{position:fixed;inset:0;z-index:42;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:16px}.motifOv[hidden]{display:none}.motifOv .card{max-width:520px;width:100%;margin:0}
 .plAutreL{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:4px 0}.plAutreL input[type=text]{margin:0}.plAutreL input[type=checkbox]{width:24px;height:24px;margin:0 2px}.plAutreL button{min-height:40px;padding:0 10px}#plAutreAdd{margin-top:6px}
 .apqgg figure{position:relative}.apqgg figure.annotee::before{content:"annotée";position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px;pointer-events:none}
 .apqgg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:8px}
@@ -368,7 +372,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <button type="button" class="acc c-jaune" data-go="prevus"><span class="acc-ic">📋</span><b>Constats prévus</b><span class="hint" id="accPrevus">Aucun</span></button>
     <button type="button" class="acc c-bleu" data-go="journal"><span class="acc-ic">📤</span><b>Journal / Envoi</b><span class="hint" id="accJournal">Rien à envoyer</span></button>
     <button type="button" class="acc c-violet" data-go="galerie"><span class="acc-ic">🖼️</span><b>Galerie</b><span class="hint">Légendes, ordre, annotations</span></button>
-    <button type="button" class="acc c-ambre" data-go="pdfs"><span class="acc-ic">📄</span><b>PDF préliminaires</b><span class="hint" id="accPdfs">Aucun</span></button>
+    <button type="button" class="acc c-ambre" data-go="pdfs"><span class="acc-ic">📄</span><b>Documents émis</b><span class="hint" id="accPdfs">Aucun</span></button>
     <button type="button" class="acc c-jaune" data-go="apq"><span class="acc-ic">🧪</span><b>Préqualification</b><span class="hint">Applicateurs, panneaux, verdicts</span></button>
     <button type="button" class="acc c-vert" data-go="reglages"><span class="acc-ic">📁</span><b>Projets</b><span class="hint">Listes, partage, réglages</span></button>
     <button type="button" class="acc c-bleu" data-go="trad" id="accTrad" hidden><span class="acc-ic">🌐</span><b>Traduction</b><span class="hint">Observations du CSV (PC)</span></button>
@@ -607,8 +611,8 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 <!-- ============ PDF PRÉLIMINAIRES ============ -->
 <section id="v-pdfs" hidden>
   <div class="card c-ambre">
-    <h2>PDF préliminaires</h2>
-    <p class="hint">Les PDF rapides créés depuis le Journal sont gardés ici, sur le téléphone. Touche un PDF pour l'ouvrir, le partager à nouveau ou le supprimer.</p>
+    <h2>Documents émis</h2>
+    <p class="hint">Registre des documents émis par le projet (rapports rapides QIR, rapports d'avancement PR, préqualification APQ), avec leurs révisions. « Réviser » crée la révision suivante (Rev1, Rev2…) à partir des constats actuels ; l'ancienne version est gardée et marquée « RÉVISÉE ».</p>
     <label class="toggle"><input type="checkbox" id="pdfToutes"> Afficher tous les projets</label>
     <p class="hint" id="pdfInfo"></p>
   </div>
@@ -772,6 +776,10 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 </nav>
 <div id="pretCard" class="card confirm" hidden><strong id="pretTxt"></strong><p class="hint" id="pretPq"></p>
   <div class="btns"><button class="primary" id="bPretPartager" type="button">Partager</button><button id="bPretDl" type="button">Enregistrer dans Téléchargements</button><button class="ghost" id="bPretNon" type="button">Fermer</button></div></div>
+<div id="motifBox" class="motifOv" hidden role="dialog" aria-modal="true" aria-labelledby="motifTitre"><div class="card">
+  <h2 id="motifTitre" data-noi18n></h2><p class="hint" id="motifTxt"></p>
+  <label>Motif de la révision<textarea id="motifIn" rows="3" placeholder="ex. : photo recadrée, complément d'observation, correction de la surface…"></textarea></label>
+  <div class="btns"><button type="button" class="primary" id="motifOk">Réviser</button><button type="button" id="motifNon">Annuler</button></div></div></div>
 <div id="busy" role="status" aria-live="polite" hidden><div class="bx"><div class="sp" aria-hidden="true"></div><div id="busyTxt"></div><div id="busySub"></div><div class="bar" id="busyBar" hidden><i id="busyBarI"></i></div><button type="button" class="ghost" id="busyStop" hidden>Annuler</button></div></div>
 <div class="toast" id="toast" hidden></div>
 <div id="majBar" role="status" hidden><span>Nouvelle version de l'appli disponible.</span><button type="button" id="majGo">Recharger</button><button type="button" class="ghost" id="majPlusTard">Plus tard</button></div>
@@ -846,7 +854,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.19";
+const APP_VERSION="2.20";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3561,7 +3569,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const k=APQ_SLOT_T[x.slot];if(!(x.leg&&x.leg.trim())&&k&&releves&&releves[k]!==""&&releves[k]!=null) leg+=` : ${releves[k]} °C`;
       try{out.push({im:this.ajouterImage(await jpegPdf(p.blob,1600)),n:++this.nPh,leg})}catch(e){}}
     return out}
-  async rapport(a,ann){const l=this.l,M=this.M,L=this.W-2*M,T=k=>apqL(k,l),m=this.m;this.nouvellePage();this.grandEntete=true;this.sansMission=true;this.y+=24;
+  async rapport(a,ann){const l=this.l,M=this.M,L=this.W-2*M,T=k=>apqL(k,l),m=this.m;this.nouvellePage();this.grandEntete=true;this.sansMission=true;this.y+=24;this.blocDoc();
     // v1.92 : matériaux et sessions vides (créés puis non remplis) laissés hors du PDF
     a={...a,materiaux:(a.materiaux||[]).filter(x=>(x.produit||"").trim()||(x.lots||"").trim()||(x.photos||[]).length||x.tds),
       sessions:(a.sessions||[]).filter(s=>s.methode||(s.applicateurs||[]).length||(s.photos||[]).length||(s.ctrlPhotos||[]).length||(s.commentaire||"").trim())};
@@ -3630,24 +3638,33 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const rt=apqSansRedite(a);if(rt){this.y+=4;this.texteBalise(rt,M,L,10)}}
     if(ann&&ann.length){this.titreSection(T("annexes"));
       this.tableau([{t:"N°",w:.08},{t:T("docA"),w:.38},{t:T("fichA"),w:.4},{t:T("pagesA"),w:.14}],ann.map((x,i)=>[{t:String(i+1),b:true},x.titre,x.nom,x.pages?String(x.pages):T("nonInseree")]))}}}}
-async function pdfApq(){if(PDF_EN_COURS) return;const a=await apqCharger();if(!a.sessions.length&&!a.materiaux.length){toast("Rien à mettre dans le rapport : ajoute au moins un matériau ou une session.");return}
+// v2.20 : titre du rapport de préqualification = équipements – Préqualification – méthode(s)
+function apqTitreDoc(a,l){const meth=[...new Set((a.sessions||[]).map(s=>(s.methode||"").trim()).filter(Boolean))];
+  return [apqEquipTexte(a)||"",pdfL("preq",l),meth.join(", ")].filter(Boolean).join(" – ")}
+async function construireApq(m,doc){const a=await apqCharger();if(!a.sessions.length&&!a.materiaux.length){toast("Rien à mettre dans le rapport : ajoute au moins un matériau ou une session.");return null}
+  await apqSauver(true);const l=apqLangue(m);let so=socMission(m);
+  if(a.logo==="QUARTIS"||a.logo==="FTA") so=socMission({...m,societe:a.logo});
+  const nomI=a.inspecteur||m.inspecteur||"",insp=[nomI,a.apiNo?`API ${a.apiType||"936"} N° ${a.apiNo}`:""].filter(Boolean).join(" – ");
+  const mk=new (PdfApqClasse())(l,so.societe,{...m,...so,inspecteur:nomI});mk.inspBoite=insp;
+  mk.pied=`${apqL("etabli",l)} : ${[nomI,frDate(today())].filter(Boolean).join(" – ")}`;
+  if(a.logo==="perso"&&(a.logoPhotos||[]).length){const ph=await getPhoto(a.logoPhotos[0].pid);if(ph&&ph.blob){try{mk.logoPerso=await jpegPdf(ph.blob,600)}catch(e){}}}
+  doc.titre=apqTitreDoc(a,l);doc.l=l;mk.doc=doc;const ann=await apqAnnexes(a,l);await mk.rapport(a,ann);mk.historique();
+  const nom=nomSur(`${doc.ref} Rev${doc.rev} - ${doc.titre}`)+".pdf";
+  let octets=await mk.octets();if(ann.some(x=>x.pages)){busy("Ajout des annexes…","");await repos();try{octets=await apqFusion(octets,ann)}catch(e){toast("Annexes non ajoutées : "+(e&&e.message||e),8000)}}
+  return {mk,octets,nom,l,so,f:new File([octets],nom,{type:"application/pdf"})}}
+async function pdfApq(){if(PDF_EN_COURS) return;const m=curMission()||CFG.mission;
+  // déjà émis : « Créer le PDF » = révision suivante (motif demandé)
+  let ex=null;try{ex=(await tousPdfs()).filter(p=>p.doc&&p.doc.code==="APQ"&&p.doc.statut!=="revisee"&&p.mission&&p.mission.id===m.id).sort((a,b)=>b.doc.rev-a.doc.rev)[0]}catch(e){}
+  if(ex){await reviserDoc(ex);return}
   PDF_EN_COURS=true;busy("Création du PDF…","");await repos();
-  try{await apqSauver(true);const m=curMission()||CFG.mission,l=apqLangue(m);let so=socMission(m);
-    if(a.logo==="QUARTIS"||a.logo==="FTA") so=socMission({...m,societe:a.logo});
-    // v1.99 : en-tête sans n° API ; n° API dans l'encadré « Inspecteur » ; pied « Rapport établi par : <inspecteur> – <date> »
-    const nomI=a.inspecteur||m.inspecteur||"",insp=[nomI,a.apiNo?`API ${a.apiType||"936"} N° ${a.apiNo}`:""].filter(Boolean).join(" – ");
-    const mk=new (PdfApqClasse())(l,so.societe,{...m,...so,inspecteur:nomI});mk.inspBoite=insp;
-    mk.pied=`${apqL("etabli",l)} : ${[nomI,frDate(today())].filter(Boolean).join(" – ")}`;
-    if(a.logo==="perso"&&(a.logoPhotos||[]).length){const ph=await getPhoto(a.logoPhotos[0].pid);if(ph&&ph.blob){try{mk.logoPerso=await jpegPdf(ph.blob,600)}catch(e){}}}const ann=await apqAnnexes(a,l);await mk.rapport(a,ann);
-    const dts=a.sessions.map(s=>s.date).filter(Boolean).sort();
-    const nom=nomSur(`${m.no} - ${apqL("fichier",l)} - ${dts.length?dts[dts.length-1]:today()}`)+".pdf";
-    let octets=await mk.octets();if(ann.some(x=>x.pages)){busy("Ajout des annexes…","");await repos();try{octets=await apqFusion(octets,ann)}catch(e){toast("Annexes non ajoutées : "+(e&&e.message||e),8000)}}
-    const f=new File([octets],nom,{type:"application/pdf"});busyFin();
-    if(!await apercuPdf(mk,nom)){toast("PDF annulé.");return}
-    const garde=tx("pdfs","readwrite",s=>s.put({id:newId(),nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:so.societe,
-      constats:[],titres:[apqL("h1",l)],taille:octets.length,blob:f})).catch(()=>{});
-    await proposerFichiers([f],"PDF");await garde}
+  try{const l=apqLangue(m);const doc={ref:await prochaineRef(m,"APQ"),code:"APQ",rev:0,date:today(),l,hist:[{rev:0,date:today(),motif:pdfL("prem",l)}]};
+    const r=await construireApq(m,doc);if(!r) return;busyFin();
+    if(!await apercuPdf(r.mk,r.nom)){toast("PDF annulé.");return}
+    const garde=tx("pdfs","readwrite",s=>s.put({id:newId(),nom:r.nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:r.so.societe,
+      constats:[],titres:[doc.titre],taille:r.octets.length,blob:r.f,doc:{...doc,statut:"courant"}})).catch(()=>{});
+    await proposerFichiers([r.f],"PDF");await garde}
   catch(err){toast("PDF impossible : "+(err&&err.message||err),6000)}finally{busyFin();PDF_EN_COURS=false}}
+
 
 /* ---------- accueil ---------- */
 async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`${m.no} · ${m.client||""}`;
@@ -3663,7 +3680,7 @@ async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`
     al.textContent=`⚠ ${n} constat${n>1?"s":""} non envoyé${n>1?"s":""} au PC (le plus ancien : ${quand} à ${pad(vieux.getHours())}:${pad(vieux.getMinutes())}). Tant qu'il${n>1?"s ne sont pas envoyés, ils n'existent":" n'est pas envoyé, il n'existe"} que sur ce téléphone.`;
     al.onclick=()=>showView("journal");al.style.cursor="pointer"}
   afficherBrouillon();
-  try{const np=(await tousPdfs()).filter(p=>p.mission&&p.mission.id===m.id).length;$("accPdfs").textContent=np?`${np} PDF`:"Aucun"}catch(e){}
+  try{const lp=(await tousPdfs()).filter(p=>p.mission&&p.mission.id===m.id);const np=new Set(lp.map(p=>p.doc&&p.doc.ref||p.id)).size;$("accPdfs").textContent=np?`${np} document(s)`:"Aucun"}catch(e){}
   $("accTrad").hidden=$("navTrad").hidden}
 function initAccueil(){$("pdfToutes").onchange=renderPdfs;document.querySelectorAll("#v-accueil .acc").forEach(b=>b.onclick=()=>{const g=b.dataset.go;
   if(g==="prep"){showView("saisie");prepOuvrir(true);$("prepCard").scrollIntoView({block:"start"});return}
@@ -3740,6 +3757,9 @@ function pdfChaine(t){let o="(";for(const c of t){const b=pdfOctet(c);o+=b===40|
 // intitulés du PDF dans la langue du projet
 const PDFL={titre:["RAPPORT RAPIDE D'INSPECTION","QUICK INSPECTION REPORT","INFORME RÁPIDO DE INSPECCIÓN","KURZER INSPEKTIONSBERICHT"],
   prelim:["Préliminaire – pas un rapport officiel","Preliminary – not a formal report","Preliminar – no es un informe oficial","Vorläufig – kein offizieller Bericht"],
+  ref:["Référence","Reference","Referencia","Referenz"],emis:["émis le","issued on","emitido el","ausgegeben am"],
+  hist:["Historique des révisions","Revision history","Historial de revisiones","Revisionsverlauf"],cRev:["Rév.","Rev.","Rev.","Rev."],cDate:["Date","Date","Fecha","Datum"],cMotif:["Motif","Reason","Motivo","Grund"],
+  prem:["Première émission","First issue","Primera emisión","Erstausgabe"],filig:["RÉVISÉE","REVISED","REVISADO","REVIDIERT"],preq:["Préqualification","Prequalification","Precalificación","Vorqualifizierung"],
   notif:["Notification immédiate de constat, pour information – ce document ne remplace pas les rapports d'inspection.","Immediate finding notification, for information only – this document does not replace the inspection reports.","Notificación inmediata de hallazgo, solo para información – este documento no sustituye a los informes de inspección.","Sofortige Befundmeldung, nur zur Information – dieses Dokument ersetzt nicht die Inspektionsberichte."],
   mission:["Projet","Project","Proyecto","Projekt"],client:["Client / site","Client / site","Cliente / sitio","Kunde / Standort"],
   date:["Date d'inspection","Inspection date","Fecha de inspección","Inspektionsdatum"],rep:["Repère","Tag","Referencia","Markierung"],
@@ -3807,7 +3827,19 @@ class PdfRapide{
         this.place(s*1.32);this.txt(ind,this.y+s*0.95,mk,"R",s);this.paragraphe(morceaux(m[4]),ind+mw,w-(ind+mw-x),s)}
       else this.paragraphe(morceaux(brut),x,w,s)}}
   titreSection(t,suite){this.place(30+(suite??80));this.y+=8;this.txt(this.M,this.y+10,t.toUpperCase(),"B",9.5,"0.42 0.16 0.08");this.trait(this.M,this.y+14,this.W-this.M,this.y+14,"0.85 0.85 0.85",0.6);this.y+=20}
-  async constat(e,photos){const l=this.l,M=this.M,L=this.W-2*M;this.nouvellePage();
+  // v2.20 : bloc « titre du document – RevN / Référence … émis le … » en haut de la 1re page
+  blocDoc(){if(!this.doc||this.docFait) return;this.docFait=true;const M=this.M,L=this.W-2*M,l=this.l,d=this.doc;
+    this.paragraphe([{t:`${d.titre} – Rev${d.rev}`,b:true}],M,L,14,"0.42 0.16 0.08");
+    this.txt(M,this.y+9,`${pdfL("ref",l)} : ${d.ref} Rev${d.rev} · ${pdfL("emis",l)} ${frDate(d.date)}`,"R",9,"0.40 0.40 0.40");this.y+=16;
+    this.trait(M,this.y,this.W-M,this.y,"0.85 0.85 0.85",0.5);this.y+=12}
+  // v2.20 : tableau « Historique des révisions » à la fin du document
+  historique(){if(!this.doc||!(this.doc.hist||[]).length) return;const d=this.doc,l=this.l,M=this.M,L=this.W-2*M,c1=48,c2=78,cw=L-c1-c2-18;
+    this.titreSection(pdfL("hist",l),40);this.place(18);this.rect(M,this.y,L,16,"0.85 0.85 0.85");
+    this.txt(M+6,this.y+11,pdfL("cRev",l),"B",8.5);this.txt(M+c1+6,this.y+11,pdfL("cDate",l),"B",8.5);this.txt(M+c1+c2+6,this.y+11,pdfL("cMotif",l),"B",8.5);this.y+=16;
+    for(const h of d.hist){const ll=this.lignes([{t:h.motif||"–"}],cw,9);const rh=Math.max(16,ll.length*11.5+5);this.place(rh);
+      this.cadre(M,this.y,L,rh,"0.85 0.85 0.85",0.5);this.txt(M+6,this.y+11,`Rev${h.rev}`,"B",9);this.txt(M+c1+6,this.y+11,frDate(h.date),"R",9);
+      let yy=this.y+11;for(const ln of ll){let cx=M+c1+c2+6;for(const m of ln){if(m.t!==" ") this.txt(cx,yy,m.t,m.f,9);cx+=m.w}yy+=11.5}this.y+=rh}}
+  async constat(e,photos){const l=this.l,M=this.M,L=this.W-2*M;this.nouvellePage();this.blocDoc();
     // titre
     const titre=[e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom].filter(Boolean).join(" – ");
     this.paragraphe([{t:titre,b:true}],M,L,13);this.y+=4;
@@ -3871,7 +3903,7 @@ class PdfRapide{
       if(!rap&&this.soc!=="FTA"){const t3=pdfL("prelim",l);this.txt(W-M-pdfLargeur(t3,"I",8),G?M+46:(this.sansMission?M+28:M+38),t3,"I",8,"0.70 0.15 0.12")}
       this.trait(M,G?M+72:M+48,W-M,G?M+72:M+48,"0.42 0.16 0.08",1);
       const pied=this.pied||[this.m.inspecteur?`${pdfL("insp",l)} : ${this.m.inspecteur}`:"",gen].filter(Boolean).join(" · ");
-      this.trait(M,this.H-M-14,W-M,this.H-M-14,"0.85 0.85 0.85",0.5);this.txt(M,this.H-M-3,pied,"R",7.5,"0.45 0.45 0.45");
+      this.trait(M,this.H-M-14,W-M,this.H-M-14,"0.85 0.85 0.85",0.5);this.txt(M,this.H-M-3,this.doc?`${pied} · ${this.doc.ref} Rev${this.doc.rev}`:pied,"R",7.5,"0.45 0.45 0.45");
       const np=`${pdfL("page",l)} ${i+1} / ${N}`;this.txt(W-M-pdfLargeur(np,"R",7.5),this.H-M-3,np,"R",7.5,"0.45 0.45 0.45");pg.ops.push(...ops);pg.d.push(...dd)})}
   async octets(){await this.miseEnPage();const l=this.l,W=this.W,N=this.pages.length;
     // assemblage du fichier PDF
@@ -3887,7 +3919,7 @@ class PdfRapide{
     this.pages.forEach((p,i)=>{const c=enc(p.ops.join("\n"));const nP=nPg+2*i;
       obj(nP,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${this.H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R >> /XObject << ${[...p.ims].map(im=>`/Im${im.n} ${nIm+im.n-1} 0 R`).join(" ")} >> >> /Contents ${nP+1} 0 R >>`);
       obj(nP+1,`<< /Length ${c.length} >>`,c)});
-    const nInfo=nPg+2*N;obj(nInfo,`<< /Title ${pdfInfo(pdfL(this.prog?"rapAv":"rapide",l)+" – "+(this.m.no||""))} /Producer (The 982 Inspector Toolbox ${APP_VERSION}) /Creator (The 982 Inspector Toolbox) >>`);
+    const nInfo=nPg+2*N;obj(nInfo,`<< /Title ${pdfInfo(this.doc?`${this.doc.ref} Rev${this.doc.rev} – ${this.doc.titre}`:pdfL(this.prog?"rapAv":"rapide",l)+" – "+(this.m.no||""))} /Producer (The 982 Inspector Toolbox ${APP_VERSION}) /Creator (The 982 Inspector Toolbox) >>`);
     const xref=pos;let x=`xref\n0 ${nInfo+1}\n0000000000 65535 f \n`;for(let n=1;n<=nInfo;n++) x+=String(off[n]||0).padStart(10,"0")+" 00000 n \n";
     ecrire(enc(x+`trailer\n<< /Size ${nInfo+1} /Root 1 0 R /Info ${nInfo} 0 R >>\nstartxref\n${xref}\n%%EOF\n`));
     const out=new Uint8Array(pos);let o=0;for(const b of morceauxPdf){out.set(b,o);o+=b.length}return out}}
@@ -3908,6 +3940,9 @@ async function dessinerPagePdf(mk,pg,cv,k){const ctx=cv.getContext("2d");cv.widt
     else if(o.k==="t"){const pol=s=>`${/I/.test(o.f)?"italic ":""}${/B/.test(o.f)?"bold ":""}${s.toFixed(2)}px Helvetica, Arial, sans-serif`;ctx.fillStyle=pdfCol(o.col);let cx=o.x;
       String(o.t).split("²").forEach((seg,i)=>{if(i){const s2=o.s*0.62;ctx.font=pol(s2);ctx.fillText("2",cx,o.y-3.6);cx+=pdfLargeur("2",o.f,s2)}
         if(!seg) return;const w=pdfLargeur(seg,o.f,o.s);ctx.font=pol(o.s);ctx.fillText(seg,cx,o.y-(o.ry||0),w*1.02);cx+=w})}}}
+{const base=dessinerPagePdf;dessinerPagePdf=async function(mk,pg,cv,k){await base(mk,pg,cv,k);if(!mk.filigrane) return;const ctx=cv.getContext("2d");ctx.save();
+  ctx.translate(mk.W/2,mk.H/2);ctx.rotate(-Math.atan2(mk.H,mk.W));ctx.font=`bold ${Math.round(Math.min(mk.W,mk.H)/5.2)}px Helvetica, Arial, sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillStyle="rgba(204,31,31,.20)";ctx.fillText(mk.filigrane,0,0);ctx.restore()}}
 // relire un PDF rapide déjà créé (même générateur) pour l'afficher dans l'appli, sans téléchargement
 function lirePdfRapide(octets){const s=new TextDecoder("windows-1252").decode(octets);
   const objet=n=>{const i=s.indexOf(`\n${n} 0 obj\n`);if(i<0) throw new Error("objet "+n);const d=i+`\n${n} 0 obj\n`.length;const st=s.indexOf("\nstream\n",d),fin=s.indexOf("\nendobj",d);
@@ -3939,20 +3974,69 @@ function apercuPdf(mk,nom,o={}){$("pvTitre").textContent=o.titre||"Aperçu du PD
   $("pvZoom").onclick=()=>{const z=pv.classList.toggle("zoom");$("pvZoom").setAttribute("aria-pressed",String(z))};
   for(const pg of mk.pages){if(fini) return;const cv=document.createElement("canvas");box.append(cv);await dessinerPagePdf(mk,pg,cv,k)}})}
 let PDF_EN_COURS=false;
+// v2.20 : documents émis = référence fixe <n° projet>-<code>-<n°> + RevN ; un document par zone (équipement / sous-équipement / activité / sous-activité)
+const DOC_NUM={QIR:3,PR:3,APQ:2};
+async function prochaineRef(m,code){let mx=0;const pre=`${m.no}-${code}-`;
+  for(const p of await tousPdfs()) if(p.doc&&p.doc.ref&&p.doc.ref.startsWith(pre)){const n=parseInt(p.doc.ref.slice(pre.length),10);if(n>mx) mx=n}
+  return pre+String(mx+1).padStart(DOC_NUM[code]||3,"0")}
+const zoneCle=e=>[e.equipement.code,e.sousEquipement,e.activite.code,e.sousActivite&&e.sousActivite.code||""].join("|");
+const zoneTitre=e=>[e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom].filter(Boolean).join(" – ");
+const triConstats=l=>[...l].sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));
+async function construireQir(tri,m,so,l,doc){const mk=new PdfRapide(l,so.societe,{...m,...so});mk.prog=doc.code==="PR";mk.doc=doc;
+  for(const e of tri) await mk.constat(e,await photosPdf(e,mk));mk.historique();
+  const nom=nomSur(`${doc.ref} Rev${doc.rev} - ${doc.titre}`)+".pdf";const octets=await mk.octets();return {mk,octets,nom,l,so,f:new File([octets],nom,{type:"application/pdf"})}}
 async function pdfRapide(liste){if(!liste.length){toast("Aucun constat sélectionné.");return}if(PDF_EN_COURS) return;
   if(form.editId&&liste.some(e=>e.id===form.editId)){toast("Ce constat est ouvert dans la Saisie : enregistre (ou annule) d'abord la modification, pour que le PDF prenne en compte tes changements.",7000);return}PDF_EN_COURS=true;
-  try{toast("Création du PDF…",60000);const m=MISSIONS.find(x=>liste[0].mission&&x.id===liste[0].mission.id)||curMission()||CFG.mission;
-    const so=socMission(m),l=m.langue||langueMission();const mk=new PdfRapide(l,so.societe,{...m,...so});
-    const tri=[...liste].sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));
-    mk.prog=tri.every(e=>e.avancement&&e.avancement.length); // v1.61 : que des constats d'avancement -> « Progress report »
-    for(const e of tri) await mk.constat(e,await photosPdf(e,mk));
-    const nom=tri.length===1?nomExplicite(tri[0])+".pdf":nomSur(`${m.no} - ${pdfL(mk.prog?"rapAv":"rapide",l)} - ${today()} - ${tri.length} ${pdfL("constats",l)}`)+".pdf";
-    const octets=await mk.octets();const f=new File([octets],nom,{type:"application/pdf"});
-    $("toast").hidden=true;if(!await apercuPdf(mk,nom)){toast("PDF annulé.");return}
-    const garde=tx("pdfs","readwrite",s=>s.put({id:newId(),nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:so.societe,
-      constats:tri.map(e=>e.id),titres:tri.map(e=>libelleConstat(e)),taille:octets.length,blob:f})).catch(()=>toast("PDF créé mais pas gardé dans l'appli (mémoire pleine ?).",5000));
-    await proposerFichiers([f],"PDF");await garde}
+  const files=[];
+  try{const m=MISSIONS.find(x=>liste[0].mission&&x.id===liste[0].mission.id)||curMission()||CFG.mission;
+    const so=socMission(m),l=m.langue||langueMission();
+    const groupes=new Map();for(const e of triConstats(liste)){const k=zoneCle(e);if(!groupes.has(k)) groupes.set(k,[]);groupes.get(k).push(e)}
+    const G=[...groupes.values()];
+    for(const [i,tri] of G.entries()){toast(G.length>1?`Création du document ${i+1} / ${G.length} (un par zone)…`:"Création du PDF…",60000);
+      const code=tri.every(e=>e.avancement&&e.avancement.length)?"PR":"QIR";
+      const doc={ref:await prochaineRef(m,code),code,rev:0,titre:zoneTitre(tri[0]),date:today(),l,hist:[{rev:0,date:today(),motif:pdfL("prem",l)}]};
+      const r=await construireQir(tri,m,so,l,doc);$("toast").hidden=true;
+      if(!await apercuPdf(r.mk,r.nom,G.length>1?{titre:`Aperçu ${i+1} / ${G.length}`}:{})){toast("PDF annulé.");continue}
+      try{await tx("pdfs","readwrite",s=>s.put({id:newId(),nom:r.nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:so.societe,
+        constats:tri.map(e=>e.id),titres:tri.map(e=>libelleConstat(e)),taille:r.octets.length,blob:r.f,doc:{...doc,statut:"courant"}}))}
+      catch(e){toast("PDF créé mais pas gardé dans l'appli (mémoire pleine ?).",5000)}
+      files.push(r.f)}
+    if(files.length) await proposerFichiers(files,"PDF")}
   catch(err){toast("PDF impossible : "+(err&&err.message||err),6000)}finally{PDF_EN_COURS=false}}
+// motif d'une révision (obligatoire)
+function demanderMotif(titre,texte){return new Promise(res=>{const b=$("motifBox");$("motifTitre").textContent=titre;$("motifTxt").textContent=texte||"";$("motifIn").value="";b.hidden=false;
+  setTimeout(()=>{try{$("motifIn").focus()}catch(e){}},50);
+  const fin=v=>{b.hidden=true;$("motifOk").onclick=$("motifNon").onclick=null;res(v)};
+  $("motifOk").onclick=()=>{const v=$("motifIn").value.trim();if(!v){toast("Indique le motif de la révision.");return}fin(v)};$("motifNon").onclick=()=>fin(null)})}
+// filigrane « RÉVISÉE » sur toutes les pages d'un PDF déjà émis (pdf-lib)
+async function filigranerPdf(octets,texte){const P=await apqPdfLib();const doc=await P.PDFDocument.load(octets,{ignoreEncryption:true});const f=await doc.embedFont(P.StandardFonts.HelveticaBold);
+  for(const pg of doc.getPages()){const {width:w,height:h}=pg.getSize();const a=Math.atan2(h,w),size=Math.min(w,h)/5.2,tw=f.widthOfTextAtSize(texte,size);
+    const x=w/2-Math.cos(a)*tw/2+Math.sin(a)*size*0.35,y=h/2-Math.sin(a)*tw/2-Math.cos(a)*size*0.35;
+    pg.drawText(texte,{x,y,size,font:f,rotate:P.degrees(a*180/Math.PI),color:P.rgb(0.8,0.12,0.12),opacity:0.22})}
+  return await doc.save()}
+const fichierDoc=p=>p.blob instanceof File?p.blob:new File([p.blob],p.nom,{type:"application/pdf"});
+// révision : nouvel indice, motif, régénération depuis les constats actuels (ou le rapport APQ actuel) ; l'ancienne version est gardée avec le filigrane
+async function reviserDoc(p){if(PDF_EN_COURS||!p||!p.doc) return;const d=p.doc,rev=(d.rev||0)+1;
+  const motif=await demanderMotif(`${d.ref} Rev${d.rev} → Rev${rev}`,"Le document sera recréé à partir des données actuelles. L'ancienne version est gardée dans le registre et marquée « RÉVISÉE ».");if(!motif) return;
+  const m=MISSIONS.find(x=>p.mission&&x.id===p.mission.id);if(!m){toast("Le projet de ce document n'est pas sur cet appareil.");return}
+  PDF_EN_COURS=true;busy("Création de la révision…","");await repos();
+  try{const doc={...d,rev,date:today(),hist:[...(d.hist||[]),{rev,date:today(),motif}],statut:"courant"};delete doc.remplaceLe;
+    let r,constats=p.constats||[],titres=p.titres||[];
+    if(d.code==="APQ"){r=await construireApq(m,doc);if(!r) return}
+    else{const en=await allEntries();const tri=triConstats(constats.map(id=>en.find(e=>e.id===id)).filter(Boolean));
+      if(!tri.length){toast("Les constats de ce document ne sont plus sur cet appareil : révision impossible.",6000);return}
+      if(form.editId&&tri.some(e=>e.id===form.editId)){toast("Ce constat est ouvert dans la Saisie : enregistre (ou annule) d'abord la modification, pour que le PDF prenne en compte tes changements.",7000);return}
+      if(tri.length<constats.length) toast(`${constats.length-tri.length} constat(s) supprimé(s) depuis l'émission : la révision contient les constats restants.`,5000);
+      const so=socMission(m),l=d.l||m.langue||langueMission();doc.l=l;doc.titre=zoneTitre(tri[0]);
+      r=await construireQir(tri,m,so,l,doc);constats=tri.map(e=>e.id);titres=tri.map(e=>libelleConstat(e))}
+    busyFin();if(!await apercuPdf(r.mk,r.nom,{titre:`${d.ref} Rev${rev}`,ok:"📄 Émettre la révision"})){toast("Révision annulée.");return}
+    busy("Archivage de l'ancienne version…","");
+    let ancien=fichierDoc(p);try{const o=await filigranerPdf(new Uint8Array(await ancien.arrayBuffer()),pdfL("filig",r.l||d.l||"fr"));ancien=new File([o],p.nom,{type:"application/pdf"})}
+    catch(e){toast("Filigrane non ajouté : "+(e&&e.message||e),5000)}
+    await tx("pdfs","readwrite",s=>{s.put({...p,blob:ancien,blobOrig:p.blobOrig||fichierDoc(p),taille:ancien.size,doc:{...d,statut:"revisee",remplaceLe:new Date().toISOString()}});
+      s.put({id:newId(),nom:r.nom,cree:new Date().toISOString(),mission:p.mission,societe:r.so.societe,constats,titres,taille:r.octets.length,blob:r.f,doc:{...doc,l:r.l||doc.l}})});
+    busyFin();if(!$("v-pdfs").hidden) renderPdfs();toast(`${d.ref} Rev${rev} émise ; Rev${d.rev} archivée (RÉVISÉE).`,4500);await proposerFichiers([r.f],"PDF")}
+  catch(err){toast("Révision impossible : "+(err&&err.message||err),6000)}finally{busyFin();PDF_EN_COURS=false}}
 // partage Android (Quick Share, mail, WhatsApp, Teams…) ; si le délai d'Android est dépassé, une carte propose de partager
 let FICHIERS_PRETS=null;
 // v1.51 : partage vers le client (PDF, photos) : feuille de partage dès qu'elle existe (téléphone, DeX, PC),
@@ -3996,27 +4080,50 @@ async function partagerPhotos(e){const files=[];const base=nomExplicite(e);
 /* ---------- PDF préliminaires gardés dans l'appli (v1.51) ---------- */
 const tousPdfs=()=>tx("pdfs","readonly",s=>s.getAll());
 const fmtTaille=n=>n>=1048576?`${(n/1048576).toFixed(1)} Mo`:`${Math.max(1,Math.round(n/1024))} ko`;
+const DOC_TYPE={QIR:"Rapport rapide (QIR)",PR:"Rapport d'avancement (PR)",APQ:"Préqualification (APQ)"};
+async function ouvrirDoc(p){const src=p.blobOrig||p.blob;let mk=null;try{mk=lirePdfRapide(new Uint8Array(await (src instanceof Blob?src:fichierDoc(p)).arrayBuffer()))}catch(err){}
+  if(!mk){toast("Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.",5000);telechargerFichiers([fichierDoc(p)]);return}
+  if(p.doc&&p.doc.statut==="revisee") mk.filigrane=pdfL("filig",p.doc.l||"fr");
+  if(await apercuPdf(mk,p.nom,{titre:p.doc?`${p.doc.ref} Rev${p.doc.rev}`:"PDF",ok:"📤 Partager",annul:"✕ Fermer"})) proposerFichiers([fichierDoc(p)],"PDF")}
 async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
-  const toutes=$("pdfToutes").checked;const vis=liste.filter(p=>toutes||(p.mission&&p.mission.id===CFG.mission.id)).sort((a,b)=>b.cree.localeCompare(a.cree));
-  const tot=vis.reduce((s,p)=>s+(p.taille||0),0);
-  $("pdfInfo").textContent=vis.length?`${vis.length} PDF · ${fmtTaille(tot)}`:"";
+  const toutes=$("pdfToutes").checked;const vis=liste.filter(p=>toutes||(p.mission&&p.mission.id===CFG.mission.id));
+  const tot=vis.reduce((s,p)=>s+(p.taille||0),0);const docs=vis.filter(p=>p.doc&&p.doc.ref),anciens=vis.filter(p=>!(p.doc&&p.doc.ref));
+  const refs=new Map();for(const p of docs){if(!refs.has(p.doc.ref)) refs.set(p.doc.ref,[]);refs.get(p.doc.ref).push(p)}
+  $("pdfInfo").textContent=vis.length?`${refs.size} document(s) · ${vis.length} fichier(s) · ${fmtTaille(tot)}`:"";
   const box=$("pdfListe");box.innerHTML="";
-  if(!vis.length){box.innerHTML=`<div class="card"><p class="hint">Aucun PDF préliminaire pour l'instant. Crée-en un depuis le Journal (bouton « 📄 PDF » d'un constat, ou « PDF rapide de la sélection »).</p></div>`;return}
-  const parJour={};for(const p of vis)(parJour[p.cree.slice(0,10)]??=[]).push(p);
-  for(const [jour,lot] of Object.entries(parJour)){const c=document.createElement("div");c.className="card";
-    c.innerHTML=`<div class="dayhead"><h3>${frDate(jour)}</h3><span class="stat">${lot.length} PDF</span></div>`;
-    for(const p of lot){const d=document.createElement("div");d.className="pdfit";const h=new Date(p.cree);
+  if(!vis.length){box.innerHTML=`<div class="card"><p class="hint">Aucun document émis pour l'instant. Crée un rapport rapide depuis le Journal (bouton « 📄 PDF » d'un constat, ou « PDF rapide de la sélection »), ou le rapport de préqualification.</p></div>`;return}
+  let en=[];try{en=await allEntries()}catch(e){}
+  const modifie=p=>(p.constats||[]).some(id=>{const e=en.find(x=>x.id===id);return e&&(e.modifieLe||"")>p.cree});
+  const bouton=(par,t,f,cl)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(cl) b.className=cl;b.onclick=()=>f(b);par.append(b);return b};
+  if(refs.size){const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="dayhead"><h3>Registre des documents émis</h3><span class="stat"></span></div>`;
+    c.querySelector(".stat").textContent=`${refs.size} document(s)`;
+    for(const ref of [...refs.keys()].sort()){const revs=refs.get(ref).sort((a,b)=>b.doc.rev-a.doc.rev);const cur=revs[0],d=cur.doc;
+      const it=document.createElement("div");it.className="pdfit docit";
+      it.innerHTML=`<span class="ic" aria-hidden="true">📄</span><div><div class="t"><b class="docref" data-noi18n></b><span class="revb" data-noi18n></span></div><div class="dt" data-noi18n></div><div class="m"></div><div class="aRev" hidden>⚠ Constat modifié depuis l'émission : une révision est peut-être à faire.</div><div class="acts"></div><div class="revs"></div></div>`;
+      it.querySelector(".docref").textContent=ref;it.querySelector(".revb").textContent=`Rev${d.rev}`;it.querySelector(".dt").textContent=`${d.titre||""} – Rev${d.rev}`;
+      const n=(cur.constats||[]).length;
+      it.querySelector(".m").textContent=[DOC_TYPE[d.code]||d.code,frDate(d.date||cur.cree.slice(0,10)),toutes&&cur.mission?`Projet ${cur.mission.no}`:"",n?`${n} constat(s)`:"",fmtTaille(cur.taille||0)].filter(Boolean).join(" · ");
+      it.querySelector(".aRev").hidden=!modifie(cur);
+      const acts=it.querySelector(".acts");
+      bouton(acts,"Ouvrir",()=>ouvrirDoc(cur));bouton(acts,"Partager",()=>proposerFichiers([fichierDoc(cur)],"PDF"));
+      bouton(acts,"✎ Réviser",()=>reviserDoc(cur),"primary");
+      bouton(acts,"Supprimer",async b=>{if(!b.dataset.ok){b.dataset.ok="1";b.textContent=`Confirmer : supprimer ${ref} (toutes révisions)`;b.classList.add("danger");setTimeout(()=>{b.dataset.ok="";b.textContent="Supprimer";b.classList.remove("danger")},6000);return}
+        await tx("pdfs","readwrite",s=>{for(const p of revs) s.delete(p.id)});toast("Document supprimé du téléphone.");renderPdfs()},"ghost");
+      const rv=it.querySelector(".revs");
+      for(const p of revs.slice(1)){const r=document.createElement("div");r.className="revOld";
+        r.innerHTML=`<span class="rv" data-noi18n></span><span class="wm">RÉVISÉE</span><span class="dd"></span>`;r.querySelector(".rv").textContent=`Rev${p.doc.rev}`;
+        r.querySelector(".dd").textContent=[frDate(p.doc.date||p.cree.slice(0,10)),(p.doc.hist||[]).slice(-1)[0]?.motif||""].filter(Boolean).join(" · ");
+        bouton(r,"Ouvrir",()=>ouvrirDoc(p));bouton(r,"Partager",()=>proposerFichiers([fichierDoc(p)],"PDF"));rv.append(r)}
+      c.append(it)}
+    box.append(c)}
+  if(anciens.length){const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="dayhead"><h3>PDF sans référence (avant la v2.20)</h3><span class="stat"></span></div>`;
+    c.querySelector(".stat").textContent=`${anciens.length} PDF`;
+    for(const p of anciens.sort((a,b)=>b.cree.localeCompare(a.cree))){const d=document.createElement("div");d.className="pdfit";const h=new Date(p.cree);
       d.innerHTML=`<span class="ic" aria-hidden="true">📄</span><div><div class="t"></div><div class="m"></div><div class="acts"></div></div>`;
-      d.querySelector(".t").textContent=p.nom;
-      const n=(p.constats||[]).length;d.querySelector(".m").textContent=[h.toTimeString().slice(0,5),toutes&&p.mission?`Projet ${p.mission.no}`:"",`${n} constat${n>1?"s":""}`,fmtTaille(p.taille||0)].filter(Boolean).join(" · ");
-      d.title=(p.titres||[]).join("\n");
-      const acts=d.querySelector(".acts"),bt=(t,f,cl)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(cl) b.className=cl;b.onclick=()=>f(b);acts.append(b);return b};
-      const fichier=()=>p.blob instanceof File?p.blob:new File([p.blob],p.nom,{type:"application/pdf"});
-      bt("Ouvrir",async()=>{let mk=null;try{mk=lirePdfRapide(new Uint8Array(await fichier().arrayBuffer()))}catch(err){}
-        if(!mk){toast("Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.",5000);telechargerFichiers([fichier()]);return}
-        if(await apercuPdf(mk,p.nom,{titre:"PDF préliminaire",ok:"📤 Partager",annul:"✕ Fermer"})) proposerFichiers([fichier()],"PDF")});
-      bt("Partager",()=>proposerFichiers([fichier()],"PDF"));
-      bt("Supprimer",async b=>{if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer la suppression";b.classList.add("danger");return}
+      d.querySelector(".t").textContent=p.nom;const n=(p.constats||[]).length;
+      d.querySelector(".m").textContent=[frDate(p.cree.slice(0,10)),h.toTimeString().slice(0,5),toutes&&p.mission?`Projet ${p.mission.no}`:"",`${n} constat${n>1?"s":""}`,fmtTaille(p.taille||0)].filter(Boolean).join(" · ");
+      const acts=d.querySelector(".acts");bouton(acts,"Ouvrir",()=>ouvrirDoc(p));bouton(acts,"Partager",()=>proposerFichiers([fichierDoc(p)],"PDF"));
+      bouton(acts,"Supprimer",async b=>{if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer la suppression";b.classList.add("danger");return}
         await tx("pdfs","readwrite",s=>s.delete(p.id));toast("PDF supprimé du téléphone.");renderPdfs()},"ghost");
       c.append(d)}
     box.append(c)}}
@@ -4963,7 +5070,40 @@ const TRAD_UI=[
 ["Constats vidés : les projets et leurs listes sont gardés.", "Findings cleared: the projects and their lists are kept.", "Hallazgos vaciados: se conservan los proyectos y sus listas.", "Befunde geleert: Projekte und ihre Listen bleiben erhalten."],
 ["Photo modifiée. Pense à « Enregistrer les modifications » du constat.", "Photo changed. Remember to “Save changes” of the finding.", "Foto modificada. Recuerda «Guardar los cambios» del hallazgo.", "Foto geändert. Denk an „Änderungen speichern“ beim Befund."],
 ["Photo modifiée : elle sera gardée quand tu enregistreras le constat.", "Photo changed: it will be kept when you save the finding.", "Foto modificada: se guardará cuando guardes el hallazgo.", "Foto geändert: Sie wird beim Speichern des Befunds übernommen."],
-["Ce constat est ouvert dans la Saisie : enregistre (ou annule) d'abord la modification, pour que le PDF prenne en compte tes changements.", "This finding is open in Entry: save (or cancel) the change first, so that the PDF includes your changes.", "Este hallazgo está abierto en Captura: guarda (o cancela) primero la modificación para que el PDF incluya tus cambios.", "Dieser Befund ist in der Erfassung geöffnet: zuerst die Änderung speichern (oder abbrechen), damit das PDF sie enthält."]
+["Ce constat est ouvert dans la Saisie : enregistre (ou annule) d'abord la modification, pour que le PDF prenne en compte tes changements.", "This finding is open in Entry: save (or cancel) the change first, so that the PDF includes your changes.", "Este hallazgo está abierto en Captura: guarda (o cancela) primero la modificación para que el PDF incluya tus cambios.", "Dieser Befund ist in der Erfassung geöffnet: zuerst die Änderung speichern (oder abbrechen), damit das PDF sie enthält."],
+["Documents émis", "Issued documents", "Documentos emitidos", "Ausgegebene Dokumente"],
+["Registre des documents émis par le projet (rapports rapides QIR, rapports d'avancement PR, préqualification APQ), avec leurs révisions. « Réviser » crée la révision suivante (Rev1, Rev2…) à partir des constats actuels ; l'ancienne version est gardée et marquée « RÉVISÉE ».", "Register of the documents issued by the project (QIR quick reports, PR progress reports, APQ prequalification), with their revisions. “Revise” creates the next revision (Rev1, Rev2…) from the current findings; the old version is kept and marked “REVISED”.", "Registro de los documentos emitidos por el proyecto (informes rápidos QIR, informes de avance PR, precalificación APQ), con sus revisiones. «Revisar» crea la revisión siguiente (Rev1, Rev2…) a partir de los hallazgos actuales; la versión anterior se conserva marcada «REVISADO».", "Register der vom Projekt ausgegebenen Dokumente (Kurzberichte QIR, Fortschrittsberichte PR, Vorqualifizierung APQ) mit ihren Revisionen. „Revidieren“ erstellt die nächste Revision (Rev1, Rev2…) aus den aktuellen Befunden; die alte Version bleibt erhalten und wird mit „REVIDIERT“ markiert."],
+["Motif de la révision", "Reason for the revision", "Motivo de la revisión", "Grund der Revision"],
+["Réviser", "Revise", "Revisar", "Revidieren"],
+["✎ Réviser", "✎ Revise", "✎ Revisar", "✎ Revidieren"],
+["Indique le motif de la révision.", "Enter the reason for the revision.", "Indica el motivo de la revisión.", "Grund der Revision angeben."],
+["Le document sera recréé à partir des données actuelles. L'ancienne version est gardée dans le registre et marquée « RÉVISÉE ».", "The document will be recreated from the current data. The old version is kept in the register and marked “REVISED”.", "El documento se volverá a crear con los datos actuales. La versión anterior se conserva en el registro marcada «REVISADO».", "Das Dokument wird aus den aktuellen Daten neu erstellt. Die alte Version bleibt im Register und wird mit „REVIDIERT“ markiert."],
+["Création du document {a} / {b} (un par zone)…", "Creating document {a} / {b} (one per area)…", "Creando el documento {a} / {b} (uno por zona)…", "Dokument {a} / {b} wird erstellt (eines pro Bereich)…"],
+["Aperçu {a} / {b}", "Preview {a} / {b}", "Vista previa {a} / {b}", "Vorschau {a} / {b}"],
+["Le projet de ce document n'est pas sur cet appareil.", "The project of this document is not on this device.", "El proyecto de este documento no está en este dispositivo.", "Das Projekt dieses Dokuments ist nicht auf diesem Gerät."],
+["Création de la révision…", "Creating the revision…", "Creando la revisión…", "Revision wird erstellt…"],
+["Les constats de ce document ne sont plus sur cet appareil : révision impossible.", "The findings of this document are no longer on this device: revision impossible.", "Los hallazgos de este documento ya no están en este dispositivo: revisión imposible.", "Die Befunde dieses Dokuments sind nicht mehr auf diesem Gerät: Revision unmöglich."],
+["{a} constat(s) supprimé(s) depuis l'émission : la révision contient les constats restants.", "{a} finding(s) deleted since issue: the revision contains the remaining findings.", "{a} hallazgo(s) borrado(s) desde la emisión: la revisión contiene los restantes.", "{a} Befund(e) seit der Ausgabe gelöscht: Die Revision enthält die übrigen Befunde."],
+["📄 Émettre la révision", "📄 Issue the revision", "📄 Emitir la revisión", "📄 Revision ausgeben"],
+["Révision annulée.", "Revision cancelled.", "Revisión cancelada.", "Revision abgebrochen."],
+["Archivage de l'ancienne version…", "Archiving the old version…", "Archivando la versión anterior…", "Alte Version wird archiviert…"],
+["Filigrane non ajouté : {a}", "Watermark not added: {a}", "Marca de agua no añadida: {a}", "Wasserzeichen nicht hinzugefügt: {a}"],
+["{a} émise ; {b} archivée (RÉVISÉE).", "{a} issued; {b} archived (REVISED).", "{a} emitida; {b} archivada (REVISADO).", "{a} ausgegeben; {b} archiviert (REVIDIERT)."],
+["Révision impossible : {a}", "Revision impossible: {a}", "Revisión imposible: {a}", "Revision unmöglich: {a}"],
+["Rapport rapide (QIR)", "Quick report (QIR)", "Informe rápido (QIR)", "Kurzbericht (QIR)"],
+["Rapport d'avancement (PR)", "Progress report (PR)", "Informe de avance (PR)", "Fortschrittsbericht (PR)"],
+["Préqualification (APQ)", "Prequalification (APQ)", "Precalificación (APQ)", "Vorqualifizierung (APQ)"],
+["{a} document(s) · {b} fichier(s) · {c}", "{a} document(s) · {b} file(s) · {c}", "{a} documento(s) · {b} archivo(s) · {c}", "{a} Dokument(e) · {b} Datei(en) · {c}"],
+["{a} document(s)", "{a} document(s)", "{a} documento(s)", "{a} Dokument(e)"],
+["Aucun document émis pour l'instant. Crée un rapport rapide depuis le Journal (bouton « 📄 PDF » d'un constat, ou « PDF rapide de la sélection »), ou le rapport de préqualification.", "No document issued yet. Create a quick report from the Log (“📄 PDF” button of a finding, or “Quick PDF of the selection”), or the prequalification report.", "Aún no hay documentos emitidos. Crea un informe rápido desde el Diario (botón «📄 PDF» de un hallazgo, o «PDF rápido de la selección»), o el informe de precalificación.", "Noch kein Dokument ausgegeben. Einen Kurzbericht im Journal erstellen („📄 PDF“ eines Befunds oder „Kurz-PDF der Auswahl“) oder den Vorqualifizierungsbericht."],
+["Registre des documents émis", "Register of issued documents", "Registro de documentos emitidos", "Register der ausgegebenen Dokumente"],
+["⚠ Constat modifié depuis l'émission : une révision est peut-être à faire.", "⚠ Finding changed since issue: a revision may be needed.", "⚠ Hallazgo modificado desde la emisión: quizá haya que revisar.", "⚠ Befund seit der Ausgabe geändert: eventuell Revision nötig."],
+["{a} constat(s)", "{a} finding(s)", "{a} hallazgo(s)", "{a} Befund(e)"],
+["Confirmer : supprimer {a} (toutes révisions)", "Confirm: delete {a} (all revisions)", "Confirmar: borrar {a} (todas las revisiones)", "Bestätigen: {a} löschen (alle Revisionen)"],
+["Document supprimé du téléphone.", "Document deleted from the phone.", "Documento borrado del teléfono.", "Dokument vom Telefon gelöscht."],
+["RÉVISÉE", "REVISED", "REVISADO", "REVIDIERT"],
+["PDF sans référence (avant la v2.20)", "PDFs without reference (before v2.20)", "PDF sin referencia (antes de la v2.20)", "PDFs ohne Referenz (vor v2.20)"],
+["Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.", "This PDF cannot be displayed in the app: it is saved to Downloads.", "Este PDF no se puede mostrar en la app: se guarda en Descargas.", "Dieses PDF kann in der App nicht angezeigt werden: Es wird in Downloads gespeichert."]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
