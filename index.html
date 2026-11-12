@@ -256,6 +256,9 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .cgrp{margin:12px 0 2px;font-weight:650;font-size:14px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:3px}
 .cst{display:grid;grid-template-columns:64px minmax(0,1fr);gap:4px 10px;padding:8px 0;align-items:start}
 .cst img{width:64px;height:48px;object-fit:cover;border-radius:6px;background:var(--bg);cursor:pointer}
+.cst .fic{font:12px var(--mono);color:var(--muted);margin-top:2px;overflow-wrap:anywhere}.cst .docs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.cst .docs span{font:600 11px var(--mono);border:1px solid var(--line,#888);border-radius:4px;padding:1px 5px}
+.docit .chx{display:flex;flex-direction:column;gap:6px;margin-top:6px}.docit .chx button{text-align:left}
+#revBoxListe{display:flex;flex-direction:column;gap:8px;margin:8px 0}#revBoxListe button{text-align:left}
 .cst .t{font-weight:650;font-size:15px;line-height:1.3}.cst .m{font-size:13px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
 .cst .acts{grid-column:2;display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}.cst .acts button.ouvrir{min-width:108px}.cst .acts button[aria-expanded=true]{background:var(--accent-soft);border-color:var(--accent)}
 .cst.prevu>*:not(.acts){opacity:.55}.cst.prevu .ic{width:64px;height:48px;border-radius:6px;border:1px dashed var(--muted);display:grid;place-items:center;font-size:20px}
@@ -785,6 +788,9 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <h2 id="motifTitre" data-noi18n></h2><p class="hint" id="motifTxt"></p>
   <label>Motif de la révision<textarea id="motifIn" rows="3" placeholder="ex. : photo recadrée, complément d'observation, correction de la surface…"></textarea></label>
   <div class="btns"><button type="button" class="primary" id="motifOk">Réviser</button><button type="button" id="motifNon">Annuler</button></div></div></div>
+<div id="revBox" class="motifOv" hidden role="dialog" aria-modal="true" aria-labelledby="revBoxTitre"><div class="card">
+  <h2 id="revBoxTitre">Document déjà émis</h2><p class="hint" id="revBoxTxt"></p><div id="revBoxListe"></div>
+  <div class="btns"><button type="button" class="ghost" id="revBoxNon">Plus tard</button></div></div></div>
 <div id="busy" role="status" aria-live="polite" hidden><div class="bx"><div class="sp" aria-hidden="true"></div><div id="busyTxt"></div><div id="busySub"></div><div class="bar" id="busyBar" hidden><i id="busyBarI"></i></div><button type="button" class="ghost" id="busyStop" hidden>Annuler</button></div></div>
 <div class="toast" id="toast" hidden></div>
 <div id="majBar" role="status" hidden><span>Nouvelle version de l'appli disponible.</span><button type="button" id="majGo">Recharger</button><button type="button" class="ghost" id="majPlusTard">Plus tard</button></div>
@@ -1148,6 +1154,7 @@ async function saveEntry(){
   toast((old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`)+(nDep?` · ${nDep} photo(s) retirée(s) de leur constat d'origine`:""),nDep?4500:2600);
   const fini=!old?await prevuTermine():null;
   resetForm(true);memoCtxPrec(ctxSauve);viderCtx();effacerBrouillon();refreshBadge();if(fini) proposerSuivant(fini);
+  if(old) proposerRevision(id);
 }
 async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;BR.silence=true;try{await editEntry2(en,id)}finally{BR.silence=false}}
 async function editEntry2(en,id){
@@ -2339,7 +2346,7 @@ async function paquetEnvoi(list,files,m0,nd){const m=m0||list[0].mission||{},np=
   const nom=nomSur(`${m.no||"mission"} - Envoi PC - ${today()} ${String(h.getHours()).padStart(2,"0")}h${String(h.getMinutes()).padStart(2,"0")} - ${quoi}`)+".releve.jpg";
   const c=document.createElement("canvas");c.width=900;c.height=Math.min(1400,260+Math.min(list.length,20)*40);const g=c.getContext("2d");
   g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.fillStyle="#6b2914";g.fillRect(0,0,900,10);g.font="bold 30px sans-serif";g.fillText("Envoi vers le PC – paquet de transfert",40,64);
-  g.fillStyle="#444";g.font="24px sans-serif";g.fillText(`Projet ${m.no||""} · ${list.length} constat${list.length>1?"s":""} · ${np} photo${np>1?"s":""}${nd?` · ${nd} document${nd>1?"s":""} émis`:""}`,40,110);
+  g.fillStyle="#444";g.font="24px sans-serif";g.fillText(`Projet ${m.no||""}${list.length?` · ${list.length} constat${list.length>1?"s":""} · ${np} photo${np>1?"s":""}`:""}${nd?` · ${nd} document${nd>1?"s":""} émis`:""}`,40,110);
   g.fillStyle="#222";g.font="21px sans-serif";list.slice(0,20).forEach((e,i)=>{const t=`${frDate(e.date)} – ${libelleConstat(e)}`;g.fillText(t.length>70?t.slice(0,68)+"…":t,40,160+i*40)});
   if(list.length>20) g.fillText(`… et ${list.length-20} autre(s)`,40,160+20*40);
   g.fillStyle="#777";g.font="19px sans-serif";g.fillText("Déballé et rangé automatiquement sur le PC (Ranger les relevés). Ne pas ouvrir ni renommer.",40,c.height-30);
@@ -2935,6 +2942,9 @@ function ligneConstat(e){const r=document.createElement("div");r.className="cst"
   const m=r.querySelector(".m"),h=e.hms?` ${e.hms.slice(0,2)}:${e.hms.slice(2,4)}`:"";
   const d=document.createElement("span");d.textContent=`${frDate(e.date)}${h} · ${e.repere?"Repère "+e.repere+" · ":""}${e.photos.length} photo${e.photos.length>1?"s":""} `;m.append(d);
   const st=document.createElement("span");st.className="st "+(e.envoye?"env":"aenv");st.textContent=e.envoye?`envoyé ✓${e.envoyeLe?" le "+fmtCourt(e.envoyeLe):""}`:"à envoyer";m.append(st);
+  {const fi=document.createElement("div");fi.className="fic";fi.dataset.noi18n="";fi.textContent=e.id;fi.title="Nom du constat (fichier sur le PC)";m.after(fi);
+   const dl=(DOCS_CST||new Map()).get(e.id);if(dl&&dl.length){const dd=document.createElement("div");dd.className="docs";
+     for(const p of dl){const sp=document.createElement("span");sp.dataset.noi18n="";sp.textContent=`📄 ${p.doc.ref} Rev${p.doc.rev}`;sp.title=p.doc.titre||"";dd.append(sp)}fi.after(dd)}}
   if(e.photos[0]) getPhoto(e.photos[0]).then(p=>{if(p) r.querySelector("img").src=p.thumb});
   const acts=r.querySelector(".acts"),ap=r.querySelector(".apercu");ap.id="cap_"+e.id;
   const bO=document.createElement("button");bO.type="button";bO.className="ouvrir";bO.setAttribute("aria-controls",ap.id);
@@ -2953,7 +2963,9 @@ function lignePrevu(p){const r=document.createElement("div");r.className="cst pr
   const st=document.createElement("span");st.className="st prevu";st.textContent="prévu";m.append(st);
   const b=document.createElement("button");b.type="button";b.textContent="Commencer";b.onclick=()=>{showView("saisie");commencerPrevu(p.id)};r.querySelector(".acts").append(b);
   return r}
+let DOCS_CST=null;
 async function renderConstats(){
+  DOCS_CST=new Map();try{for(const p of await tousPdfs()) if(p.doc&&p.doc.ref&&p.doc.statut!=="revisee") for(const id of p.constats||[]){if(!DOCS_CST.has(id)) DOCS_CST.set(id,[]);DOCS_CST.get(id).push(p)}}catch(e){}
   const en=(await allEntries()).filter(belongs).sort((a,b)=>(a.date+(a.hms||"")).localeCompare(b.date+(b.hms||"")));
   const pv=PREVUS.filter(p=>p.mission===CFG.mission.id);
   remplirFiltre($("kEq"),EQ,CST.eq,"Tous");remplirFiltre($("kAct"),ACT,CST.act,"Toutes");$("kSt").value=CST.st;CST.eq=$("kEq").value;CST.act=$("kAct").value;
@@ -4022,6 +4034,16 @@ async function pdfRapide(liste){if(!liste.length){toast("Aucun constat sélectio
     if(files.length) await proposerFichiers(files,"PDF")}
   catch(err){toast("PDF impossible : "+(err&&err.message||err),6000)}finally{PDF_EN_COURS=false}}
 // motif d'une révision (obligatoire)
+// v2.22 : documents en vigueur (non révisés) qui contiennent un constat
+async function docsDuConstat(id){try{return (await tousPdfs()).filter(p=>p.doc&&p.doc.ref&&p.doc.statut!=="revisee"&&(p.constats||[]).includes(id)).sort((a,b)=>a.doc.ref.localeCompare(b.doc.ref))}catch(e){return []}}
+// après la modification d'un constat déjà émis : « réviser maintenant ? »
+async function proposerRevision(id){const docs=await docsDuConstat(id);if(!docs.length) return;
+  const b=$("revBox"),li=$("revBoxListe");li.innerHTML="";
+  $("revBoxTxt").textContent=docs.length>1?`Ce constat figure dans ${docs.length} documents déjà émis. Réviser l'un d'eux maintenant (le PDF sera recréé avec le constat modifié) ?`:"Ce constat figure dans un document déjà émis. Le réviser maintenant (le PDF sera recréé avec le constat modifié) ?";
+  const fin=()=>{b.hidden=true;li.innerHTML=""};
+  for(const p of docs){const x=document.createElement("button");x.type="button";x.className="primary";x.dataset.noi18n="";x.textContent=`✎ Réviser ${p.doc.ref} Rev${p.doc.rev}`;
+    x.onclick=()=>{fin();reviserDoc(p)};li.append(x)}
+  $("revBoxNon").onclick=()=>{fin();toast("Le document reste en Rev actuelle ; « ⚠ Constat modifié » s'affiche dans Documents émis.",4500)};b.hidden=false}
 function demanderMotif(titre,texte){return new Promise(res=>{const b=$("motifBox");$("motifTitre").textContent=titre;$("motifTxt").textContent=texte||"";$("motifIn").value="";b.hidden=false;
   setTimeout(()=>{try{$("motifIn").focus()}catch(e){}},50);
   const fin=v=>{b.hidden=true;$("motifOk").onclick=$("motifNon").onclick=null;res(v)};
@@ -4130,6 +4152,14 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
       it.querySelector(".aRev").hidden=!modifie(cur);
       const acts=it.querySelector(".acts");
       bouton(acts,"Ouvrir",()=>ouvrirDoc(cur));bouton(acts,"Partager",()=>proposerFichiers([fichierDoc(cur)],"PDF"));
+      if(d.code!=="APQ"&&n){const ids=(cur.constats||[]).filter(id=>en.some(e=>e.id===id));
+        if(ids.length) bouton(acts,ids.length>1?"✎ Modifier un constat":"✎ Modifier le constat",b=>{
+          if(ids.length===1){editEntry(ids[0]);return}
+          let ch=it.querySelector(".chx");if(ch){ch.remove();return}
+          ch=document.createElement("div");ch.className="chx";
+          for(const id of ids){const e=en.find(x=>x.id===id);const x=document.createElement("button");x.type="button";x.dataset.noi18n="";
+            x.textContent=`${libelleConstat(e)}${e.observation?" – « "+e.observation.slice(0,50)+(e.observation.length>50?"…":"")+" »":""} · ${id}`;x.onclick=()=>editEntry(id);ch.append(x)}
+          acts.after(ch)})}
       bouton(acts,"✎ Réviser",()=>reviserDoc(cur),"primary");
       bouton(acts,"Supprimer",async b=>{if(!b.dataset.ok){b.dataset.ok="1";b.textContent=`Confirmer : supprimer ${ref} (toutes révisions)`;b.classList.add("danger");setTimeout(()=>{b.dataset.ok="";b.textContent="Supprimer";b.classList.remove("danger")},6000);return}
         await tx("pdfs","readwrite",s=>{for(const p of revs) s.delete(p.id)});toast("Document supprimé du téléphone.");renderPdfs()},"ghost");
@@ -5134,7 +5164,15 @@ const TRAD_UI=[
 ["📤 Envoyer au PC ({a} fichier(s) PDF)", "📤 Send to the PC ({a} PDF file(s))", "📤 Enviar al PC ({a} archivo(s) PDF)", "📤 An den PC senden ({a} PDF-Datei(en))"],
 ["Préparation de l'envoi…", "Preparing the sending…", "Preparando el envío…", "Versand wird vorbereitet…"],
 ["Envoi impossible : {a}", "Sending impossible: {a}", "Envío imposible: {a}", "Senden unmöglich: {a}"],
-["Documents marqués comme envoyés au PC.", "Documents marked as sent to the PC.", "Documentos marcados como enviados al PC.", "Dokumente als an den PC gesendet markiert."]
+["Documents marqués comme envoyés au PC.", "Documents marked as sent to the PC.", "Documentos marcados como enviados al PC.", "Dokumente als an den PC gesendet markiert."],
+["Document déjà émis", "Document already issued", "Documento ya emitido", "Bereits ausgegebenes Dokument"],
+["Plus tard", "Later", "Más tarde", "Später"],
+["Ce constat figure dans {a} documents déjà émis. Réviser l'un d'eux maintenant (le PDF sera recréé avec le constat modifié) ?", "This finding is in {a} documents already issued. Revise one of them now (the PDF will be recreated with the edited finding)?", "Esta constatación figura en {a} documentos ya emitidos. ¿Revisar uno de ellos ahora (el PDF se recreará con la constatación modificada)?", "Dieser Befund ist in {a} bereits ausgegebenen Dokumenten. Eines davon jetzt revidieren (das PDF wird mit dem geänderten Befund neu erstellt)?"],
+["Ce constat figure dans un document déjà émis. Le réviser maintenant (le PDF sera recréé avec le constat modifié) ?", "This finding is in a document already issued. Revise it now (the PDF will be recreated with the edited finding)?", "Esta constatación figura en un documento ya emitido. ¿Revisarlo ahora (el PDF se recreará con la constatación modificada)?", "Dieser Befund ist in einem bereits ausgegebenen Dokument. Jetzt revidieren (das PDF wird mit dem geänderten Befund neu erstellt)?"],
+["Le document reste en Rev actuelle ; « ⚠ Constat modifié » s'affiche dans Documents émis.", "The document stays at its current Rev; “⚠ Finding changed” is shown in Issued documents.", "El documento queda en su Rev actual; «⚠ Constatación modificada» aparece en Documentos emitidos.", "Das Dokument bleibt auf der aktuellen Rev; „⚠ Befund geändert“ wird unter Ausgegebene Dokumente angezeigt."],
+["✎ Modifier un constat", "✎ Edit a finding", "✎ Modificar una constatación", "✎ Einen Befund bearbeiten"],
+["✎ Modifier le constat", "✎ Edit the finding", "✎ Modificar la constatación", "✎ Befund bearbeiten"],
+["Nom du constat (fichier sur le PC)", "Finding name (file on the PC)", "Nombre de la constatación (archivo en el PC)", "Befundname (Datei auf dem PC)"]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
