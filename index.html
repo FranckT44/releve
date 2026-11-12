@@ -616,6 +616,8 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <label class="toggle"><input type="checkbox" id="pdfToutes"> Afficher tous les projets</label>
     <p class="hint" id="pdfInfo"></p>
     <p class="hint">Les documents émis partent aussi au PC avec le prochain envoi des constats (paquet), ou avec le bouton ci-dessous : ils sont rangés dans le dossier du projet (Rapport\Documents appli) et inscrits dans le registre des rapports ; une version révisée part dans Rapport\_Archives.</p>
+  </div>
+  <div class="card" id="docEnvCard" hidden>
     <div class="btns" id="docEnvBox" hidden><button type="button" class="primary" id="bDocEnv"></button></div>
     <div class="btns" id="docEnvOk" hidden><span class="hint">Envoi fait ?</span><button type="button" id="bDocEnvOui">✓ Marquer envoyé au PC</button><button type="button" class="ghost" id="bDocEnvNon">Non</button></div>
   </div>
@@ -857,7 +859,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.21";
+const APP_VERSION="2.22";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -4098,9 +4100,9 @@ const tousPdfs=()=>tx("pdfs","readonly",s=>s.getAll());
 const fmtTaille=n=>n>=1048576?`${(n/1048576).toFixed(1)} Mo`:`${Math.max(1,Math.round(n/1024))} ko`;
 async function envoyerDocs(docs){if(!docs.length) return;const m=MISSIONS.find(x=>x.id===docs[0].mission.id)||CFG.mission;busy("Préparation de l'envoi…","");
   let f;try{f=await paquetEnvoi([],await fichiersDocs(docs),{no:m.no},docs.length)}catch(e){busyFin();toast("Envoi impossible : "+(e&&e.message||e),6000);return}busyFin();
-  await proposerFichiers([f],"documents");$("docEnvOk").hidden=false;
+  await proposerFichiers([f],"documents");$("docEnvOk").hidden=false;$("docEnvCard").hidden=false;
   $("bDocEnvOui").onclick=async()=>{await marquerDocsEnvoyes(docs.map(p=>p.id));$("docEnvOk").hidden=true;toast("Documents marqués comme envoyés au PC.");renderPdfs()};
-  $("bDocEnvNon").onclick=()=>{$("docEnvOk").hidden=true}}
+  $("bDocEnvNon").onclick=()=>{$("docEnvOk").hidden=true;$("docEnvCard").hidden=$("docEnvBox").hidden}}
 const DOC_TYPE={QIR:"Rapport rapide (QIR)",PR:"Rapport d'avancement (PR)",APQ:"Préqualification (APQ)"};
 async function ouvrirDoc(p){const src=p.blobOrig||p.blob;let mk=null;try{mk=lirePdfRapide(new Uint8Array(await (src instanceof Blob?src:fichierDoc(p)).arrayBuffer()))}catch(err){}
   if(!mk){toast("Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.",5000);telechargerFichiers([fichierDoc(p)]);return}
@@ -4116,7 +4118,7 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
   let en=[];try{en=await allEntries()}catch(e){}
   const modifie=p=>(p.constats||[]).some(id=>{const e=en.find(x=>x.id===id);return e&&(e.modifieLe||"")>p.cree});
   const bouton=(par,t,f,cl)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(cl) b.className=cl;b.onclick=()=>f(b);par.append(b);return b};
-  {const aEnv=await docsAEnvoyer(CFG.mission.id);$("docEnvBox").hidden=!aEnv.length;if(aEnv.length){$("bDocEnv").textContent=`📤 Envoyer au PC (${aEnv.length} fichier(s) PDF)`;$("bDocEnv").onclick=()=>envoyerDocs(aEnv)}}
+  {const aEnv=await docsAEnvoyer(CFG.mission.id);$("docEnvBox").hidden=!aEnv.length;$("docEnvCard").hidden=!aEnv.length&&$("docEnvOk").hidden;if(aEnv.length){$("bDocEnv").textContent=`📤 Envoyer au PC (${aEnv.length} fichier(s) PDF)`;$("bDocEnv").onclick=()=>envoyerDocs(aEnv)}}
   if(refs.size){const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="dayhead"><h3>Registre des documents émis</h3><span class="stat"></span></div>`;
     c.querySelector(".stat").textContent=`${refs.size} document(s)`;
     for(const ref of [...refs.keys()].sort()){const revs=refs.get(ref).sort((a,b)=>b.doc.rev-a.doc.rev);const cur=revs[0],d=cur.doc;
