@@ -615,6 +615,9 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <p class="hint">Registre des documents émis par le projet (rapports rapides QIR, rapports d'avancement PR, préqualification APQ), avec leurs révisions. « Réviser » crée la révision suivante (Rev1, Rev2…) à partir des constats actuels ; l'ancienne version est gardée et marquée « RÉVISÉE ».</p>
     <label class="toggle"><input type="checkbox" id="pdfToutes"> Afficher tous les projets</label>
     <p class="hint" id="pdfInfo"></p>
+    <p class="hint">Les documents émis partent aussi au PC avec le prochain envoi des constats (paquet), ou avec le bouton ci-dessous : ils sont rangés dans le dossier du projet (Rapport\Documents appli) et inscrits dans le registre des rapports ; une version révisée part dans Rapport\_Archives.</p>
+    <div class="btns" id="docEnvBox" hidden><button type="button" class="primary" id="bDocEnv"></button></div>
+    <div class="btns" id="docEnvOk" hidden><span class="hint">Envoi fait ?</span><button type="button" id="bDocEnvOui">✓ Marquer envoyé au PC</button><button type="button" class="ghost" id="bDocEnvNon">Non</button></div>
   </div>
   <div id="pdfListe"></div>
 </section>
@@ -854,7 +857,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.20";
+const APP_VERSION="2.21";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2327,12 +2330,14 @@ async function photoFile(n,original,e,k){const p=await getPhoto(n);if(!p) return
   return new File([blob],n,{type:"image/jpeg"})}
 // v1.56 : TOUT l'envoi (constats + photos + originaux) voyage dans UN SEUL fichier image « paquet » :
 // Samsung Internet / Mes fichiers ne transmettaient pas tous les fichiers. Ranger-Releves.ps1 le déballe.
-async function buildFiles(list){return list.length?[await paquetEnvoi(list,await fichiersEnvoi(list))]:[]}
-async function paquetEnvoi(list,files){const m=list[0].mission||{},np=list.reduce((a,e)=>a+e.photos.length,0),h=new Date();
-  const nom=nomSur(`${m.no||"mission"} - Envoi PC - ${today()} ${String(h.getHours()).padStart(2,"0")}h${String(h.getMinutes()).padStart(2,"0")} - ${list.length} constat${list.length>1?"s":""}`)+".releve.jpg";
+async function buildFiles(list){if(!list.length) return [];const docs=await docsAEnvoyer(list[0].mission&&list[0].mission.id);PENDING_DOCS=docs.map(p=>p.id);
+  return [await paquetEnvoi(list,[...await fichiersEnvoi(list),...await fichiersDocs(docs)],null,docs.length)]}
+async function paquetEnvoi(list,files,m0,nd){const m=m0||list[0].mission||{},np=list.reduce((a,e)=>a+e.photos.length,0),h=new Date();nd=nd||0;
+  const quoi=[list.length?`${list.length} constat${list.length>1?"s":""}`:"",nd?`${nd} document${nd>1?"s":""}`:""].filter(Boolean).join(" + ");
+  const nom=nomSur(`${m.no||"mission"} - Envoi PC - ${today()} ${String(h.getHours()).padStart(2,"0")}h${String(h.getMinutes()).padStart(2,"0")} - ${quoi}`)+".releve.jpg";
   const c=document.createElement("canvas");c.width=900;c.height=Math.min(1400,260+Math.min(list.length,20)*40);const g=c.getContext("2d");
   g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.fillStyle="#6b2914";g.fillRect(0,0,900,10);g.font="bold 30px sans-serif";g.fillText("Envoi vers le PC – paquet de transfert",40,64);
-  g.fillStyle="#444";g.font="24px sans-serif";g.fillText(`Projet ${m.no||""} · ${list.length} constat${list.length>1?"s":""} · ${np} photo${np>1?"s":""}`,40,110);
+  g.fillStyle="#444";g.font="24px sans-serif";g.fillText(`Projet ${m.no||""} · ${list.length} constat${list.length>1?"s":""} · ${np} photo${np>1?"s":""}${nd?` · ${nd} document${nd>1?"s":""} émis`:""}`,40,110);
   g.fillStyle="#222";g.font="21px sans-serif";list.slice(0,20).forEach((e,i)=>{const t=`${frDate(e.date)} – ${libelleConstat(e)}`;g.fillText(t.length>70?t.slice(0,68)+"…":t,40,160+i*40)});
   if(list.length>20) g.fillText(`… et ${list.length-20} autre(s)`,40,160+20*40);
   g.fillStyle="#777";g.font="19px sans-serif";g.fillText("Déballé et rangé automatiquement sur le PC (Ranger les relevés). Ne pas ouvrir ni renommer.",40,c.height-30);
@@ -2344,6 +2349,16 @@ async function paquetEnvoi(list,files){const m=list[0].mission||{},np=list.reduc
   const pre=enc.encode("RELEVE-DATA:"),T=65000;
   for(const f of files){const b=new Uint8Array(await f.arrayBuffer());for(let i=0;i<b.length;i+=T) seg(pre,b.subarray(i,i+T))}
   parts.push(jpg.subarray(pos));return new File(parts,nom,{type:"image/jpeg"})}
+// v2.21 : documents émis (QIR / PR / APQ) pas encore envoyés au PC : PDF + fiche « releve-document/1 »
+let PENDING_DOCS=[];
+async function docsAEnvoyer(missionId){try{return (await tousPdfs()).filter(p=>p.doc&&p.doc.ref&&!p.doc.envoyePC&&p.mission&&p.mission.id===missionId)}catch(e){return []}}
+function ficheDoc(p){const d=p.doc,m=MISSIONS.find(x=>p.mission&&x.id===p.mission.id)||{};
+  return new File([JSON.stringify({schema:"releve-document/1",ref:d.ref,code:d.code,rev:d.rev,titre:d.titre,date:d.date,statut:d.statut||"courant",hist:d.hist||[],
+    constats:p.constats||[],fichier:p.nom,mission:{id:m.id||p.mission.id,no:m.no||p.mission.no,client:m.client||p.mission.client||"",dossierPC:m.dossierPC||""},versionAppli:APP_VERSION},null,2)],
+    `${d.ref}_Rev${d.rev}${d.statut==="revisee"?"_revisee":""}.releve-doc.txt`,{type:"text/plain"})}
+async function fichiersDocs(docs){const files=[];for(const p of docs){files.push(new File([p.blob],p.nom,{type:"application/pdf"}));files.push(ficheDoc(p))}return files}
+async function marquerDocsEnvoyes(ids){if(!ids.length) return;const now=new Date().toISOString();
+  await tx("pdfs","readwrite",s=>{for(const id of ids){const r=s.get(id);r.onsuccess=()=>{const p=r.result;if(p&&p.doc){p.doc.envoyePC=true;p.doc.envoyePCLe=now;s.put(p)}}}})}
 async function fichiersEnvoi(list){const files=[];
   for(const e of list){for(const [k,n] of e.photos.entries()){const f=await photoFile(n,false,e,k);if(f) files.push(f);const o=await photoFile(n,true,e,k);if(o) files.push(o)}
     files.push(new File([entryJSON(e)],`${e.id}.releve.txt`,{type:"text/plain"}))} // dans le paquet : simple texte, rangé au même passage
@@ -2388,6 +2403,7 @@ async function shareFiles(list,files){
   }else{await downloadFiles(list,files)}
 }
 async function markSent(){const now=new Date().toISOString();for(const id of pendingSent) JSEL.delete(id);await tx("entries","readwrite",s=>{for(const id of pendingSent){const r=s.get(id);r.onsuccess=()=>{const e=r.result;if(e){e.envoye=true;e.envoyeLe=now;s.put(e)}}}});
+  await marquerDocsEnvoyes(PENDING_DOCS);PENDING_DOCS=[];
   $("sentConfirm").hidden=true;pendingSent=[];toast("Marqué comme envoyé");renderJournal();refreshBadge()}
 async function supprimerConstat(e,b){
   if(form.editId===e.id){toast("Ce constat est ouvert dans l'onglet Saisie : enregistre ou annule d'abord la modification.");return}
@@ -4020,7 +4036,7 @@ async function reviserDoc(p){if(PDF_EN_COURS||!p||!p.doc) return;const d=p.doc,r
   const motif=await demanderMotif(`${d.ref} Rev${d.rev} → Rev${rev}`,"Le document sera recréé à partir des données actuelles. L'ancienne version est gardée dans le registre et marquée « RÉVISÉE ».");if(!motif) return;
   const m=MISSIONS.find(x=>p.mission&&x.id===p.mission.id);if(!m){toast("Le projet de ce document n'est pas sur cet appareil.");return}
   PDF_EN_COURS=true;busy("Création de la révision…","");await repos();
-  try{const doc={...d,rev,date:today(),hist:[...(d.hist||[]),{rev,date:today(),motif}],statut:"courant"};delete doc.remplaceLe;
+  try{const doc={...d,rev,date:today(),hist:[...(d.hist||[]),{rev,date:today(),motif}],statut:"courant",envoyePC:false};delete doc.remplaceLe;delete doc.envoyePCLe;
     let r,constats=p.constats||[],titres=p.titres||[];
     if(d.code==="APQ"){r=await construireApq(m,doc);if(!r) return}
     else{const en=await allEntries();const tri=triConstats(constats.map(id=>en.find(e=>e.id===id)).filter(Boolean));
@@ -4033,7 +4049,7 @@ async function reviserDoc(p){if(PDF_EN_COURS||!p||!p.doc) return;const d=p.doc,r
     busy("Archivage de l'ancienne version…","");
     let ancien=fichierDoc(p);try{const o=await filigranerPdf(new Uint8Array(await ancien.arrayBuffer()),pdfL("filig",r.l||d.l||"fr"));ancien=new File([o],p.nom,{type:"application/pdf"})}
     catch(e){toast("Filigrane non ajouté : "+(e&&e.message||e),5000)}
-    await tx("pdfs","readwrite",s=>{s.put({...p,blob:ancien,blobOrig:p.blobOrig||fichierDoc(p),taille:ancien.size,doc:{...d,statut:"revisee",remplaceLe:new Date().toISOString()}});
+    await tx("pdfs","readwrite",s=>{s.put({...p,blob:ancien,blobOrig:p.blobOrig||fichierDoc(p),taille:ancien.size,doc:{...d,statut:"revisee",remplaceLe:new Date().toISOString(),envoyePC:false}});
       s.put({id:newId(),nom:r.nom,cree:new Date().toISOString(),mission:p.mission,societe:r.so.societe,constats,titres,taille:r.octets.length,blob:r.f,doc:{...doc,l:r.l||doc.l}})});
     busyFin();if(!$("v-pdfs").hidden) renderPdfs();toast(`${d.ref} Rev${rev} émise ; Rev${d.rev} archivée (RÉVISÉE).`,4500);await proposerFichiers([r.f],"PDF")}
   catch(err){toast("Révision impossible : "+(err&&err.message||err),6000)}finally{busyFin();PDF_EN_COURS=false}}
@@ -4080,6 +4096,11 @@ async function partagerPhotos(e){const files=[];const base=nomExplicite(e);
 /* ---------- PDF préliminaires gardés dans l'appli (v1.51) ---------- */
 const tousPdfs=()=>tx("pdfs","readonly",s=>s.getAll());
 const fmtTaille=n=>n>=1048576?`${(n/1048576).toFixed(1)} Mo`:`${Math.max(1,Math.round(n/1024))} ko`;
+async function envoyerDocs(docs){if(!docs.length) return;const m=MISSIONS.find(x=>x.id===docs[0].mission.id)||CFG.mission;busy("Préparation de l'envoi…","");
+  let f;try{f=await paquetEnvoi([],await fichiersDocs(docs),{no:m.no},docs.length)}catch(e){busyFin();toast("Envoi impossible : "+(e&&e.message||e),6000);return}busyFin();
+  await proposerFichiers([f],"documents");$("docEnvOk").hidden=false;
+  $("bDocEnvOui").onclick=async()=>{await marquerDocsEnvoyes(docs.map(p=>p.id));$("docEnvOk").hidden=true;toast("Documents marqués comme envoyés au PC.");renderPdfs()};
+  $("bDocEnvNon").onclick=()=>{$("docEnvOk").hidden=true}}
 const DOC_TYPE={QIR:"Rapport rapide (QIR)",PR:"Rapport d'avancement (PR)",APQ:"Préqualification (APQ)"};
 async function ouvrirDoc(p){const src=p.blobOrig||p.blob;let mk=null;try{mk=lirePdfRapide(new Uint8Array(await (src instanceof Blob?src:fichierDoc(p)).arrayBuffer()))}catch(err){}
   if(!mk){toast("Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.",5000);telechargerFichiers([fichierDoc(p)]);return}
@@ -4095,6 +4116,7 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
   let en=[];try{en=await allEntries()}catch(e){}
   const modifie=p=>(p.constats||[]).some(id=>{const e=en.find(x=>x.id===id);return e&&(e.modifieLe||"")>p.cree});
   const bouton=(par,t,f,cl)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(cl) b.className=cl;b.onclick=()=>f(b);par.append(b);return b};
+  {const aEnv=await docsAEnvoyer(CFG.mission.id);$("docEnvBox").hidden=!aEnv.length;if(aEnv.length){$("bDocEnv").textContent=`📤 Envoyer au PC (${aEnv.length} fichier(s) PDF)`;$("bDocEnv").onclick=()=>envoyerDocs(aEnv)}}
   if(refs.size){const c=document.createElement("div");c.className="card";c.innerHTML=`<div class="dayhead"><h3>Registre des documents émis</h3><span class="stat"></span></div>`;
     c.querySelector(".stat").textContent=`${refs.size} document(s)`;
     for(const ref of [...refs.keys()].sort()){const revs=refs.get(ref).sort((a,b)=>b.doc.rev-a.doc.rev);const cur=revs[0],d=cur.doc;
@@ -4102,7 +4124,7 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
       it.innerHTML=`<span class="ic" aria-hidden="true">📄</span><div><div class="t"><b class="docref" data-noi18n></b><span class="revb" data-noi18n></span></div><div class="dt" data-noi18n></div><div class="m"></div><div class="aRev" hidden>⚠ Constat modifié depuis l'émission : une révision est peut-être à faire.</div><div class="acts"></div><div class="revs"></div></div>`;
       it.querySelector(".docref").textContent=ref;it.querySelector(".revb").textContent=`Rev${d.rev}`;it.querySelector(".dt").textContent=`${d.titre||""} – Rev${d.rev}`;
       const n=(cur.constats||[]).length;
-      it.querySelector(".m").textContent=[DOC_TYPE[d.code]||d.code,frDate(d.date||cur.cree.slice(0,10)),toutes&&cur.mission?`Projet ${cur.mission.no}`:"",n?`${n} constat(s)`:"",fmtTaille(cur.taille||0)].filter(Boolean).join(" · ");
+      it.querySelector(".m").textContent=[DOC_TYPE[d.code]||d.code,frDate(d.date||cur.cree.slice(0,10)),toutes&&cur.mission?`Projet ${cur.mission.no}`:"",n?`${n} constat(s)`:"",fmtTaille(cur.taille||0),revs.every(x=>x.doc.envoyePC)?"envoyé au PC ✓":"à envoyer au PC"].filter(Boolean).join(" · ");
       it.querySelector(".aRev").hidden=!modifie(cur);
       const acts=it.querySelector(".acts");
       bouton(acts,"Ouvrir",()=>ouvrirDoc(cur));bouton(acts,"Partager",()=>proposerFichiers([fichierDoc(cur)],"PDF"));
@@ -5103,7 +5125,14 @@ const TRAD_UI=[
 ["Document supprimé du téléphone.", "Document deleted from the phone.", "Documento borrado del teléfono.", "Dokument vom Telefon gelöscht."],
 ["RÉVISÉE", "REVISED", "REVISADO", "REVIDIERT"],
 ["PDF sans référence (avant la v2.20)", "PDFs without reference (before v2.20)", "PDF sin referencia (antes de la v2.20)", "PDFs ohne Referenz (vor v2.20)"],
-["Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.", "This PDF cannot be displayed in the app: it is saved to Downloads.", "Este PDF no se puede mostrar en la app: se guarda en Descargas.", "Dieses PDF kann in der App nicht angezeigt werden: Es wird in Downloads gespeichert."]
+["Ce PDF ne peut pas s'afficher dans l'appli : il est enregistré dans Téléchargements.", "This PDF cannot be displayed in the app: it is saved to Downloads.", "Este PDF no se puede mostrar en la app: se guarda en Descargas.", "Dieses PDF kann in der App nicht angezeigt werden: Es wird in Downloads gespeichert."],
+["Les documents émis partent aussi au PC avec le prochain envoi des constats (paquet), ou avec le bouton ci-dessous : ils sont rangés dans le dossier du projet (Rapport\\Documents appli) et inscrits dans le registre des rapports ; une version révisée part dans Rapport\\_Archives.", "Issued documents also go to the PC with the next findings sending (package), or with the button below: they are filed in the project folder (Rapport\\Documents appli) and entered in the report register; a revised version goes to Rapport\\_Archives.", "Los documentos emitidos también van al PC con el próximo envío de hallazgos (paquete), o con el botón de abajo: se archivan en la carpeta del proyecto (Rapport\\Documents appli) y se inscriben en el registro de informes; una versión revisada va a Rapport\\_Archives.", "Ausgegebene Dokumente gehen auch mit dem nächsten Befundversand (Paket) oder mit der Schaltfläche unten an den PC: Sie werden im Projektordner (Rapport\\Documents appli) abgelegt und im Berichtsregister eingetragen; eine revidierte Version kommt nach Rapport\\_Archives."],
+["Envoi fait ?", "Sent?", "¿Enviado?", "Gesendet?"],
+["✓ Marquer envoyé au PC", "✓ Mark as sent to the PC", "✓ Marcar como enviado al PC", "✓ Als an den PC gesendet markieren"],
+["📤 Envoyer au PC ({a} fichier(s) PDF)", "📤 Send to the PC ({a} PDF file(s))", "📤 Enviar al PC ({a} archivo(s) PDF)", "📤 An den PC senden ({a} PDF-Datei(en))"],
+["Préparation de l'envoi…", "Preparing the sending…", "Preparando el envío…", "Versand wird vorbereitet…"],
+["Envoi impossible : {a}", "Sending impossible: {a}", "Envío imposible: {a}", "Senden unmöglich: {a}"],
+["Documents marqués comme envoyés au PC.", "Documents marked as sent to the PC.", "Documentos marcados como enviados al PC.", "Dokumente als an den PC gesendet markiert."]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
