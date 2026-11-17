@@ -903,7 +903,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.36";
+const APP_VERSION="2.37";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3998,12 +3998,13 @@ function initAtelier(){$("atVigSel").onchange=()=>{AT_SEL_AUTO=false;renderVig(l
   renderAtelier(null)}
 /* ---------- v2.36 : réception d'un partage Android (Partager → 982 Toolbox) ---------- */
 async function initPartage(){if(!/[?&]partage=1/.test(location.search)) return;try{history.replaceState(null,"",location.pathname)}catch(e){}
-  let files=[];
-  try{const c=await caches.open("partage-recu");for(const k of await c.keys()){const r=await c.match(k);if(!r) continue;const b=await r.blob();
+  let files=[],diag=null;
+  try{const c=await caches.open("partage-recu");for(const k of await c.keys()){const r=await c.match(k);if(!r) continue;
+      if(/partage-diag$/.test(k.url)){try{diag=await r.json()}catch(e){}continue}const b=await r.blob();
       files.push(new File([b],decodeURIComponent(r.headers.get("X-Nom")||"partage.jpg"),{type:b.type||r.headers.get("Content-Type")||"image/jpeg",lastModified:+(r.headers.get("X-Date")||Date.now())}))}
     await caches.delete("partage-recu")}
   catch(e){toast("Partage illisible : "+(e&&e.message||e),5000);return}
-  if(!files.length){toast("Le partage n'a apporté aucun fichier.",4000);return}
+  if(!files.length){toast("Le partage n'a apporté aucun fichier."+(diag?` Diagnostic : ${diag.champs.length?diag.champs.join(" ; "):"aucun champ reçu"}${diag.err?" ; erreur : "+diag.err:""} (${diag.type.split(";")[0]||"type ?"}).`:" Pas de diagnostic : le partage n'est pas passé par l'appli (recharge-la puis réessaie)."),12000);return}
   const projets=[],photos=[];
   for(const f of files){let ok=false;
     if(/jpe?g/i.test(f.type)||/\.jpe?g$/i.test(f.name)){try{ok=!!((await lireNavette(f).catch(()=>null))||(await lireImageProgramme(f).catch(()=>null))||(await lireImageMission(f).catch(()=>null)))}catch(e){}}

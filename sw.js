@@ -2,7 +2,7 @@
 // v1.46 : la copie du téléphone s'ouvre tout de suite (même avec un réseau faible en unité).
 // Une nouvelle version déposée sur GitHub est téléchargée en arrière-plan ; l'appli affiche alors
 // « Nouvelle version disponible – Recharger » et ne bascule que sur demande.
-const CACHE = "releve-refractaire-v140";
+const CACHE = "releve-refractaire-v141";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "logo-fta.png", "pdf-lib.min.js", "pdfjs.min.mjs", "pdfjs.worker.min.mjs"];
 self.addEventListener("install", e => {
   // cache: "reload" = ignorer le cache HTTP de GitHub (10 min) pour bien prendre la nouvelle version
@@ -20,14 +20,23 @@ self.addEventListener("fetch", e => {
   const u = new URL(e.request.url);
   if (e.request.method === "POST" && u.origin === location.origin && /\/partage$/.test(u.pathname)) {
     e.respondWith((async () => {
+      // v2.37 : tout fichier du formulaire est pris, quel que soit le nom du champ ; diagnostic gardé pour l'appli
+      const diag = { champs: [], n: 0, err: "", type: e.request.headers.get("content-type") || "" };
       try {
-        const fd = await e.request.formData(); const c = await caches.open("partage-recu"); let i = 0;
-        for (const f of fd.getAll("fichiers")) {
+        const c = await caches.open("partage-recu"); let i = 0;
+        const fd = await e.request.formData();
+        for (const [k, f] of fd.entries()) {
+          diag.champs.push(k + ":" + (typeof f === "string" ? "texte" : ((f && f.type) || "fichier") + " " + ((f && f.size) || 0) + " o"));
           if (!f || typeof f === "string") continue;
           await c.put(new Request(new URL("partage-recu/" + String(i++).padStart(3, "0") + "-" + Date.now(), self.registration.scope).href),
             new Response(f, { headers: { "Content-Type": f.type || "application/octet-stream", "X-Nom": encodeURIComponent(f.name || "partage.jpg"), "X-Date": String(f.lastModified || Date.now()) } }));
+          diag.n++;
         }
-      } catch (err) { }
+        await c.put(new Request(new URL("partage-diag", self.registration.scope).href), new Response(JSON.stringify(diag), { headers: { "Content-Type": "application/json" } }));
+      } catch (err) {
+        diag.err = String((err && err.message) || err);
+        try { const c = await caches.open("partage-recu"); await c.put(new Request(new URL("partage-diag", self.registration.scope).href), new Response(JSON.stringify(diag), { headers: { "Content-Type": "application/json" } })); } catch (e2) { }
+      }
       return Response.redirect(new URL("index.html?partage=1", self.registration.scope).href, 303);
     })());
     return;
