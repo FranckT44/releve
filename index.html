@@ -217,6 +217,17 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 #gvImg{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
 .gvbas{padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px}#gvLeg{width:100%;box-sizing:border-box;font-size:16px;min-height:44px}
 .gvacts{display:grid;grid-template-columns:1fr 1fr 1.2fr;padding:2px 0}.gvacts .gvinc{grid-column:1/-1;min-height:40px}.gvacts button{min-height:44px;font-size:14px}.gvinc{font-size:15px}.gvinc input{width:22px;height:22px}
+body:not(.atelier) #atCard{display:none!important}
+body.atelier #planCard,body.atelier #avCard,body.atelier .degats{display:none!important}
+.thumb button.itp{top:auto;bottom:24px;right:auto;left:4px;width:auto;min-height:26px;border-radius:6px;padding:0 7px;font:700 12px var(--font)}
+.thumb button.itp.on{background:#6a4fc4}
+#atVig label.toggle{display:flex;gap:8px;align-items:flex-start;margin:4px 0}
+#atVig .vigX{font-style:italic}
+.atRow{display:grid;grid-template-columns:1fr 1fr auto;grid-template-areas:"d r r" "n n n" "m m x";gap:6px;align-items:end;padding:8px 0;border-top:1px dashed var(--line)}
+.atRow>label:nth-child(1){grid-area:d}.atRow>label:nth-child(2){grid-area:n}.atRow>label:nth-child(3){grid-area:r}.atRow .atRem{grid-area:m}.atRow .atDel{grid-area:x;min-height:44px;width:52px}
+#atVig label.toggle input{flex:none}
+.atRow input,.atRow select{width:100%}
+.atGrp{font-weight:700;margin:14px 0 4px}
 .thumb .an{position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px}
 .card.pliable>h2,.card.pliable>.ghead>h2{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 .card.pliable>h2::before,.card.pliable>.ghead>h2::before{content:"▾";display:inline-block;width:1.15em;color:var(--muted)}
@@ -466,6 +477,19 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <div class="path" id="fPath"></div>
   </div>
 
+  <div class="card c-violet" id="atCard">
+    <h2>Contrôle atelier (WIR)</h2>
+    <label>Opération ITP (n° et intitulé)<input type="text" id="fOpItp" autocomplete="off" maxlength="160" placeholder="ex. : 5.2 – Installation des ancrages"></label>
+    <label>Liste des points de vigilance<select id="atVigSel"></select></label>
+    <p class="hint">Coche les points vérifiés : ils sont repris dans le WIR.</p>
+    <div id="atVig"></div>
+    <p class="atGrp">Contrôles datés</p>
+    <div id="atCtl"></div>
+    <datalist id="atCtlList"></datalist>
+    <button type="button" class="ghost" id="atCtlAdd">＋ Ajouter un contrôle</button>
+    <p class="hint">Un contrôle « NOK » rend l'élément « non libéré » dans le WIR. Photo de l'ITP signé : touche « ITP » sur sa vignette (elle part au §7 du WIR).</p>
+  </div>
+
   <div class="card c-vert" id="planCard" hidden>
     <h2>Plan de réparation</h2>
     <p class="hint">Coche les étapes prévues pour réparer cette zone (reprises au §4 « Repair plan » de l'IR) ; pour chacune : point d'arrêt et commentaire.</p>
@@ -663,6 +687,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <div class="row2"><label>Rapports émis au nom de<select id="cSoc"><option value="QUARTIS">QUARTIS (consultant)</option><option value="FTA">Mon entreprise (compte propre)</option></select></label>
       <label id="lActSoc" hidden>Activité affichée dans l'en-tête<select id="cActSoc"><option value="API 936 Consultancy">API 936 Consultancy</option><option value="API 982 Consultancy">API 982 Consultancy</option></select></label></div>
     <p class="hint">Change le logo et l'en-tête des IPR / IR générés sur le PC pour ce projet (dossier 982 Toolbox\Sociétés).</p>
+    <label>Type de projet<select id="cType"><option value="arret">Arrêt d'unité (IPR / IR)</option><option value="atelier">Préfabrication atelier (WIR)</option></select></label>
     <label>Dossier du projet sur le PC<input type="text" id="cDir"></label>
     <label>Langue des listes (équipements, activités)<select id="cLang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label>
     <p class="hint" id="dicoInfo"></p>
@@ -690,6 +715,12 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <h2>Activités et sous-activités</h2>
     <p class="hint">Même principe : code entre crochets, sous-activités précédées d'un tiret.</p>
     <textarea class="cfg" id="cAct" spellcheck="false"></textarea>
+  </div>
+  <div class="card c-violet" id="vigCard" hidden>
+    <h2>Points de vigilance (atelier)</h2>
+    <p class="hint">Une ligne par opération (même nom que l'activité ou la sous-activité pour être proposée automatiquement), puis ses points de vigilance précédés d'un tiret.</p>
+    <textarea class="cfg" id="cVig" spellcheck="false"></textarea>
+    <div class="btns"><button type="button" class="ghost" id="bVigDef">Remettre les listes par défaut</button></div>
   </div>
   </div>
   <div id="renCard" class="card confirm" hidden>
@@ -865,7 +896,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.26";
+const APP_VERSION="2.27";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1045,7 +1076,7 @@ async function loadCfg(){
     MISSIONS=[{id:newId(),archive:false,...m}];await kvSet("missions",MISSIONS)}
   let act=null;try{act=await kvGet("active")}catch(e){}
   setActive(MISSIONS.find(m=>m.id===act&&!m.archive)||MISSIONS.find(m=>!m.archive)||MISSIONS[0])}
-function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m),...(m.dico&&m.dico.length?{dico:m.dico}:{})},equipements:m.equipements,activites:m.activites};
+function setActive(m){CFG={mission:{id:m.id,no:m.no,client:m.client,inspecteur:m.inspecteur,dossierPC:m.dossierPC,...socMission(m),...(m.dico&&m.dico.length?{dico:m.dico}:{}),...(m.typeProjet==="atelier"?{typeProjet:"atelier"}:{})},equipements:m.equipements,activites:m.activites,vigilance:m.vigilance||""};document.body.classList.toggle("atelier",m.typeProjet==="atelier");
   EQ=parseTree(CFG.equipements);ACT=parseTree(CFG.activites);kvSet("active",m.id).catch(()=>{})}
 const curMission=()=>MISSIONS.find(m=>m.id===CFG.mission.id);
 const belongs=e=>e.mission&&(e.mission.id?e.mission.id===CFG.mission.id:e.mission.no===CFG.mission.no);
@@ -1061,7 +1092,7 @@ const CHOISIR={fr:"— choisir —",en:"— choose —",es:"— elegir —",de:"
 const choisirOpt=()=>({code:"",nom:CHOISIR[(typeof LANGUI!=="undefined"&&LANGUI.lang)||"fr"]||CHOISIR.fr});
 function refreshSelects(keep={}){fillSelect($("fEq"),[choisirOpt(),...EQ],keep.eq);fillSub(keep.sub);fillSelect($("fAct"),[choisirOpt(),...ACT],keep.act);fillSubAct(keep.subact)}
 function fillSub(keep){const e=curEq();fillSelect($("fSub"),!e?[{nom:"—",code:""}]:e.enfants.length?e.enfants:[{nom:GENERAL[langueMission()]||"(général)",code:"GEN"}],keep)}
-function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],keep);updatePath();if(typeof majDegats==="function") majDegats();if(typeof majPlan==="function") majPlan();if(typeof majAv==="function") majAv()}
+function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],keep);updatePath();if(typeof majDegats==="function") majDegats();if(typeof majPlan==="function") majPlan();if(typeof majAv==="function") majAv();if(typeof majAtelier==="function") majAtelier()}
 function subActObj(){if(!$("fSubAct").value) return null;const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
 function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=e?($("fSub").selectedOptions[0]?.textContent||""):"";
   const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
@@ -1082,7 +1113,11 @@ async function makeThumb(blob){try{const bm=await createImageBitmap(blob);const 
 function renderThumbs(){planifierBrouillon(true);majPropDate();const t=$("thumbs");t.innerHTML="";form.photos.forEach((p,i)=>{const d=document.createElement("div");d.className="thumb"+(p.inc===false?" hors":"");
   d.innerHTML=`<img alt="Photo ${i+1} : toucher pour annoter">${p.annot?'<i class="an">annotée</i>':""}${p.inc===false?'<i class="hr">hors rapport</i>':""}<span>${pad(i+1)}${p.prise?" · "+p.prise.slice(11,16):""}</span><button type="button" aria-label="Retirer la photo ${i+1}">×</button>`;d.querySelector("img").src=p.thumb;
   d.querySelector("img").onclick=()=>ouvrirEditeur(i,{src:form.photos,rendu:renderThumbs,fin:renderThumbs});
-  d.querySelector("button").onclick=()=>{form.photos.splice(i,1);renderThumbs()};t.append(d)});
+  d.querySelector("button").onclick=()=>{form.photos.splice(i,1);renderThumbs()};
+  if(estAtelier()){const b=document.createElement("button");b.type="button";const on=estLegItp(p.leg);b.className="itp"+(on?" on":"");b.textContent=on?"✓ ITP":"ITP";
+    b.setAttribute("aria-label",on?"Photo de l'ITP signé (toucher pour annuler)":"Marquer comme photo de l'ITP signé");
+    b.onclick=()=>{p.leg=estLegItp(p.leg)?String(p.leg).replace(/^ITP\s*(signé|signed)?\s*[–-]?\s*/i,""):(String(p.leg||"").trim()?"ITP – "+String(p.leg).trim():(langueMission()==="fr"?"ITP signé":"ITP signed"));renderThumbs();toast(estLegItp(p.leg)?"Photo marquée « ITP signé » (§7 du WIR).":"Marque ITP retirée.")};d.append(b)}
+  t.append(d)});
   $("photoHint").textContent=form.photos.length?`${form.photos.length} photo(s) pour ce constat. Touche une photo pour l'annoter.`:"Aucune photo pour ce constat."}
 async function exifDate(blob){ // DateTimeOriginal (0x9003) ou DateTime (0x0132) d'un JPEG
   try{const v=new DataView(await blob.slice(0,262144).arrayBuffer());if(v.getUint16(0)!==0xFFD8) return null;let o=2;
@@ -1114,7 +1149,7 @@ async function addFiles(files){const nouv=[];const im=files.filter(f=>f.type.sta
   majPropDate();
   renderThumbs()}
 function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";$("fSurf").value="";$("fMarq").checked=false;if($("fAcces").options.length){$("fAcces").value="";majAccesLibre(false)}
-  renderPlan([]);majAv([]);$("fDate").value=today();/* v1.57 : chaque nouveau constat repart sur la date du jour */majPropDate();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true;majCtxPrec()}
+  renderPlan([]);majAv([]);renderAtelier(null);$("fDate").value=today();/* v1.57 : chaque nouveau constat repart sur la date du jour */majPropDate();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true;majCtxPrec()}
 async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
   const e=curEq(),a=curAct();if(!e||!a){toast("Choisis un équipement et une activité dans la liste.");return}
@@ -1142,8 +1177,9 @@ async function saveEntry(){
   const entry={schema:"releve-refractaire/1",id,hms:old?old.hms:hms,creeLe:old?old.creeLe:now.toISOString(),modifieLe:now.toISOString(),
     mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa?{code:sa.code,nom:sa.nom}:null,
     repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,surface:$("fSurf").value.trim().replace(/\s*m²?$/i,""),zonesMarquees:$("fMarq").checked,acces:accesSaisi(),
-    planReparation:estInitiale(a)?lirePlan():[],
-    avancement:estInitiale(a)?[]:lireAv(),
+    planReparation:estInitiale(a)&&!estAtelier()?lirePlan():[],
+    avancement:estInitiale(a)||estAtelier()?[]:lireAv(),
+    ...(estAtelier()?(x=>({operationItp:x.op,vigilance:x.vig,controles:x.ctl}))(lireAtelier()):{}),
     photos:names,photosPrisesLe:prises,legendes:form.photos.map(p=>p.leg||""),rapport:form.photos.map(p=>p.inc!==false),originaux,dossierCible:targetDir(),envoye:false,envoyeLe:null};
   try{
     await tx("photos","readwrite",s=>{if(old) for(const n of old.photos) s.delete(n);for(const r of photoRecs) s.put(r)});
@@ -1165,7 +1201,7 @@ async function editEntry2(en,id){
   else{const e=curEq();const sub=e?.enfants.find(x=>x.nom===en.sousEquipement);if(sub) $("fSub").value=sub.code;
     else if(e&&e.enfants.length){absent($("fSub"),en.sousEquipement);toast("Le sous-équipement de ce constat n'existe plus : choisis-le à nouveau avant d'enregistrer.",6000)}}
   if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
-  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;poserAcces(en.acces);renderPlan(en.planReparation||[]);majAv(en.avancement||[]);
+  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;poserAcces(en.acces);renderPlan(en.planReparation||[]);majAv(en.avancement||[]);renderAtelier({op:en.operationItp||"",vig:en.vigilance||[],ctl:en.controles||[]});
   form={photos:[],gravite:en.gravite,editId:id};
   for(const [k,n] of en.photos.entries()){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null,leg:(en.legendes||[])[k]||"",inc:(en.rapport||[])[k]!==false})}
   renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";ouvrirCarte($("formTitle"));$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
@@ -2263,6 +2299,9 @@ async function remplirApercu(ap,e){
   ajouter("Recommandation",e.recommandation?versHtml(e.recommandation):"");
   ajouter("Plan de réparation",planHtml(e.planReparation));
   ajouter("Avancement",avHtml(e.avancement));
+  ajouter("Opération ITP",e.operationItp?esc(e.operationItp):"");
+  ajouter("Points de vigilance vérifiés",e.vigilance&&e.vigilance.length?"<ul>"+e.vigilance.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":"");
+  ajouter("Contrôles",ctlHtml(e.controles));
   ajouter("Accès au revêtement",e.acces&&e.acces.nom?esc(e.acces.nom):"");
   const surf=[e.surface?esc(e.surface)+" m²":"",e.zonesMarquees?"zone(s) déjà marquée(s)":""].filter(Boolean).join(" · ");ajouter("Surface estimée à réparer",surf);
   ajouter("Décision client",e.decisionClient?"<b>attendue</b>":"");
@@ -2529,7 +2568,7 @@ function renderCfg(){
   const show=$("mShowArch").checked;const sel=$("mSel");sel.innerHTML="";
   for(const m of MISSIONS.filter(m=>show||!m.archive||m.id===CFG.mission.id)){const o=document.createElement("option");o.value=m.id;o.textContent=missionLabel(m);sel.append(o)}
   sel.value=CFG.mission.id;const cur=curMission();$("bArch").textContent=cur&&cur.archive?"Désarchiver":"Archiver";
-  $("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur||"";$("cClient").value=CFG.mission.client||"";$("cDir").value=CFG.mission.dossierPC||"";{const so=socMission(cur);$("cSoc").value=so.societe;$("cActSoc").value=so.activiteSociete||"API 936 Consultancy";majChoixSoc("cSoc","lActSoc")}$("cLang").value=langueMission();$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites;
+  $("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur||"";$("cClient").value=CFG.mission.client||"";$("cDir").value=CFG.mission.dossierPC||"";{const so=socMission(cur);$("cSoc").value=so.societe;$("cActSoc").value=so.activiteSociete||"API 936 Consultancy";majChoixSoc("cSoc","lActSoc")}$("cLang").value=langueMission();$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites;$("cType").value=cur&&cur.typeProjet==="atelier"?"atelier":"arret";$("cVig").value=cur&&cur.vigilance||"";majVigCard();
   const f=$("nFrom");f.innerHTML="";
   const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;f.append(o)};
   add("copy:"+CFG.mission.id,`Copie du projet ${CFG.mission.no}`);
@@ -2565,8 +2604,8 @@ async function majMissionConstats(m){const liste=(await allEntries()).filter(e=>
 async function saveCfg(){
   const eq=parseTree($("cEq").value),ac=parseTree($("cAct").value);if(!eq.length||!ac.length){toast("Il faut au moins un équipement et une activité.");return}
   if(!$("cNo").value.trim()){toast("Indique le n° de projet.");return}
-  const m=curMission();const nv={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),societe:$("cSoc").value,activiteSociete:$("cSoc").value==="FTA"?$("cActSoc").value:"",equipements:$("cEq").value,activites:$("cAct").value};
-  const change=Object.keys(nv).some(k=>(k==="societe"?socMission(m).societe:k==="activiteSociete"?socMission(m).activiteSociete:(m[k]||""))!==nv[k]);
+  const m=curMission();const nv={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),societe:$("cSoc").value,activiteSociete:$("cSoc").value==="FTA"?$("cActSoc").value:"",equipements:$("cEq").value,activites:$("cAct").value,typeProjet:$("cType").value,vigilance:$("cVig").value};
+  const change=Object.keys(nv).some(k=>(k==="societe"?socMission(m).societe:k==="activiteSociete"?socMission(m).activiteSociete:k==="typeProjet"?(m.typeProjet||"arret"):(m[k]||""))!==nv[k]);
   const ren=detecterRenommages(parseTree(m.equipements),eq);
   if(ren.length&&!saveCfg.force){const n=(await constatsTouches(ren)).length;
     if(n){REN_EN_ATTENTE={ren};
@@ -2585,6 +2624,7 @@ async function createMission(){
   const [kind,ref]=$("nFrom").value.split(":");const src=kind==="copy"?MISSIONS.find(m=>m.id===ref):TEMPLATES[ref];
   const lang=$("nLang").value||"fr";
   const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",equipements:src.equipements,activites:convertirActivites(src.activites,lang),dico:kind==="copy"&&src.dico?JSON.parse(JSON.stringify(src.dico)):[],modifieLe:new Date().toISOString()};
+  {const at=kind==="tpl"?ref==="atelier":src.typeProjet==="atelier";m.typeProjet=at?"atelier":"arret";m.vigilance=kind==="copy"&&src.vigilance?src.vigilance:at?vigDefaut(lang):""}
   MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
   toast(`Projet ${no} créé : vérifie le dossier PC et complète les listes`,4000)}
 async function toggleArchive(){const m=curMission();
@@ -2618,7 +2658,7 @@ async function appliquerImport(d){$("impCard").hidden=true;IMPORT_EN_ATTENTE=nul
   let m=MISSIONS.find(x=>x.no===d.no);const maj=!!m;
   if(!m){m={id:newId(),archive:false};MISSIONS.push(m)}
   const v=d.modifieLe||new Date().toISOString();
-  Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",societe:d.societe||"QUARTIS",activiteSociete:d.activiteSociete||"",equipements:d.equipements,activites:d.activites,dico:Array.isArray(d.dico)?d.dico:(m.dico||[]),archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
+  Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",societe:d.societe||"QUARTIS",activiteSociete:d.activiteSociete||"",equipements:d.equipements,activites:d.activites,typeProjet:d.typeProjet==="atelier"?"atelier":"arret",vigilance:d.vigilance||"",dico:Array.isArray(d.dico)?d.dico:(m.dico||[]),archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
   await saveMissions();await switchMission(m.id);toast(maj?`Projet ${m.no} mis à jour`:`Projet ${m.no} ajouté`)}
 /* ---------- v1.67 : programme d'arrêt préparé sur le PC (« Préparer l'arrêt », 982 Toolbox) ----------
    image programme-<N°>.jpg : JSON {schema:"releve-programme/1", id, mission:{no}, lignes:[{eq:{nom,code}, sub, act, lining, rem}]}
@@ -3732,14 +3772,132 @@ function initMaj(){if(!("serviceWorker" in navigator)) return;let rechargee=fals
     // l'appli reste souvent ouverte des jours : on revérifie au retour sur l'appli (au plus toutes les 30 min)
     const verifier=()=>{if(document.visibilityState!=="visible"||!navigator.onLine||Date.now()-derniere<30*60000) return;derniere=Date.now();reg.update().catch(()=>{})};
     document.addEventListener("visibilitychange",verifier);derniere=Date.now()}).catch(()=>{})}
+/* ---------- v2.27 : projets « Préfabrication atelier » (WIR) ----------
+   Carte « Contrôle atelier » de la saisie : opération ITP, points de vigilance cochés (listes du projet, par opération)
+   et contrôles datés (date, contrôle, résultat OK / NOK / Reporté / S.O., remarque). Repris par le PC dans le WIR. */
+const VIG_DEF={fr:`Types de matériel
+- Matériel conforme à la commande (type, quantité)
+- Identification / marquage des pièces
+Matériaux
+- Désignation, n° de lot et date de péremption des produits
+- Certificats matière / fiches techniques
+- Conditions de stockage (température, humidité)
+Contrôle dimensionnel
+- Dimensions conformes au plan
+- Épaisseur du revêtement
+- Planéité / ovalisation
+Préparation de surface
+- Propreté des surfaces (graisse, rouille, calamine)
+- Degré de préparation conforme à la spécification
+- Protection des ancrages (peinture, cire, capuchons)
+Installation du système d'ancrage
+- Type et nuance des ancrages conformes au plan
+- Pas et orientation des ancrages
+- Soudage des ancrages (pattern WP2, cordon complet, sans caniveau)
+- Jonctions sur plats d'arrêt
+- Connexions entre panneaux d'hexmetal
+- Hauteur des bandes / retombées
+- Test au marteau / pliage des ancrages
+- Contrôle dimensionnel des ancrages
+Préqualification
+- Panneau d'essai réalisé dans les conditions de l'atelier
+- Prélèvement des échantillons
+- Résultats d'essais conformes (densité, résistance, retrait)
+Installation des revêtements
+- Relevés des conditions de mise en œuvre (températures, eau de gâchage, temps de malaxage)
+- Remplissage complet de l'hexmetal (sans vide)
+- Arasage / surépaisseur < 1 mm
+- Test au marteau (pas de son creux)
+- Échantillonnage (cubes / éprouvettes)
+- Cure et séchage`,
+en:`Types of material
+- Material as per purchase order (type, quantity)
+- Identification / marking of parts
+Materials
+- Product designation, batch number and expiry date
+- Material certificates / data sheets
+- Storage conditions (temperature, humidity)
+Dimensional check
+- Dimensions as per drawing
+- Lining thickness
+- Flatness / ovality
+Surface preparation
+- Surface cleanliness (grease, rust, mill scale)
+- Preparation grade as per specification
+- Anchor protection (paint, wax, caps)
+Anchoring system installation
+- Anchor type and grade as per drawing
+- Anchor pitch and orientation
+- Anchor welding (WP2 pattern, full weld, no undercut)
+- Junctions on stop plates
+- Connections between hexmetal panels
+- Strip height / overlaps
+- Hammer test / bend test of anchors
+- Dimensional check of anchors
+Prequalification
+- Test panel made under workshop conditions
+- Sampling
+- Test results compliant (density, strength, shrinkage)
+Lining installation
+- Application conditions recorded (temperatures, mixing water, mixing time)
+- Hexmetal completely filled (no voids)
+- Levelling / overthickness < 1 mm
+- Hammer test (no hollow sound)
+- Sampling (cubes / specimens)
+- Curing and drying`};
+function vigDefaut(l){return VIG_DEF[l]||VIG_DEF[l==="fr"?"fr":"en"]}
+const estAtelier=()=>CFG&&CFG.mission&&CFG.mission.typeProjet==="atelier";
+const estLegItp=l=>/^ITP\b/i.test(String(l||"").trim());
+function parseVig(t){const out=[];let cur=null;for(const l of String(t||"").split(/\r?\n/)){const x=l.trim();if(!x) continue;
+  if(/^[-•–]/.test(x)){const p=x.replace(/^[-•–]\s*/,"");if(p){if(!cur){cur={nom:"Général",points:[]};out.push(cur)}cur.points.push(p)}}else{cur={nom:x,points:[]};out.push(cur)}}return out}
+const AT_RES=[["OK","OK"],["NOK","NOK"],["REPORTE","Reporté"],["SO","S.O."]];
+const AT_RES_LIB=c=>(AT_RES.find(x=>x[0]===c)||[c,c])[1];
+let AT_SEL_AUTO=true;
+function vigListes(){return parseVig(CFG.vigilance)}
+function vigPourActivite(){const L=vigListes();const a=curAct(),sa=subActObj();
+  for(const n of [sa&&sa.nom,a&&a.nom].filter(Boolean)){const k=norm(n);const t=L.find(x=>norm(x.nom)===k)||L.find(x=>norm(x.nom)&&(k.includes(norm(x.nom))||norm(x.nom).includes(k)));if(t) return t.nom}
+  return ""}
+function lireVig(){return [...document.querySelectorAll("#atVig input:checked")].map(c=>c.value)}
+function lireCtl(){return [...document.querySelectorAll("#atCtl .atRow")].map(d=>({date:d.querySelector(".atDate").value,controle:d.querySelector(".atNom").value.trim(),resultat:d.querySelector(".atRes").value,remarque:d.querySelector(".atRemI").value.trim()}))
+  .filter(x=>x.controle||x.remarque||x.resultat)}
+function lireAtelier(){const o=$("fOpItp");if(!o) return {op:"",vig:[],ctl:[]};return {op:o.value.trim(),vig:lireVig(),ctl:lireCtl()}}
+function remplirSelVig(choix){const sel=$("atVigSel");const L=vigListes();sel.innerHTML="";
+  const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;sel.append(o)};add("","(aucune liste)");for(const x of L) add(x.nom,x.nom);
+  sel.value=L.some(x=>x.nom===choix)?choix:""}
+function renderVig(coches){coches=coches||[];const box=$("atVig");box.innerHTML="";const t=vigListes().find(x=>x.nom===$("atVigSel").value);
+  const pts=t?t.points.slice():[];const extra=coches.filter(c=>!pts.includes(c));
+  for(const p of [...pts,...extra]){const l=document.createElement("label");l.className="toggle"+(pts.includes(p)?"":" vigX");l.dataset.noi18n="";
+    const c=document.createElement("input");c.type="checkbox";c.value=p;c.checked=coches.includes(p);const sp=document.createElement("span");sp.textContent=p;l.append(c,sp);box.append(l)}
+  if(!pts.length&&!extra.length) box.innerHTML='<p class="hint">Aucun point de vigilance pour cette opération (listes dans l\'onglet Projets).</p>';
+  const dl=$("atCtlList");dl.innerHTML="";for(const p of pts){const o=document.createElement("option");o.value=p;dl.append(o)}}
+function ctlLigne(x){x=x||{};const d=document.createElement("div");d.className="atRow";
+  d.innerHTML=`<label>Date<input type="date" class="atDate"></label><label>Contrôle<input type="text" class="atNom" list="atCtlList" maxlength="160" autocomplete="off" placeholder="ex. : test au marteau"></label>`
+    +`<label>Résultat<select class="atRes"><option value=""></option>${AT_RES.map(r=>`<option value="${r[0]}">${r[1]}</option>`).join("")}</select></label>`
+    +`<label class="atRem">Remarque<input type="text" class="atRemI" maxlength="300" autocomplete="off"></label><button type="button" class="ghost atDel" aria-label="Supprimer ce contrôle">🗑</button>`;
+  d.querySelector(".atDate").value=x.date||$("fDate").value||today();d.querySelector(".atNom").value=x.controle||"";d.querySelector(".atRes").value=x.resultat||"";d.querySelector(".atRemI").value=x.remarque||"";
+  d.querySelector(".atDel").onclick=()=>{d.remove();planifierBrouillon(false)};$("atCtl").append(d);return d}
+function renderAtelier(d){if(!$("atCard")) return;d=d||{op:"",vig:[],ctl:[]};$("fOpItp").value=d.op||"";
+  let choix=vigPourActivite();const vig=d.vig||[];
+  if(vig.length){const L=vigListes();const best=L.map(x=>[x.nom,vig.filter(p=>x.points.includes(p)).length]).sort((a,b)=>b[1]-a[1])[0];if(best&&best[1]) choix=best[0]}
+  AT_SEL_AUTO=!vig.length;remplirSelVig(choix);renderVig(vig);$("atCtl").innerHTML="";for(const c of d.ctl||[]) ctlLigne(c)}
+function majAtelier(){if(!$("atCard")||!estAtelier()) return;const v=lireVig();
+  if(AT_SEL_AUTO||!v.length){const c=vigPourActivite();if(c!==$("atVigSel").value||$("atVigSel").options.length!==vigListes().length+1){remplirSelVig(c);renderVig(v)}}}
+function ctlHtml(c){if(!c||!c.length) return "";return "<ul>"+c.map(x=>`<li>${x.date?esc(frDate(x.date))+" – ":""}${esc(x.controle||"")}${x.resultat?` : <b${x.resultat==="NOK"?' style="color:#b3261e"':""}>${esc(AT_RES_LIB(x.resultat))}</b>`:""}${x.remarque?" – "+esc(x.remarque):""}</li>`).join("")+"</ul>"}
+function majVigCard(){const at=$("cType").value==="atelier";$("vigCard").hidden=!at;if(at&&!$("cVig").value.trim()) $("cVig").value=vigDefaut($("cLang").value||langueMission())}
+function initAtelier(){$("atVigSel").onchange=()=>{AT_SEL_AUTO=false;renderVig(lireVig());planifierBrouillon(false)};
+  $("atCtlAdd").onclick=()=>{const d=ctlLigne(null);d.querySelector(".atNom").focus();planifierBrouillon(false)};
+  $("cType").onchange=majVigCard;
+  $("bVigDef").onclick=()=>{const b=$("bVigDef");if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer : remplacer les listes actuelles";return}
+    b.dataset.ok="";b.textContent="Remettre les listes par défaut";$("cVig").value=vigDefaut($("cLang").value||langueMission());toast("Listes par défaut remises : touche « Enregistrer » pour les garder.",4000)};
+  renderAtelier(null)}
 let MAJ=null;
 /* ---------- brouillon du constat en cours (v1.46) ----------
    Android peut fermer Chrome pendant l'appareil photo, la galerie ou un appel : le formulaire est gardé
    dans le téléphone (photos à chaque changement, textes 1 s après la frappe, et dès que l'appli passe en arrière-plan). */
 const BR={silence:false,minuterie:null,photos:false,charge:false,session:false};
 function etatTexte(){return {mission:CFG.mission.id,t:Date.now(),eq:$("fEq").value,sub:$("fSub").value,act:$("fAct").value,subact:$("fSubAct").value,rep:$("fRep").value,date:$("fDate").value,
-  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,accesLibre:$("fAccesLibre").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,plan:lirePlan(),av:lireAv()}}
-const aDuContenu=t=>!!(form.photos.length||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||(t.plan&&t.plan.length)||(t.av&&t.av.length)||t.editId);
+  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,accesLibre:$("fAccesLibre").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,plan:lirePlan(),av:lireAv(),at:lireAtelier()}}
+const aDuContenu=t=>!!(form.photos.length||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||(t.plan&&t.plan.length)||(t.av&&t.av.length)||(t.at&&(t.at.op||t.at.vig.length||t.at.ctl.length))||t.editId);
 function planifierBrouillon(photos){if(BR.silence||!DB||!BR.charge) return;if(photos) BR.photos=true;clearTimeout(BR.minuterie);BR.minuterie=setTimeout(()=>sauverBrouillon().catch(()=>{}),photos?300:1000)}
 async function sauverBrouillon(){clearTimeout(BR.minuterie);if(!DB||!BR.charge) return;const t=etatTexte();
   // formulaire vidé : on ne supprime que le brouillon écrit pendant cette session (jamais celui d'avant, pas encore repris)
@@ -3759,7 +3917,7 @@ async function afficherBrouillon(){let t=null,ph=null;try{t=await kvGet("brouill
 async function reprendreBrouillon(){const t=await kvGet("brouillonTexte"),ph=await kvGet("brouillonPhotos");if(!t) return;
   BR.silence=true;try{showView("saisie");
     refreshSelects({eq:t.eq,act:t.act,subact:t.subact});if(t.sub) $("fSub").value=t.sub;fillSubAct(t.subact);
-    $("fRep").value=t.rep;$("fDate").value=t.date||today();$("fObs").value=t.obs;$("fReco").value=t.reco;$("fDec").checked=t.dec;$("fSurf").value=t.surf;$("fMarq").checked=t.marq;{const v=t.acces||"";if(v==="LIBRE"){$("fAcces").value="LIBRE";majAccesLibre(false);$("fAccesLibre").value=t.accesLibre||""}else if(v.startsWith("L:")) poserAcces({code:"LIBRE",nom:v.slice(2)},t.accesLibre);else poserAcces(v?{code:v}:null)}renderPlan(t.plan||[]);majAv(t.av||[]);
+    $("fRep").value=t.rep;$("fDate").value=t.date||today();$("fObs").value=t.obs;$("fReco").value=t.reco;$("fDec").checked=t.dec;$("fSurf").value=t.surf;$("fMarq").checked=t.marq;{const v=t.acces||"";if(v==="LIBRE"){$("fAcces").value="LIBRE";majAccesLibre(false);$("fAccesLibre").value=t.accesLibre||""}else if(v.startsWith("L:")) poserAcces({code:"LIBRE",nom:v.slice(2)},t.accesLibre);else poserAcces(v?{code:v}:null)}renderPlan(t.plan||[]);majAv(t.av||[]);renderAtelier(t.at||null);
     form={photos:ph&&ph.mission===t.mission?ph.photos:[],gravite:t.gravite||"",editId:t.editId,prevuId:t.prevuId};
     const pv=t.prevuId&&PREVUS.find(x=>x.id===t.prevuId);if(pv){$("prevuBanner").hidden=false;$("prevuTxt").textContent=pv.note}else{form.prevuId=null;$("prevuBanner").hidden=true}
     if(t.editId){$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false}
@@ -5179,7 +5337,36 @@ const TRAD_UI=[
 ["Le document reste en Rev actuelle ; « ⚠ Constat modifié » s'affiche dans Documents émis.", "The document stays at its current Rev; “⚠ Finding changed” is shown in Issued documents.", "El documento queda en su Rev actual; «⚠ Constatación modificada» aparece en Documentos emitidos.", "Das Dokument bleibt auf der aktuellen Rev; „⚠ Befund geändert“ wird unter Ausgegebene Dokumente angezeigt."],
 ["✎ Modifier un constat", "✎ Edit a finding", "✎ Modificar una constatación", "✎ Einen Befund bearbeiten"],
 ["✎ Modifier le constat", "✎ Edit the finding", "✎ Modificar la constatación", "✎ Befund bearbeiten"],
-["Nom du constat (fichier sur le PC)", "Finding name (file on the PC)", "Nombre de la constatación (archivo en el PC)", "Befundname (Datei auf dem PC)"]
+["Nom du constat (fichier sur le PC)", "Finding name (file on the PC)", "Nombre de la constatación (archivo en el PC)", "Befundname (Datei auf dem PC)"],
+["Contrôle atelier (WIR)","Workshop inspection (WIR)","Control en taller (WIR)","Werkstattprüfung (WIR)"],
+["Opération ITP (n° et intitulé)","ITP operation (no. and title)","Operación ITP (n.º y título)","ITP-Arbeitsgang (Nr. und Titel)"],
+["ex. : 5.2 – Installation des ancrages","e.g. 5.2 – Anchor installation","p. ej. 5.2 – Instalación de anclajes","z. B. 5.2 – Ankereinbau"],
+["Liste des points de vigilance","Checkpoint list","Lista de puntos de control","Liste der Prüfpunkte"],
+["Coche les points vérifiés : ils sont repris dans le WIR.","Tick the points checked: they are included in the WIR.","Marca los puntos verificados: se incluyen en el WIR.","Geprüfte Punkte ankreuzen: sie werden in den WIR übernommen."],
+["Contrôles datés","Dated checks","Controles fechados","Datierte Prüfungen"],
+["＋ Ajouter un contrôle","＋ Add a check","＋ Añadir un control","＋ Prüfung hinzufügen"],
+["Un contrôle « NOK » rend l'élément « non libéré » dans le WIR. Photo de l'ITP signé : touche « ITP » sur sa vignette (elle part au §7 du WIR).","A “NOK” check makes the item “not released” in the WIR. Photo of the signed ITP: tap “ITP” on its thumbnail (it goes to §7 of the WIR).","Un control «NOK» deja el elemento «no liberado» en el WIR. Foto del ITP firmado: toca «ITP» en su miniatura (va al §7 del WIR).","Eine „NOK“-Prüfung macht das Element im WIR „nicht freigegeben“. Foto des unterschriebenen ITP: auf seinem Vorschaubild „ITP“ tippen (es kommt in §7 des WIR)."],
+["(aucune liste)","(no list)","(ninguna lista)","(keine Liste)"],
+["Aucun point de vigilance pour cette opération (listes dans l'onglet Projets).","No checkpoint for this operation (lists in the Projects tab).","Ningún punto de control para esta operación (listas en la pestaña Proyectos).","Keine Prüfpunkte für diesen Arbeitsgang (Listen im Reiter Projekte)."],
+["Date","Date","Fecha","Datum"],
+["Contrôle","Check","Control","Prüfung"],
+["ex. : test au marteau","e.g. hammer test","p. ej. prueba de martillo","z. B. Hammerprüfung"],
+["Résultat","Result","Resultado","Ergebnis"],
+["Reporté","Postponed","Aplazado","Verschoben"],
+["S.O.","N/A","N/A","k. A."],
+["Remarque","Remark","Observación","Bemerkung"],
+["Supprimer ce contrôle","Delete this check","Eliminar este control","Diese Prüfung löschen"],
+["Type de projet","Project type","Tipo de proyecto","Projekttyp"],
+["Arrêt d'unité (IPR / IR)","Unit shutdown (IPR / IR)","Parada de unidad (IPR / IR)","Anlagenstillstand (IPR / IR)"],
+["Préfabrication atelier (WIR)","Workshop prefabrication (WIR)","Prefabricación en taller (WIR)","Werkstattvorfertigung (WIR)"],
+["Points de vigilance (atelier)","Checkpoints (workshop)","Puntos de control (taller)","Prüfpunkte (Werkstatt)"],
+["Une ligne par opération (même nom que l'activité ou la sous-activité pour être proposée automatiquement), puis ses points de vigilance précédés d'un tiret.","One line per operation (same name as the activity or sub-activity to be offered automatically), then its checkpoints preceded by a dash.","Una línea por operación (mismo nombre que la actividad o subactividad para proponerse automáticamente), luego sus puntos de control precedidos de un guion.","Eine Zeile pro Arbeitsgang (gleicher Name wie die Tätigkeit oder Untertätigkeit, damit er automatisch vorgeschlagen wird), dann seine Prüfpunkte mit vorangestelltem Bindestrich."],
+["Remettre les listes par défaut","Restore default lists","Restablecer las listas por defecto","Standardlisten wiederherstellen"],
+["Confirmer : remplacer les listes actuelles","Confirm: replace the current lists","Confirmar: reemplazar las listas actuales","Bestätigen: aktuelle Listen ersetzen"],
+["Opération ITP","ITP operation","Operación ITP","ITP-Arbeitsgang"],
+["Points de vigilance vérifiés","Checkpoints verified","Puntos de control verificados","Geprüfte Prüfpunkte"],
+["Contrôles","Checks","Controles","Prüfungen"],
+["Marquer comme photo de l'ITP signé","Mark as photo of the signed ITP","Marcar como foto del ITP firmado","Als Foto des unterschriebenen ITP markieren"]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
 const TRAD_UI_PARTS=[
@@ -5208,7 +5395,7 @@ function tradUI(fr,interne){const k=normUI(fr);if(!k) return null;const i=LANGUI
     const v={};p.noms.forEach((n,j)=>{const x=m[j+1];v[n]=tradUI(x,true)??x});return p.tr[i].replace(/\{([a-z])\}/g,(q,n)=>v[n]??q)}
   return null}
 // zones à ne jamais traduire : textes saisis, noms des listes du projet, données
-const UI_EXCLU='[data-noi18n],.rte,[contenteditable],textarea,input,script,style,#fEq,#fSub,#fAct,#fSubAct,#fAcces,#mSel,#degats,#degParam,.apercu dd,figcaption,#accMission,#hMission,#prepLive,#gvInfo,#gvLeg,.gt .lg,#renTxt,#pastePreview,#fPath,#uaInfo';
+const UI_EXCLU='[data-noi18n],.rte,[contenteditable],textarea,input,script,style,#fEq,#fSub,#fAct,#fSubAct,#fAcces,#mSel,#degats,#degParam,.apercu dd,figcaption,#accMission,#hMission,#prepLive,#gvInfo,#gvLeg,.gt .lg,#renTxt,#pastePreview,#fPath,#uaInfo,#atVigSel,#atVig';
 function traduireNoeudUI(n){
   if(n.nodeType===3){const el=n.parentElement;if(!el||el.closest(UI_EXCLU)) return;
     const fr=n.__fr??n.data;if(LANGUI.lang==="fr"){if(n.__fr!=null){n.data=n.__fr;n.__fr=null}return}
@@ -5273,7 +5460,7 @@ async function start(){
   $("bNavLoad").onclick=()=>choisirFichier($("iNav"));$("iNav").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];if(f) chargerNavette(f);else busyFin();e.target.value=""};
   initBusy();initConstats();initApq();
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
-  initTrad();initAccueil();initEnvoi();initBrouillon();showView("accueil");
+  initTrad();initAccueil();initEnvoi();initAtelier();initBrouillon();showView("accueil");
   initMaj();
 }
 start();
