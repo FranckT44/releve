@@ -865,7 +865,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.23";
+const APP_VERSION="2.24";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3849,7 +3849,13 @@ class PdfRapide{
       l.push({...m,f,w:mw});lw+=mw}
     while(l.length&&l[l.length-1].t===" ") l.pop();if(l.length) out.push(l);return out}
   paragraphe(runs,x,w,s,col){const lh=s*1.32;for(const l of this.lignes(runs,w,s)){this.place(lh);let cx=x;const base=this.y+s*0.95;
-      for(const m of l){if(m.t!==" ") this.txt(cx,base,m.t,m.f,s,col);if(m.u&&m.t!==" ") this.trait(cx,base+1.4,cx+m.w,base+1.4,"0.2 0.2 0.2",0.5);cx+=m.w}this.y+=lh}}
+      // v2.24 : mots consécutifs de même style écrits d'un seul tenant (les espaces de la visionneuse suivent sa propre police : plus de grands écarts entre les mots)
+      let g=null;const vider=()=>{if(g){this.txt(g.x,base,g.t.replace(/ +$/,""),g.f,s,col);g=null}};
+      for(const m of l){if(m.u){vider();if(m.t!==" "){this.txt(cx,base,m.t,m.f,s,col);this.trait(cx,base+1.4,cx+m.w,base+1.4,"0.2 0.2 0.2",0.5)}}
+        else if(g&&g.f===m.f) g.t+=m.t;
+        else{vider();if(m.t!==" ") g={x:cx,t:m.t,f:m.f}}
+        cx+=m.w}
+      vider();this.y+=lh}}
   // observation / recommandation saisies (listes à puces et numérotées, gras, italique, souligné)
   texteBalise(t,x,w,s){for(const brut of String(t||"").split("\n")){const m=brut.match(/^(\s*)(?:([-•])|((?:\d+\.)*\d+)[.)])\s+(.*)$/);
       if(!brut.trim()){this.y+=s*0.6;continue}
@@ -3860,7 +3866,7 @@ class PdfRapide{
   // v2.20 : bloc « titre du document – RevN / Référence … émis le … » en haut de la 1re page
   blocDoc(){if(!this.doc||this.docFait) return;this.docFait=true;const M=this.M,L=this.W-2*M,l=this.l,d=this.doc;
     this.paragraphe([{t:`${d.titre} – Rev${d.rev}`,b:true}],M,L,14,"0.42 0.16 0.08");
-    this.txt(M,this.y+9,`${pdfL("ref",l)} : ${d.ref} Rev${d.rev} · ${pdfL("emis",l)} ${frDate(d.date)}`,"R",9,"0.40 0.40 0.40");this.y+=16;
+    this.txt(M,this.y+11.5,`${pdfL("ref",l)} : ${d.ref} Rev${d.rev} · ${pdfL("emis",l)} ${frDate(d.date)}`,"R",11.5,"0.30 0.30 0.30");this.y+=21;
     this.trait(M,this.y,this.W-M,this.y,"0.85 0.85 0.85",0.5);this.y+=12}
   // v2.20 : tableau « Historique des révisions » à la fin du document
   historique(){if(!this.doc||!(this.doc.hist||[]).length) return;const d=this.doc,l=this.l,M=this.M,L=this.W-2*M,c1=48,c2=78,cw=L-c1-c2-18;
@@ -3871,8 +3877,9 @@ class PdfRapide{
       let yy=this.y+11;for(const ln of ll){let cx=M+c1+c2+6;for(const m of ln){if(m.t!==" ") this.txt(cx,yy,m.t,m.f,9);cx+=m.w}yy+=11.5}this.y+=rh}}
   async constat(e,photos){const l=this.l,M=this.M,L=this.W-2*M;this.nouvellePage();this.blocDoc();
     // titre
-    const titre=[e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom].filter(Boolean).join(" – ");
-    this.paragraphe([{t:titre,b:true}],M,L,13);this.y+=4;
+    // v2.24 : un rapport = une seule zone, déjà nommée dans le titre du document : pas de titre répété
+    if(!this.doc){const titre=[e.equipement.nom,e.sousEquipement,e.activite.nom,e.sousActivite&&e.sousActivite.nom].filter(Boolean).join(" – ");
+      this.paragraphe([{t:titre,b:true}],M,L,13);this.y+=4}
     // informations
     const lignes=[[pdfL("mission",l),[e.mission&&e.mission.no,e.mission&&e.mission.client].filter(Boolean).join(" – ")],[pdfL("date",l),frDate(e.date)]];
     if(e.repere) lignes.push([pdfL("rep",l),e.repere]);
