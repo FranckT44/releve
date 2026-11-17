@@ -2,7 +2,7 @@
 // v1.46 : la copie du téléphone s'ouvre tout de suite (même avec un réseau faible en unité).
 // Une nouvelle version déposée sur GitHub est téléchargée en arrière-plan ; l'appli affiche alors
 // « Nouvelle version disponible – Recharger » et ne bascule que sur demande.
-const CACHE = "releve-refractaire-v142";
+const CACHE = "releve-refractaire-v143";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "logo-fta.png", "pdf-lib.min.js", "pdfjs.min.mjs", "pdfjs.worker.min.mjs"];
 self.addEventListener("install", e => {
   // cache: "reload" = ignorer le cache HTTP de GitHub (10 min) pour bien prendre la nouvelle version
@@ -41,7 +41,8 @@ self.addEventListener("fetch", e => {
           const buf = new Uint8Array(await copie.arrayBuffer()); diag.methode = "brut " + buf.length + " o";
           const m = /boundary=("?)([^";]+)\1/i.exec(diag.type); if (!m) throw new Error("pas de boundary");
           const sep = new TextEncoder().encode("--" + m[2]); const td = new TextDecoder("utf-8");
-          const cherche = (h, a, d) => { outer: for (let x = d; x <= h.length - a.length; x++) { for (let y = 0; y < a.length; y++) if (h[x + y] !== a[y]) continue outer; return x; } return -1; };
+          // v2.39 : recherche rapide (indexOf natif sur le 1er octet) : gros fichiers (navettes de centaines de Mo)
+          const cherche = (h, a, d) => { let x = h.indexOf(a[0], d); while (x >= 0 && x <= h.length - a.length) { let y = 1; while (y < a.length && h[x + y] === a[y]) y++; if (y === a.length) return x; x = h.indexOf(a[0], x + 1); } return -1; };
           let p = cherche(buf, sep, 0);
           while (p >= 0) {
             const debut = p + sep.length; if (buf[debut] === 45 && buf[debut + 1] === 45) break;
