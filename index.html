@@ -898,7 +898,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.31";
+const APP_VERSION="2.32";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3795,16 +3795,6 @@ function initMaj(){if(!("serviceWorker" in navigator)) return;let rechargee=fals
 const VIG_DEF={fr:`Types de matériel
 - Matériel conforme à la commande (type, quantité)
 - Identification / marquage des pièces
-Matériaux – Fiche technique
-- Produit conforme à la spécification et à la procédure approuvée
-- Fiche technique à jour (révision en vigueur)
-- Caractéristiques requises (densité, résistance, retrait, abrasion) conformes
-- Conditions de mise en œuvre de la fiche (eau de gâchage, malaxage, températures)
-Matériaux – N° de lot
-- N° de lot relevés (béton, aiguilles, ancrages…)
-- Dates de fabrication et de péremption respectées
-- Lots livrés identiques aux certificats
-- Conditions de stockage (température, humidité, palettes à l'abri)
 Matériaux – Essais pre-shipment
 - Certificats d'essais pre-shipment reçus pour chaque lot
 - Résultats conformes aux exigences de la spécification
@@ -3855,16 +3845,6 @@ Installation des revêtements
 en:`Types of material
 - Material as per purchase order (type, quantity)
 - Identification / marking of parts
-Materials – Data sheet
-- Product as per specification and approved procedure
-- Data sheet up to date (current revision)
-- Required properties (density, strength, shrinkage, abrasion) compliant
-- Application conditions of the data sheet (mixing water, mixing, temperatures)
-Materials – Batch number
-- Batch numbers recorded (castable, needles, anchors…)
-- Manufacturing and expiry dates respected
-- Delivered batches identical to certificates
-- Storage conditions (temperature, humidity, pallets sheltered)
 Materials – Pre-shipment tests
 - Pre-shipment test certificates received for each batch
 - Results compliant with the specification requirements
@@ -3921,7 +3901,7 @@ const AT_RES=[["OK","OK"],["NOK","NOK"],["REPORTE","Reporté"],["SO","S.O."]];
 const AT_RES_LIB=c=>(AT_RES.find(x=>x[0]===c)||[c,c])[1];
 let AT_SEL_AUTO=true;
 function vigListes(){return parseVig(CFG.vigilance)}
-function vigPourActivite(){const L=vigListes();const a=curAct(),sa=subActObj();const sub=$("fSub").value?($("fSub").selectedOptions[0]?.textContent||""):"";
+function vigPourActivite(){if(typeof estSubInfo==="function"&&estSubInfo()) return "";const L=vigListes();const a=curAct(),sa=subActObj();const sub=$("fSub").value?($("fSub").selectedOptions[0]?.textContent||""):"";
   for(const n of [sub,sub.split(/\s+[–-]\s+/)[0]]){const k=norm(n);const t=k&&L.find(x=>norm(x.nom)===k);if(t) return t.nom}
   for(const n of [sa&&sa.nom,a&&a.nom].filter(Boolean)){const k=norm(n);const t=L.find(x=>norm(x.nom)===k)||L.find(x=>norm(x.nom)&&(k.includes(norm(x.nom))||norm(x.nom).includes(k)));if(t) return t.nom}
   return ""}
@@ -3940,6 +3920,9 @@ function renderAtMat(){const box=$("atMat");if(!box) return;box.innerHTML="";
   const ajouter=async()=>{const v=inp.value.trim();if(!v) return;if(!AT_MAT.some(x=>x.toLowerCase()===v.toLowerCase())) AT_MAT.push(v);await apqMemoMat(v);renderAtMat();planifierBrouillon(false)};
   inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();ajouter()}};inp.onchange=()=>{const v=inp.value.trim();if(v&&(APQ_LMAT||[]).includes(v)) ajouter()};
   box.append(chips,apqE("div",{class:"apqmatadd"},inp,dl,apqE("button",{type:"button",onclick:ajouter},"＋ Ajouter")))}
+// v2.32 : fiche technique et n° de lot = simple information (pas de vérification) : gravité « Info » proposée
+const estSubInfo=()=>{const t=$("fSub").value?norm($("fSub").selectedOptions[0]?.textContent||""):"";return /fiche technique|data sheet|ficha tecnica|datenblatt|\blot\b|\blote\b|batch|chargen/.test(t)};
+function majInfo(){if(estAtelier()&&estSubInfo()&&!form.gravite&&!BR.silence){form.gravite="Info";renderGrav()}}
 function majAtMat(){const b=$("atMatBox");if(!b) return;b.hidden=!(estSubMateriel()||AT_MAT.length)}
 function lireAtelier(){const o=$("fOpItp");if(!o) return {op:"",vig:[],ctl:[],mat:[]};return {op:o.value.trim(),vig:lireVig(),ctl:lireCtl(),mat:AT_MAT.slice()}}
 function remplirSelVig(choix){const sel=$("atVigSel");const L=vigListes();sel.innerHTML="";
@@ -3961,7 +3944,7 @@ function renderAtelier(d){if(!$("atCard")) return;d=d||{op:"",vig:[],ctl:[]};$("
   let choix=vigPourActivite();const vig=d.vig||[];
   if(vig.length){const L=vigListes();const best=L.map(x=>[x.nom,vig.filter(p=>x.points.includes(p)).length]).sort((a,b)=>b[1]-a[1])[0];if(best&&best[1]) choix=best[0]}
   AT_SEL_AUTO=!vig.length;remplirSelVig(choix);renderVig(vig);$("atCtl").innerHTML="";for(const c of d.ctl||[]) ctlLigne(c);AT_MAT=Array.isArray(d.mat)?d.mat.slice():[];renderAtMat();majAtMat()}
-function majAtelier(){if(!$("atCard")||!estAtelier()) return;if(!majAtelier.lie){majAtelier.lie=true;$("fSub").addEventListener("change",()=>majAtelier())}majAtMat();const v=lireVig();
+function majAtelier(){if(!$("atCard")||!estAtelier()) return;if(!majAtelier.lie){majAtelier.lie=true;$("fSub").addEventListener("change",()=>{majAtelier();majInfo()})}majAtMat();const v=lireVig();
   if(AT_SEL_AUTO||!v.length){const c=vigPourActivite();if(c!==$("atVigSel").value||$("atVigSel").options.length!==vigListes().length+1){remplirSelVig(c);renderVig(v)}}}
 function ctlHtml(c){if(!c||!c.length) return "";return "<ul>"+c.map(x=>`<li>${x.date?esc(frDate(x.date))+" – ":""}${esc(x.controle||"")}${x.resultat?` : <b${x.resultat==="NOK"?' style="color:#b3261e"':""}>${esc(AT_RES_LIB(x.resultat))}</b>`:""}${x.remarque?" – "+esc(x.remarque):""}</li>`).join("")+"</ul>"}
 function majVigCard(){const at=$("cType").value==="atelier";$("vigCard").hidden=!at;if(at&&!$("cVig").value.trim()) $("cVig").value=vigDefaut($("cLang").value||langueMission())}
