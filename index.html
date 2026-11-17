@@ -228,6 +228,7 @@ body.atelier #planCard,body.atelier #avCard,body.atelier .degats{display:none!im
 #atVig label.toggle input{flex:none}
 .atRow input,.atRow select{width:100%}
 .atGrp{font-weight:700;margin:14px 0 4px}
+.partage-ov{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.partage-ov .card{max-width:460px;width:100%;margin:0}.partage-ov .pcol{flex-direction:column;align-items:stretch}
 .visList .vx{min-width:52px;font-weight:700}.visList .vx.plus{background:var(--c-violet-b);color:#fff;border-color:var(--c-violet-b)}
 .thumb .an{position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px}
 .card.pliable>h2,.card.pliable>.ghead>h2{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -902,7 +903,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.35";
+const APP_VERSION="2.36";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3995,6 +3996,29 @@ function initAtelier(){$("atVigSel").onchange=()=>{AT_SEL_AUTO=false;renderVig(l
     b.dataset.ok="";b.textContent="Remettre les listes par défaut";$("cVig").value=vigDefaut($("cLang").value||langueMission());toast("Listes par défaut remises : touche « Enregistrer » pour les garder.",4000)};
   apqListeMat().then(()=>renderAtMat()).catch(()=>{});
   renderAtelier(null)}
+/* ---------- v2.36 : réception d'un partage Android (Partager → 982 Toolbox) ---------- */
+async function initPartage(){if(!/[?&]partage=1/.test(location.search)) return;try{history.replaceState(null,"",location.pathname)}catch(e){}
+  let files=[];
+  try{const c=await caches.open("partage-recu");for(const k of await c.keys()){const r=await c.match(k);if(!r) continue;const b=await r.blob();
+      files.push(new File([b],decodeURIComponent(r.headers.get("X-Nom")||"partage.jpg"),{type:b.type||r.headers.get("Content-Type")||"image/jpeg",lastModified:+(r.headers.get("X-Date")||Date.now())}))}
+    await caches.delete("partage-recu")}
+  catch(e){toast("Partage illisible : "+(e&&e.message||e),5000);return}
+  if(!files.length){toast("Le partage n'a apporté aucun fichier.",4000);return}
+  const projets=[],photos=[];
+  for(const f of files){let ok=false;
+    if(/jpe?g/i.test(f.type)||/\.jpe?g$/i.test(f.name)){try{ok=!!((await lireNavette(f).catch(()=>null))||(await lireImageProgramme(f).catch(()=>null))||(await lireImageMission(f).catch(()=>null)))}catch(e){}}
+    (ok?projets:photos).push(f)}
+  for(const f of projets){showView("reglages");await importCfg(f)}
+  if(photos.length) partageDialogue(photos)}
+function partageDialogue(photos){const n=photos.length;const d=document.createElement("div");d.className="partage-ov";
+  d.innerHTML=`<div class="card c-violet" role="dialog" aria-modal="true"><h2>Photos reçues</h2><p class="hint"></p>
+    <div class="btns pcol"><button type="button" class="primary" data-a="libre">📥 Photos hors constat</button><button type="button" data-a="cours">📷 Constat en cours (Saisie)</button><button type="button" class="ghost" data-a="non">Annuler</button></div></div>`;
+  d.querySelector(".hint").textContent=`${n} photo(s) reçue(s) par le partage, pour le projet ${CFG.mission.no}. Où les mettre ?`;
+  d.addEventListener("click",async ev=>{const b=ev.target.closest("button[data-a]");if(!b) return;d.remove();
+    if(b.dataset.a==="libre"){showView("galerie");await libresAjouter(photos)}
+    else if(b.dataset.a==="cours"){showView("saisie");await addFiles(photos);ouvrirCarte($("thumbs"));setTimeout(()=>{try{$("thumbs").scrollIntoView({block:"center"})}catch(e){}},80)}
+    else toast("Photos reçues ignorées.")});
+  document.body.append(d)}
 let MAJ=null;
 /* ---------- brouillon du constat en cours (v1.46) ----------
    Android peut fermer Chrome pendant l'appareil photo, la galerie ou un appel : le formulaire est gardé
@@ -5472,6 +5496,9 @@ const TRAD_UI=[
 ["Opération ITP","ITP operation","Operación ITP","ITP-Arbeitsgang"],
 ["Points de vigilance vérifiés","Checkpoints verified","Puntos de control verificados","Geprüfte Prüfpunkte"],
 ["Contrôles","Checks","Controles","Prüfungen"],
+["Photos reçues","Photos received","Fotos recibidas","Empfangene Fotos"],
+["📥 Photos hors constat","📥 Photos outside findings","📥 Fotos fuera de hallazgo","📥 Fotos ohne Befund"],
+["📷 Constat en cours (Saisie)","📷 Current finding (Entry)","📷 Hallazgo en curso (Registro)","📷 Aktueller Befund (Erfassung)"],
 ["Photos hors constat","Photos outside findings","Fotos fuera de hallazgo","Fotos ohne Befund"],
 ["Pour garder une photo (document scanné, vue d'ensemble…) avant de savoir à quel constat elle ira. Elle apparaît dans la Galerie sous « Photos hors constat » ; pour l'utiliser : « Sélectionner des photos », puis l'ajouter au constat en cours. Elle quitte alors les photos hors constat.","To keep a photo (scanned document, overview…) before knowing which finding it belongs to. It appears in the Gallery under “Photos outside findings”; to use it: “Select photos”, then add it to the current finding. It then leaves the photos outside findings.","Para guardar una foto (documento escaneado, vista general…) antes de saber a qué hallazgo irá. Aparece en la Galería en «Fotos fuera de hallazgo»; para usarla: «Seleccionar fotos» y añadirla al hallazgo en curso. Entonces sale de las fotos fuera de hallazgo.","Um ein Foto (gescanntes Dokument, Übersicht…) aufzubewahren, bevor klar ist, zu welchem Befund es gehört. Es erscheint in der Galerie unter „Fotos ohne Befund“; zum Verwenden: „Fotos auswählen“ und dem aktuellen Befund hinzufügen. Danach verlässt es die Fotos ohne Befund."],
 ["🖼️ Ajouter depuis le téléphone","🖼️ Add from the phone","🖼️ Añadir desde el teléfono","🖼️ Vom Telefon hinzufügen"],
@@ -5573,7 +5600,7 @@ async function start(){
   initBusy();initConstats();initApq();
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
   initTrad();initAccueil();initEnvoi();initAtelier();initBrouillon();showView("accueil");
-  initMaj();
+  initMaj();initPartage().catch(e=>toast("Partage : "+(e&&e.message||e),5000));
 }
 start();
 </script>
