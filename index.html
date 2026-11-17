@@ -459,7 +459,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <div class="thumbs" id="thumbs"></div>
     <p class="hint" id="photoHint">Aucune photo pour ce constat.</p>
     <p class="hint">Conseil : photographie avec l'appareil Samsung (tous les modes), puis choisis les photos ici. La photo rapide ouvre un appareil simplifié.</p>
-    <p class="hint">Plusieurs photos d'un coup : dans la galerie, appui long sur une photo puis touche les autres, et valide. Pour reprendre des photos déjà dans l'appli : onglet Galerie, « Sélectionner des photos ».</p>
+    <p class="hint">Plusieurs photos d'un coup : dans la galerie, appui long sur une photo puis touche les autres, et valide. Pour reprendre des photos déjà dans l'appli (ou des photos hors constat) : onglet Galerie, « Sélectionner des photos ».</p>
   </div>
 
   <div class="card c-ambre">
@@ -588,6 +588,10 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <p class="hint">Touche le titre d'un constat pour replier ou déplier ses photos.</p>
     <div class="btns"><button type="button" class="ghost" id="gReplier">Tout replier</button><button type="button" class="ghost" id="gDeplier">Tout déplier</button></div>
     <div class="btns"><button type="button" id="gSelBtn">☑ Sélectionner des photos</button></div>
+    <p class="atGrp">Photos hors constat</p>
+    <p class="hint">Pour garder une photo (document scanné, vue d'ensemble…) avant de savoir à quel constat elle ira. Elle apparaît dans la Galerie sous « Photos hors constat » ; pour l'utiliser : « Sélectionner des photos », puis l'ajouter au constat en cours. Elle quitte alors les photos hors constat.</p>
+    <div class="btns"><button type="button" class="primary" id="gLibGal">🖼️ Ajouter depuis le téléphone</button><button type="button" id="gLibCam">📷 Photo rapide</button></div>
+    <input type="file" id="iLibGal" accept="image/*" multiple hidden><input type="file" id="iLibCam" accept="image/*" capture="environment" hidden>
   </div>
   <div id="galerie"></div>
   <div class="gselbar" id="gSelBar" hidden>
@@ -839,7 +843,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <div id="gvZone"><img id="gvImg" alt=""></div>
   <div class="gvbas">
     <input type="text" id="gvLeg" placeholder="Légende (facultative), ex. : Spalling at MH1, lower part" maxlength="160" autocomplete="off">
-    <div class="edbar gvacts"><label class="edl gvinc"><input type="checkbox" id="gvInc"> Dans le rapport</label><button type="button" id="gvAvant" aria-label="Placer avant la photo précédente">← Avant</button><button type="button" id="gvApres" aria-label="Placer après la photo suivante">Après →</button><button type="button" class="primary" id="gvAnnot">Annoter</button></div>
+    <div class="edbar gvacts"><label class="edl gvinc"><input type="checkbox" id="gvInc"> Dans le rapport</label><button type="button" id="gvAvant" aria-label="Placer avant la photo précédente">← Avant</button><button type="button" id="gvApres" aria-label="Placer après la photo suivante">Après →</button><button type="button" class="primary" id="gvAnnot">Annoter</button><button type="button" id="gvSuppr" hidden>🗑 Supprimer</button></div>
   </div>
 </div>
 <!-- ============ ÉDITEUR D'ANNOTATION ============ -->
@@ -898,7 +902,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.33";
+const APP_VERSION="2.35";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2123,13 +2127,37 @@ function initTheme(){appliquerTheme(themeActuel());
   $("bTheme").onclick=()=>{const i=THEMES.findIndex(x=>x[0]===themeActuel());const t=THEMES[(i+1)%THEMES.length];
     try{localStorage.setItem("theme",t[0])}catch(e){}appliquerTheme(t[0]);toast("Thème "+t[2],1500)}}
 /* ---------- galerie ---------- */
+/* ---------- v2.36 : photos hors constat (Galerie) ----------
+   kv « libres:<id projet> » = {id:"LIBRE:<id projet>", photos[], legendes[], rapport[], photosPrisesLe[], originaux[]} ; photos dans le magasin « photos ».
+   Elles ne partent pas au PC : on les ajoute ensuite à un constat (Galerie > Sélectionner des photos), et elles quittent alors la liste. */
+const estLibre=id=>String(id||"").startsWith("LIBRE:");
+async function libresCharger(mid){mid=mid||CFG.mission.id;let e=null;try{e=await kvGet("libres:"+mid)}catch(err){}
+  e=e||{id:"LIBRE:"+mid,photos:[],legendes:[],rapport:[],photosPrisesLe:[],originaux:[]};for(const k of ["photos","legendes","rapport","photosPrisesLe","originaux"]) if(!Array.isArray(e[k])) e[k]=[];return e}
+async function libresAjouter(files){const im=files.filter(f=>f.type.startsWith("image/"));if(!im.length){if(files.length) toast("Aucune image dans la sélection.");return}
+  const e=await libresCharger();busy("Ajout des photos hors constat…",`0 / ${im.length}`,0);let n=0;
+  try{for(const [i,f] of im.entries()){
+      const prise=(await exifDate(f))||localIso(f.lastModified||Date.now());const hp=prise.slice(2,10).replaceAll("-","")+"_"+prise.slice(11,19).replaceAll(":","");
+      let nom=`${CFG.mission.no}_HORS-CONSTAT_${hp}.jpg`;for(let k=2;e.photos.includes(nom)||await getPhoto(nom);k++) nom=`${CFG.mission.no}_HORS-CONSTAT_${hp}_${pad(k)}.jpg`;
+      const th=await makeThumb(f);await tx("photos","readwrite",s=>s.put({id:nom,entry:e.id,blob:f,thumb:th,type:f.type,prise}));
+      e.photos.push(nom);e.legendes.push("");e.rapport.push(true);e.photosPrisesLe.push(prise);n++;busyMaj(`${i+1} / ${im.length}`,(i+1)/im.length*100)}
+    await kvSet("libres:"+CFG.mission.id,e)}
+  catch(err){toast("Ajout impossible : "+(err&&err.name==="QuotaExceededError"?"mémoire du navigateur pleine.":(err&&err.message||err)),5000)}
+  finally{busyFin()}
+  if(n) toast(`${n} photo(s) hors constat ajoutée(s). Pour les utiliser : « Sélectionner des photos », puis ajoute-les au constat.`,5000);
+  await chargerGalerie();renderGalerie()}
+async function libreSupprimer(it){const e=await libresCharger();const k=e.photos.indexOf(it.n);if(k<0) return;
+  for(const key of ["photos","legendes","rapport","photosPrisesLe"]) e[key].splice(k,1);
+  e.originaux=e.originaux.filter(y=>y!==it.n.replace(/\.jpg$/i,"_original.jpg"));await kvSet("libres:"+CFG.mission.id,e);await tx("photos","readwrite",s=>s.delete(it.n))}
 const GAL={items:[],vis:[],cur:-1,attente:null,url:null,drag:null};
 async function chargerGalerie(){const en=(await allEntries()).filter(belongs).sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms));const items=[];
+  {const l=await libresCharger();if(l.photos.length){const dates=l.photosPrisesLe.filter(Boolean).sort();
+      const e={...l,libre:true,equipement:{code:"__libre",nom:"📥 Photos hors constat"},sousEquipement:"à ajouter à un constat",activite:{nom:"photos prises hors constat"},date:(dates[dates.length-1]||today()).slice(0,10),envoye:false};
+      for(const [k,n] of l.photos.entries()){const p=await getPhoto(n);if(p) items.push({n,eid:e.id,e,k,thumb:p.thumb||"",leg:l.legendes[k]||"",inc:true})}}}
   for(const e of en) for(const [k,n] of e.photos.entries()){const p=await getPhoto(n);if(p) items.push({n,eid:e.id,e,k,thumb:p.thumb,leg:(e.legendes||[])[k]||"",inc:(e.rapport||[])[k]!==false})}
   GAL.items=items}
 async function galPhoto(it){const p=await getPhoto(it.n);if(p) Object.assign(it,{blob:p.blob,orig:p.orig||null,annot:p.annot||null,type:p.type,prise:p.prise||null,thumb:p.thumb});return it}
 function galLibelle(e){return `${e.equipement.nom} · ${e.sousEquipement}`}
-function galMeta(e){return `${frDate(e.date)} · ${(e.sousActivite||e.activite).nom}${e.repere?" · "+e.repere:""}`}
+function galMeta(e){if(e.libre) return `${e.photos.length} photo(s) · à ajouter à un constat (Sélectionner des photos)`;return `${frDate(e.date)} · ${(e.sousActivite||e.activite).nom}${e.repere?" · "+e.repere:""}`}
 function renderGalerie(){
   const garder=(sel,opts,v)=>{sel.innerHTML="";for(const [val,txt] of opts){const o=document.createElement("option");o.value=val;o.textContent=txt;sel.append(o)}sel.value=opts.some(o=>o[0]===v)?v:""};
   const eqs=[...new Map(GAL.items.map(i=>[i.e.equipement.code,i.e.equipement.nom])).entries()];const dates=[...new Set(GAL.items.map(i=>i.e.date))].sort().reverse();
@@ -2145,7 +2173,7 @@ function renderGalerie(){
     if(it.eid!==eid){eid=it.eid;const e=it.e,lot=GAL.vis.filter(x=>x.eid===eid);carte=document.createElement("div");carte.className="card";
       carte.innerHTML=`<div class="ghead"><h3></h3><span class="stat"></span></div><p class="hint"></p><div class="thumbs"></div>`;
       carte.querySelector("h3").textContent=galLibelle(e);carte.querySelector(".stat").textContent=`${lot.filter(x=>x.inc).length}/${lot.length} au rapport`;
-      carte.querySelector(".hint").textContent=galMeta(e)+(e.envoye?" · envoyé ✓":" · à envoyer");grille=carte.querySelector(".thumbs");
+      carte.querySelector(".hint").textContent=galMeta(e)+(e.libre?"":e.envoye?" · envoyé ✓":" · à envoyer");if(e.libre) carte.querySelector(".stat").textContent=`${lot.length} photo(s)`;grille=carte.querySelector(".thumbs");
       galPliable(carte,eid,carte.querySelector(".ghead"));g.append(carte)}
     const d=document.createElement("div");d.className="thumb gt"+(it.inc?"":" hors");d.dataset.i=i;
     if(GAL.sel&&GAL.sel.has(it.n)) d.classList.add("sel");
@@ -2187,7 +2215,7 @@ async function razExecuter(){if(!RAZ||$("razMot").value.trim().toUpperCase()!=="
     if(mode==="tout"){try{localStorage.clear()}catch(e){}try{DB.close()}catch(e){}
       await new Promise(r=>{const q=indexedDB.deleteDatabase("releve-refractaire");q.onsuccess=q.onerror=q.onblocked=()=>r()})}
     else{await tx("entries","readwrite",s=>s.clear());await tx("photos","readwrite",s=>s.clear());await tx("pdfs","readwrite",s=>s.clear());
-      const suppr=RAZ.b.cles.filter(k=>k==="prevus"||k==="prevusFaits"||k==="brouillonTexte"||k==="brouillonPhotos"||k.startsWith("apq:")||k.startsWith("apqSauveLe:"));
+      const suppr=RAZ.b.cles.filter(k=>k==="prevus"||k==="prevusFaits"||k==="brouillonTexte"||k==="brouillonPhotos"||k.startsWith("libres:")||k.startsWith("apq:")||k.startsWith("apqSauveLe:"));
       await tx("kv","readwrite",s=>{for(const k of suppr) s.delete(k)});
       for(const m of MISSIONS){delete m.navetteLe;delete m.programme}await saveMissions();
       try{localStorage.removeItem("galPlie");localStorage.removeItem("ctxPrec")}catch(e){}}
@@ -2240,7 +2268,7 @@ async function galAjouterSel(){if(!GAL.sel) return;const choix=GAL.items.filter(
       if(form.photos.some(p=>p.id===it.n)){deja++;continue}
       const p=await getPhoto(it.n);if(!p) continue;
       form.photos.push({id:null,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:copie(p.annot),leg:it.leg||"",inc:true});n++;
-      if(dep&&it.eid!==form.editId&&!form.deplacer.some(x=>x.n===it.n)) form.deplacer.push({eid:it.eid,n:it.n});
+      if((dep||estLibre(it.eid))&&it.eid!==form.editId){form.deplacer=form.deplacer||[];if(!form.deplacer.some(x=>x.n===it.n)) form.deplacer.push({eid:it.eid,n:it.n})}
       busyMaj(`${i+1} / ${choix.length}`,(i+1)/choix.length*100)}}
   finally{busyFin()}
   galQuitterSel(false);showView("saisie");renderThumbs();ouvrirCarte($("thumbs"));setTimeout(()=>{try{$("thumbs").scrollIntoView({block:"center"})}catch(e){}},50);
@@ -2257,6 +2285,7 @@ async function retirerDeplacees(liste,dest){let k=0;
 function galVerrou(it){if(form.editId===it.eid){toast("Ce constat est ouvert dans l'onglet Saisie : enregistre-le ou annule la modification d'abord.",5000);return true}return false}
 // modifie un constat enregistré ; il repasse « à envoyer »
 async function majEntree(id,fn){const now=new Date().toISOString();
+  if(estLibre(id)){const mid=id.slice(6);const e=await libresCharger(mid);e.legendes=e.photos.map((_,k)=>e.legendes[k]||"");e.rapport=e.photos.map(()=>true);fn(e);await kvSet("libres:"+mid,e);return}
   await tx("entries","readwrite",s=>{const r=s.get(id);r.onsuccess=()=>{const e=r.result;if(!e) return;
     e.legendes=e.photos.map((_,k)=>(e.legendes||[])[k]||"");e.rapport=e.photos.map((_,k)=>(e.rapport||[])[k]!==false);
     fn(e);e.modifieLe=now;e.envoye=false;e.envoyeLe=null;s.put(e)}});refreshBadge()}
@@ -2270,7 +2299,8 @@ async function gvOuvrir(i){if(i<0||i>=GAL.vis.length) return;await galFlush();GA
   $("gv").hidden=false;document.body.style.overflow="hidden";
   const n=GAL.vis.length;$("gvNum").textContent=`${i+1}/${n}`;$("gvFirst").disabled=$("gvPrev").disabled=i===0;$("gvNext").disabled=i>=n-1;
   $("gvInfo").textContent=`${galLibelle(it.e)} · ${galMeta(it.e)} · photo ${it.k+1}/${it.e.photos.length}`;
-  $("gvLeg").value=it.leg;$("gvInc").checked=it.inc;$("gvAvant").disabled=it.k===0;$("gvApres").disabled=it.k>=it.e.photos.length-1}
+  $("gvLeg").value=it.leg;$("gvInc").checked=it.inc;$("gvAvant").disabled=it.k===0;$("gvApres").disabled=it.k>=it.e.photos.length-1;
+  const lib=estLibre(it.eid);$("gvInc").closest("label").hidden=lib;$("gvSuppr").hidden=!lib;$("gvSuppr").dataset.ok="";$("gvSuppr").textContent="🗑 Supprimer"}
 async function gvFermer(){await galFlush();$("gv").hidden=true;document.body.style.overflow="";if(GAL.url){URL.revokeObjectURL(GAL.url);GAL.url=null}renderGalerie()}
 function initGalerie(){
   $("gEq").onchange=renderGalerie;$("gDate").onchange=renderGalerie;initRaz();
@@ -2288,6 +2318,10 @@ function initGalerie(){
     await majEntree(it.eid,e=>{const k=e.photos.indexOf(it.n);if(k>=0) e.rapport[k]=it.inc})};
   const bouger=async de=>{const it=GAL.vis[GAL.cur];await galFlush();const j=await galDeplacer(it,de);if(j!=null&&j>=0) gvOuvrir(j)};
   $("gvAvant").onclick=()=>bouger(-1);$("gvApres").onclick=()=>bouger(1);
+  $("gvSuppr").onclick=async()=>{const b=$("gvSuppr"),it=GAL.vis[GAL.cur];if(!it||!estLibre(it.eid)) return;if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer la suppression";return}
+    await galFlush();await libreSupprimer(it);await chargerGalerie();renderGalerie();if(!GAL.vis.length){gvFermer();return}gvOuvrir(Math.min(GAL.cur,GAL.vis.length-1));toast("Photo hors constat supprimée.")};
+  $("gLibGal").onclick=()=>$("iLibGal").click();$("gLibCam").onclick=()=>$("iLibCam").click();
+  $("iLibGal").onchange=e=>{const f=[...e.target.files];e.target.value="";libresAjouter(f)};$("iLibCam").onchange=e=>{const f=[...e.target.files];e.target.value="";libresAjouter(f)};
   $("gvAnnot").onclick=async()=>{const it=GAL.vis[GAL.cur];if(galVerrou(it)) return;await galFlush();$("gv").hidden=true;
     ouvrirEditeur(GAL.cur,{src:GAL.vis,charger:i=>galPhoto(GAL.vis[i]),rendu:renderGalerie,fin:i=>{chargerGalerie().then(()=>{renderGalerie();const j=GAL.vis.findIndex(x=>x.n===(GAL.vis[i]||it).n);gvOuvrir(j>=0?j:0)})},
       apres:async i=>{const x=GAL.vis[i];
@@ -3797,6 +3831,7 @@ const VIG_DEF={fr:`Types de matériel
 - Identification / marquage des pièces
 Matériaux – Essais pre-shipment
 - Certificats d'essais pre-shipment reçus pour chaque lot
+- Compliance data sheet (CDS) reçue et conforme
 - Résultats conformes aux exigences de la spécification
 - Lots testés identiques aux lots livrés et utilisés
 Matériel utilisé
@@ -3813,7 +3848,9 @@ Feuilles de relevé
 - Temps de malaxage conforme
 Échantillonnage
 - Échantillons de production réalisés selon la spécification
-- Nombre et identification des échantillons
+- Dimensions et nombre d'échantillons conformes à la spécification
+- Identification des échantillons
+- Envoi au laboratoire : oui / non (laboratoire, date d'envoi)
 - Échantillons avec / sans aiguilles selon les zones
 - Conservation et cure des échantillons
 Contrôle dimensionnel
@@ -3847,6 +3884,7 @@ en:`Types of material
 - Identification / marking of parts
 Materials – Pre-shipment tests
 - Pre-shipment test certificates received for each batch
+- Compliance data sheet (CDS) received and compliant
 - Results compliant with the specification requirements
 - Tested batches identical to batches delivered and used
 Equipment used
@@ -3863,7 +3901,9 @@ Application records
 - Mixing time as specified
 Sampling
 - Production samples made as per specification
-- Number and identification of samples
+- Sample dimensions and number as per specification
+- Sample identification
+- Sent to laboratory: yes / no (laboratory, shipping date)
 - Samples with / without needles according to areas
 - Sample storage and curing
 Dimensional check
@@ -5432,6 +5472,11 @@ const TRAD_UI=[
 ["Opération ITP","ITP operation","Operación ITP","ITP-Arbeitsgang"],
 ["Points de vigilance vérifiés","Checkpoints verified","Puntos de control verificados","Geprüfte Prüfpunkte"],
 ["Contrôles","Checks","Controles","Prüfungen"],
+["Photos hors constat","Photos outside findings","Fotos fuera de hallazgo","Fotos ohne Befund"],
+["Pour garder une photo (document scanné, vue d'ensemble…) avant de savoir à quel constat elle ira. Elle apparaît dans la Galerie sous « Photos hors constat » ; pour l'utiliser : « Sélectionner des photos », puis l'ajouter au constat en cours. Elle quitte alors les photos hors constat.","To keep a photo (scanned document, overview…) before knowing which finding it belongs to. It appears in the Gallery under “Photos outside findings”; to use it: “Select photos”, then add it to the current finding. It then leaves the photos outside findings.","Para guardar una foto (documento escaneado, vista general…) antes de saber a qué hallazgo irá. Aparece en la Galería en «Fotos fuera de hallazgo»; para usarla: «Seleccionar fotos» y añadirla al hallazgo en curso. Entonces sale de las fotos fuera de hallazgo.","Um ein Foto (gescanntes Dokument, Übersicht…) aufzubewahren, bevor klar ist, zu welchem Befund es gehört. Es erscheint in der Galerie unter „Fotos ohne Befund“; zum Verwenden: „Fotos auswählen“ und dem aktuellen Befund hinzufügen. Danach verlässt es die Fotos ohne Befund."],
+["🖼️ Ajouter depuis le téléphone","🖼️ Add from the phone","🖼️ Añadir desde el teléfono","🖼️ Vom Telefon hinzufügen"],
+["🗑 Supprimer","🗑 Delete","🗑 Eliminar","🗑 Löschen"],
+["Confirmer la suppression","Confirm deletion","Confirmar la eliminación","Löschen bestätigen"],
 ["Matériel utilisé","Equipment used","Equipo utilizado","Verwendete Ausrüstung"],
 ["Marquer comme photo de l'ITP signé","Mark as photo of the signed ITP","Marcar como foto del ITP firmado","Als Foto des unterschriebenen ITP markieren"]
 ];
