@@ -28,16 +28,12 @@
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
-      "title": "title",
-      "text": "text",
       "files": [
         {
           "name": "fichiers",
           "accept": [
-            "image/*",
-            ".jpg",
-            ".jpeg",
-            ".png"
+            "image/jpeg",
+            "image/png"
           ]
         }
       ]
