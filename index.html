@@ -865,7 +865,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.24";
+const APP_VERSION="2.26";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3823,7 +3823,7 @@ async function jpegPdf(src,max,recadre){const bm=await createImageBitmap(src);co
   const k=Math.min(1,max/Math.max(r.w,r.h)),w=Math.max(1,Math.round(r.w*k)),h=Math.max(1,Math.round(r.h*k));
   const c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,w,h);g.drawImage(bm,r.x,r.y,r.w,r.h,0,0,w,h);
   const b=await new Promise(res=>c.toBlob(res,"image/jpeg",0.82));return {octets:new Uint8Array(await b.arrayBuffer()),w,h}}
-async function logoPdf(soc){try{if(soc==="FTA"){const r=await fetch("icon-512.png");return await jpegPdf(await r.blob(),400,{x:60,y:80,w:395,h:358})}
+async function logoPdf(soc){try{if(soc==="FTA"){const r=await fetch("logo-fta.png");return await jpegPdf(await r.blob(),400)}   // v2.26 : logo 982 Toolbox (image entière)
   return await jpegPdf(await (await fetch(LOGO_QUARTIS)).blob(),600)}catch(e){return null}}
 class PdfRapide{
   constructor(l,soc,mission){this.l=l;this.soc=soc;this.m=mission;this.W=595.28;this.H=841.89;this.M=40;this.pages=[];this.imgs=[];this.page=null;this.y=0}
