@@ -228,6 +228,7 @@ body.atelier #planCard,body.atelier #avCard,body.atelier .degats{display:none!im
 #atVig label.toggle input{flex:none}
 .atRow input,.atRow select{width:100%}
 .atGrp{font-weight:700;margin:14px 0 4px}
+.visList .vx{min-width:52px;font-weight:700}.visList .vx.plus{background:var(--c-violet-b);color:#fff;border-color:var(--c-violet-b)}
 .thumb .an{position:absolute;left:4px;top:4px;font:600 10px var(--font);background:#e0703f;color:#14100e;padding:1px 5px;border-radius:4px}
 .card.pliable>h2,.card.pliable>.ghead>h2{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 .card.pliable>h2::before,.card.pliable>.ghead>h2::before{content:"▾";display:inline-block;width:1.15em;color:var(--muted)}
@@ -401,7 +402,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <div id="prepCorps" hidden>
     <div class="visite" id="visBox">
       <h3>Préparer une visite</h3>
-      <p class="hint">Choisis l'équipement et l'activité : un constat prévu par sous-équipement coché, dans l'ordre de ton parcours (flèches ↑ ↓).</p>
+      <p class="hint">Choisis l'équipement et l'activité : un constat prévu par sous-équipement coché, dans l'ordre de ton parcours (flèches ↑ ↓). Plusieurs constats sur le même sous-équipement : touche « ×1 » pour passer à ×2, ×3…</p>
       <div class="row2"><label>Équipement<select id="visEq" data-noi18n></select></label><label>Activité<select id="visAct" data-noi18n></select></label></div>
       <label id="lVisSa">Sous-activité<select id="visSa" data-noi18n></select></label>
       <ul class="visList" id="visList"></ul>
@@ -483,6 +484,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <label>Liste des points de vigilance<select id="atVigSel"></select></label>
     <p class="hint">Coche les points vérifiés : ils sont repris dans le WIR.</p>
     <div id="atVig"></div>
+    <div id="atMatBox" hidden><p class="atGrp">Matériel utilisé</p><div id="atMat"></div></div>
     <p class="atGrp">Contrôles datés</p>
     <div id="atCtl"></div>
     <datalist id="atCtlList"></datalist>
@@ -896,7 +898,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.27";
+const APP_VERSION="2.31";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -966,7 +968,20 @@ Inspection progress [3]
 - Gunitage [3h]
 Inspection finale [4]`},
  atelier:{nom:"Modèle Préfabrication atelier",equipements:`Pièce / ensemble 1 [P1]
-- Général`,activites:`Types de matériel [1]
+- Général
+- Matériaux – Fiche technique
+- Matériaux – N° de lot
+- Matériaux – Essais pre-shipment
+- Matériel utilisé
+- Feuilles de relevé
+- Échantillonnage`,equipementsEn:`Part / assembly 1 [P1]
+- General
+- Materials – Data sheet
+- Materials – Batch number
+- Materials – Pre-shipment tests
+- Equipment used
+- Application records
+- Sampling`,activites:`Types de matériel [1]
 Matériaux [2]
 Contrôle dimensionnel [3]
 Préparation de surface [4]
@@ -1179,7 +1194,7 @@ async function saveEntry(){
     repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,surface:$("fSurf").value.trim().replace(/\s*m²?$/i,""),zonesMarquees:$("fMarq").checked,acces:accesSaisi(),
     planReparation:estInitiale(a)&&!estAtelier()?lirePlan():[],
     avancement:estInitiale(a)||estAtelier()?[]:lireAv(),
-    ...(estAtelier()?(x=>({operationItp:x.op,vigilance:x.vig,controles:x.ctl}))(lireAtelier()):{}),
+    ...(estAtelier()?(x=>({operationItp:x.op,vigilance:x.vig,controles:x.ctl,materiels:x.mat}))(lireAtelier()):{}),
     photos:names,photosPrisesLe:prises,legendes:form.photos.map(p=>p.leg||""),rapport:form.photos.map(p=>p.inc!==false),originaux,dossierCible:targetDir(),envoye:false,envoyeLe:null};
   try{
     await tx("photos","readwrite",s=>{if(old) for(const n of old.photos) s.delete(n);for(const r of photoRecs) s.put(r)});
@@ -1201,7 +1216,7 @@ async function editEntry2(en,id){
   else{const e=curEq();const sub=e?.enfants.find(x=>x.nom===en.sousEquipement);if(sub) $("fSub").value=sub.code;
     else if(e&&e.enfants.length){absent($("fSub"),en.sousEquipement);toast("Le sous-équipement de ce constat n'existe plus : choisis-le à nouveau avant d'enregistrer.",6000)}}
   if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
-  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;poserAcces(en.acces);renderPlan(en.planReparation||[]);majAv(en.avancement||[]);renderAtelier({op:en.operationItp||"",vig:en.vigilance||[],ctl:en.controles||[]});
+  $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;poserAcces(en.acces);renderPlan(en.planReparation||[]);majAv(en.avancement||[]);renderAtelier({op:en.operationItp||"",vig:en.vigilance||[],ctl:en.controles||[],mat:en.materiels||[]});
   form={photos:[],gravite:en.gravite,editId:id};
   for(const [k,n] of en.photos.entries()){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null,leg:(en.legendes||[])[k]||"",inc:(en.rapport||[])[k]!==false})}
   renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";ouvrirCarte($("formTitle"));$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
@@ -1790,27 +1805,28 @@ function renderPrep(){const box=$("prepRes");box.innerHTML="";$("prepSave").hidd
 /* ---------- visite d'un équipement (v1.63) ----------
    Un constat prévu par sous-équipement coché, dans l'ordre choisi. Les constats prévus d'une même visite portent visite {id, total, lib}
    et ordre : après chaque constat enregistré, l'appli propose le suivant de la visite et affiche « n / total faits ». */
-const VIS={eq:"",ordre:[],off:new Set()};
+const VIS={eq:"",ordre:[],off:new Set(),n:new Map()}; // v2.28 : n = nombre de constats prévus par sous-équipement (1 à 6)
 function visRemplir(){const sE=$("visEq"),sA=$("visAct");if(!sE) return;const ve=sE.value,va=sA.value;
   const opt=(s,items,v)=>{s.innerHTML="";for(const it of items) s.append(new Option(it.nom,it.code));if(items.some(i=>i.code===v)) s.value=v};
   opt(sE,EQ,ve||$("fEq").value);opt(sA,ACT,va||$("fAct").value);visSousAct();visListe(true)}
 function visSousAct(){const a=ACT.find(x=>x.code===$("visAct").value),s=$("visSa"),v=s.value;s.innerHTML="";
   const has=a&&a.enfants.length;$("lVisSa").hidden=!has;if(has){for(const c of a.enfants) s.append(new Option(c.nom,c.code));if(a.enfants.some(c=>c.code===v)) s.value=v}}
 function visSubs(){const e=EQ.find(x=>x.code===$("visEq").value);return e?(e.enfants.length?e.enfants:[{nom:GENERAL[langueMission()]||"(général)",code:"GEN"}]):[]}
-function visListe(reinit){const subs=visSubs();if(reinit||VIS.eq!==$("visEq").value||VIS.ordre.length!==subs.length||!subs.every(c=>VIS.ordre.includes(c.code))){VIS.eq=$("visEq").value;VIS.ordre=subs.map(c=>c.code);VIS.off=new Set()}
+function visListe(reinit){const subs=visSubs();if(reinit||VIS.eq!==$("visEq").value||VIS.ordre.length!==subs.length||!subs.every(c=>VIS.ordre.includes(c.code))){VIS.eq=$("visEq").value;VIS.ordre=subs.map(c=>c.code);VIS.off=new Set();VIS.n=new Map()}
   const ul=$("visList");ul.innerHTML="";let k=0;
-  VIS.ordre.forEach((code,i)=>{const c=subs.find(x=>x.code===code);if(!c) return;const on=!VIS.off.has(code);if(on) k++;
+  VIS.ordre.forEach((code,i)=>{const c=subs.find(x=>x.code===code);if(!c) return;const on=!VIS.off.has(code);const nb=VIS.n.get(code)||1;const k0=k+1;if(on) k+=nb;
     const li=document.createElement("li");li.className=on?"":"off";
-    li.innerHTML=`<span class="vn">${on?k+".":""}</span><label><input type="checkbox"${on?" checked":""}> <span data-noi18n></span></label><button type="button" class="ghost" aria-label="Monter">↑</button><button type="button" class="ghost" aria-label="Descendre">↓</button>`;
+    li.innerHTML=`<span class="vn">${on?(nb>1?k0+"-"+k:k)+".":""}</span><label><input type="checkbox"${on?" checked":""}> <span data-noi18n></span></label><button type="button" class="ghost" aria-label="Monter">↑</button><button type="button" class="ghost" aria-label="Descendre">↓</button><button type="button" class="ghost vx${nb>1?" plus":""}" aria-label="Nombre de constats prévus (toucher pour changer)">×${nb}</button>`;
     li.querySelector("[data-noi18n]").textContent=c.nom;
     li.querySelector("input").onchange=ev=>{if(ev.target.checked) VIS.off.delete(code);else VIS.off.add(code);visListe()};
     const [bH,bB]=li.querySelectorAll("button");bH.disabled=i===0;bB.disabled=i===VIS.ordre.length-1;
+    li.querySelector(".vx").onclick=()=>{VIS.n.set(code,nb>=6?1:nb+1);VIS.off.delete(code);visListe()};
     bH.onclick=()=>{[VIS.ordre[i-1],VIS.ordre[i]]=[VIS.ordre[i],VIS.ordre[i-1]];visListe()};bB.onclick=()=>{[VIS.ordre[i+1],VIS.ordre[i]]=[VIS.ordre[i],VIS.ordre[i+1]];visListe()};
     ul.append(li)});
   const b=$("visSave");b.disabled=!k;b.textContent=`Créer ${k} constat${k>1?"s":""} prévu${k>1?"s":""}`}
 async function visCreer(){const e=EQ.find(x=>x.code===$("visEq").value),a=ACT.find(x=>x.code===$("visAct").value);if(!e||!a){toast("Choisis l'équipement et l'activité.");return}
   const sa=a.enfants.length?a.enfants.find(c=>c.code===$("visSa").value):null;const subs=visSubs();
-  const codes=VIS.ordre.filter(c=>!VIS.off.has(c)&&subs.some(x=>x.code===c));if(!codes.length) return;
+  const codes=VIS.ordre.filter(c=>!VIS.off.has(c)&&subs.some(x=>x.code===c)).flatMap(c=>Array(VIS.n.get(c)||1).fill(c));if(!codes.length) return;
   const vid=newId(),lib=[e.nom,sa?sa.nom:a.nom].join(" · "),now=new Date().toISOString();
   codes.forEach((code,k)=>PREVUS.push({id:newId(),mission:CFG.mission.id,eq:e.code,sub:code,act:a.code,subact:sa?sa.code:"",repere:"",note:`Visite ${lib} – ${k+1} / ${codes.length}`,sur:true,
     visite:{id:vid,total:codes.length,lib},ordre:k,creeLe:now}));
@@ -2301,6 +2317,7 @@ async function remplirApercu(ap,e){
   ajouter("Avancement",avHtml(e.avancement));
   ajouter("Opération ITP",e.operationItp?esc(e.operationItp):"");
   ajouter("Points de vigilance vérifiés",e.vigilance&&e.vigilance.length?"<ul>"+e.vigilance.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":"");
+  ajouter("Matériel utilisé",e.materiels&&e.materiels.length?esc(e.materiels.join(" · ")):"");
   ajouter("Contrôles",ctlHtml(e.controles));
   ajouter("Accès au revêtement",e.acces&&e.acces.nom?esc(e.acces.nom):"");
   const surf=[e.surface?esc(e.surface)+" m²":"",e.zonesMarquees?"zone(s) déjà marquée(s)":""].filter(Boolean).join(" · ");ajouter("Surface estimée à réparer",surf);
@@ -2623,7 +2640,7 @@ async function createMission(){
   if(MISSIONS.some(m=>m.no===no&&!m.archive)){toast(`Le projet ${no} existe déjà.`);return}
   const [kind,ref]=$("nFrom").value.split(":");const src=kind==="copy"?MISSIONS.find(m=>m.id===ref):TEMPLATES[ref];
   const lang=$("nLang").value||"fr";
-  const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",equipements:src.equipements,activites:convertirActivites(src.activites,lang),dico:kind==="copy"&&src.dico?JSON.parse(JSON.stringify(src.dico)):[],modifieLe:new Date().toISOString()};
+  const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",equipements:kind==="tpl"&&lang!=="fr"&&src.equipementsEn?src.equipementsEn:src.equipements,activites:convertirActivites(src.activites,lang),dico:kind==="copy"&&src.dico?JSON.parse(JSON.stringify(src.dico)):[],modifieLe:new Date().toISOString()};
   {const at=kind==="tpl"?ref==="atelier":src.typeProjet==="atelier";m.typeProjet=at?"atelier":"arret";m.vigilance=kind==="copy"&&src.vigilance?src.vigilance:at?vigDefaut(lang):""}
   MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
   toast(`Projet ${no} créé : vérifie le dossier PC et complète les listes`,4000)}
@@ -3778,10 +3795,37 @@ function initMaj(){if(!("serviceWorker" in navigator)) return;let rechargee=fals
 const VIG_DEF={fr:`Types de matériel
 - Matériel conforme à la commande (type, quantité)
 - Identification / marquage des pièces
-Matériaux
-- Désignation, n° de lot et date de péremption des produits
-- Certificats matière / fiches techniques
-- Conditions de stockage (température, humidité)
+Matériaux – Fiche technique
+- Produit conforme à la spécification et à la procédure approuvée
+- Fiche technique à jour (révision en vigueur)
+- Caractéristiques requises (densité, résistance, retrait, abrasion) conformes
+- Conditions de mise en œuvre de la fiche (eau de gâchage, malaxage, températures)
+Matériaux – N° de lot
+- N° de lot relevés (béton, aiguilles, ancrages…)
+- Dates de fabrication et de péremption respectées
+- Lots livrés identiques aux certificats
+- Conditions de stockage (température, humidité, palettes à l'abri)
+Matériaux – Essais pre-shipment
+- Certificats d'essais pre-shipment reçus pour chaque lot
+- Résultats conformes aux exigences de la spécification
+- Lots testés identiques aux lots livrés et utilisés
+Matériel utilisé
+- Matériel conforme à la procédure de mise en œuvre (type, capacité)
+- Malaxeur propre, en bon état, palettes non usées
+- Balance / dosage de l'eau étalonnés
+- Thermomètres disponibles et en état
+- Matériel de mise en place (vibreur, pilon, machine) adapté et en état
+Feuilles de relevé
+- Feuilles de relevé des conditions de mise en œuvre complètes et signées
+- Températures (ambiante, eau, matériau) dans les limites de la spécification
+- Humidité ambiante relevée
+- % d'eau et poids de matériau par gâchée conformes
+- Temps de malaxage conforme
+Échantillonnage
+- Échantillons de production réalisés selon la spécification
+- Nombre et identification des échantillons
+- Échantillons avec / sans aiguilles selon les zones
+- Conservation et cure des échantillons
 Contrôle dimensionnel
 - Dimensions conformes au plan
 - Épaisseur du revêtement
@@ -3804,19 +3848,44 @@ Préqualification
 - Prélèvement des échantillons
 - Résultats d'essais conformes (densité, résistance, retrait)
 Installation des revêtements
-- Relevés des conditions de mise en œuvre (températures, eau de gâchage, temps de malaxage)
 - Remplissage complet de l'hexmetal (sans vide)
 - Arasage / surépaisseur < 1 mm
 - Test au marteau (pas de son creux)
-- Échantillonnage (cubes / éprouvettes)
 - Cure et séchage`,
 en:`Types of material
 - Material as per purchase order (type, quantity)
 - Identification / marking of parts
-Materials
-- Product designation, batch number and expiry date
-- Material certificates / data sheets
-- Storage conditions (temperature, humidity)
+Materials – Data sheet
+- Product as per specification and approved procedure
+- Data sheet up to date (current revision)
+- Required properties (density, strength, shrinkage, abrasion) compliant
+- Application conditions of the data sheet (mixing water, mixing, temperatures)
+Materials – Batch number
+- Batch numbers recorded (castable, needles, anchors…)
+- Manufacturing and expiry dates respected
+- Delivered batches identical to certificates
+- Storage conditions (temperature, humidity, pallets sheltered)
+Materials – Pre-shipment tests
+- Pre-shipment test certificates received for each batch
+- Results compliant with the specification requirements
+- Tested batches identical to batches delivered and used
+Equipment used
+- Equipment as per installation procedure (type, capacity)
+- Mixer clean, in good condition, paddles not worn
+- Scale / water dosing calibrated
+- Thermometers available and in working order
+- Placing equipment (vibrator, rammer, machine) suitable and in working order
+Application records
+- Application record sheets complete and signed
+- Temperatures (ambient, water, material) within specification limits
+- Ambient humidity recorded
+- Water % and material weight per batch as specified
+- Mixing time as specified
+Sampling
+- Production samples made as per specification
+- Number and identification of samples
+- Samples with / without needles according to areas
+- Sample storage and curing
 Dimensional check
 - Dimensions as per drawing
 - Lining thickness
@@ -3839,11 +3908,9 @@ Prequalification
 - Sampling
 - Test results compliant (density, strength, shrinkage)
 Lining installation
-- Application conditions recorded (temperatures, mixing water, mixing time)
 - Hexmetal completely filled (no voids)
 - Levelling / overthickness < 1 mm
 - Hammer test (no hollow sound)
-- Sampling (cubes / specimens)
 - Curing and drying`};
 function vigDefaut(l){return VIG_DEF[l]||VIG_DEF[l==="fr"?"fr":"en"]}
 const estAtelier=()=>CFG&&CFG.mission&&CFG.mission.typeProjet==="atelier";
@@ -3854,13 +3921,27 @@ const AT_RES=[["OK","OK"],["NOK","NOK"],["REPORTE","Reporté"],["SO","S.O."]];
 const AT_RES_LIB=c=>(AT_RES.find(x=>x[0]===c)||[c,c])[1];
 let AT_SEL_AUTO=true;
 function vigListes(){return parseVig(CFG.vigilance)}
-function vigPourActivite(){const L=vigListes();const a=curAct(),sa=subActObj();
+function vigPourActivite(){const L=vigListes();const a=curAct(),sa=subActObj();const sub=$("fSub").value?($("fSub").selectedOptions[0]?.textContent||""):"";
+  for(const n of [sub,sub.split(/\s+[–-]\s+/)[0]]){const k=norm(n);const t=k&&L.find(x=>norm(x.nom)===k);if(t) return t.nom}
   for(const n of [sa&&sa.nom,a&&a.nom].filter(Boolean)){const k=norm(n);const t=L.find(x=>norm(x.nom)===k)||L.find(x=>norm(x.nom)&&(k.includes(norm(x.nom))||norm(x.nom).includes(k)));if(t) return t.nom}
   return ""}
 function lireVig(){return [...document.querySelectorAll("#atVig input:checked")].map(c=>c.value)}
 function lireCtl(){return [...document.querySelectorAll("#atCtl .atRow")].map(d=>({date:d.querySelector(".atDate").value,controle:d.querySelector(".atNom").value.trim(),resultat:d.querySelector(".atRes").value,remarque:d.querySelector(".atRemI").value.trim()}))
   .filter(x=>x.controle||x.remarque||x.resultat)}
-function lireAtelier(){const o=$("fOpItp");if(!o) return {op:"",vig:[],ctl:[]};return {op:o.value.trim(),vig:lireVig(),ctl:lireCtl()}}
+// v2.31 : sous-équipement « Matériel utilisé » : matériel choisi comme dans l'APQ (liste partagée « apqMateriels »)
+let AT_MAT=[];
+const estSubMateriel=()=>{const t=$("fSub").value?norm($("fSub").selectedOptions[0]?.textContent||""):"";return /^(materiel|equipment|equipo|ausrustung)\b/.test(t)};
+function renderAtMat(){const box=$("atMat");if(!box) return;box.innerHTML="";
+  const chips=apqE("div",{class:"apqchips"});
+  for(const v of AT_MAT) chips.append(apqE("span",{class:"apqchip"},apqE("span",{"data-noi18n":true,text:v}),
+    apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce matériel",onclick:()=>{AT_MAT=AT_MAT.filter(x=>x!==v);renderAtMat();planifierBrouillon(false)}},"✕")));
+  const dl=apqE("datalist",{id:"dlAtMat"});for(const v of APQ_LMAT||[]) if(!AT_MAT.includes(v)) dl.append(apqE("option",{value:v}));
+  const inp=apqE("input",{type:"text",list:"dlAtMat",placeholder:"Choisir dans la liste ou taper un nouveau matériel",autocomplete:"off","aria-label":"Matériel à ajouter"});
+  const ajouter=async()=>{const v=inp.value.trim();if(!v) return;if(!AT_MAT.some(x=>x.toLowerCase()===v.toLowerCase())) AT_MAT.push(v);await apqMemoMat(v);renderAtMat();planifierBrouillon(false)};
+  inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();ajouter()}};inp.onchange=()=>{const v=inp.value.trim();if(v&&(APQ_LMAT||[]).includes(v)) ajouter()};
+  box.append(chips,apqE("div",{class:"apqmatadd"},inp,dl,apqE("button",{type:"button",onclick:ajouter},"＋ Ajouter")))}
+function majAtMat(){const b=$("atMatBox");if(!b) return;b.hidden=!(estSubMateriel()||AT_MAT.length)}
+function lireAtelier(){const o=$("fOpItp");if(!o) return {op:"",vig:[],ctl:[],mat:[]};return {op:o.value.trim(),vig:lireVig(),ctl:lireCtl(),mat:AT_MAT.slice()}}
 function remplirSelVig(choix){const sel=$("atVigSel");const L=vigListes();sel.innerHTML="";
   const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;sel.append(o)};add("","(aucune liste)");for(const x of L) add(x.nom,x.nom);
   sel.value=L.some(x=>x.nom===choix)?choix:""}
@@ -3879,8 +3960,8 @@ function ctlLigne(x){x=x||{};const d=document.createElement("div");d.className="
 function renderAtelier(d){if(!$("atCard")) return;d=d||{op:"",vig:[],ctl:[]};$("fOpItp").value=d.op||"";
   let choix=vigPourActivite();const vig=d.vig||[];
   if(vig.length){const L=vigListes();const best=L.map(x=>[x.nom,vig.filter(p=>x.points.includes(p)).length]).sort((a,b)=>b[1]-a[1])[0];if(best&&best[1]) choix=best[0]}
-  AT_SEL_AUTO=!vig.length;remplirSelVig(choix);renderVig(vig);$("atCtl").innerHTML="";for(const c of d.ctl||[]) ctlLigne(c)}
-function majAtelier(){if(!$("atCard")||!estAtelier()) return;const v=lireVig();
+  AT_SEL_AUTO=!vig.length;remplirSelVig(choix);renderVig(vig);$("atCtl").innerHTML="";for(const c of d.ctl||[]) ctlLigne(c);AT_MAT=Array.isArray(d.mat)?d.mat.slice():[];renderAtMat();majAtMat()}
+function majAtelier(){if(!$("atCard")||!estAtelier()) return;if(!majAtelier.lie){majAtelier.lie=true;$("fSub").addEventListener("change",()=>majAtelier())}majAtMat();const v=lireVig();
   if(AT_SEL_AUTO||!v.length){const c=vigPourActivite();if(c!==$("atVigSel").value||$("atVigSel").options.length!==vigListes().length+1){remplirSelVig(c);renderVig(v)}}}
 function ctlHtml(c){if(!c||!c.length) return "";return "<ul>"+c.map(x=>`<li>${x.date?esc(frDate(x.date))+" – ":""}${esc(x.controle||"")}${x.resultat?` : <b${x.resultat==="NOK"?' style="color:#b3261e"':""}>${esc(AT_RES_LIB(x.resultat))}</b>`:""}${x.remarque?" – "+esc(x.remarque):""}</li>`).join("")+"</ul>"}
 function majVigCard(){const at=$("cType").value==="atelier";$("vigCard").hidden=!at;if(at&&!$("cVig").value.trim()) $("cVig").value=vigDefaut($("cLang").value||langueMission())}
@@ -3889,6 +3970,7 @@ function initAtelier(){$("atVigSel").onchange=()=>{AT_SEL_AUTO=false;renderVig(l
   $("cType").onchange=majVigCard;
   $("bVigDef").onclick=()=>{const b=$("bVigDef");if(!b.dataset.ok){b.dataset.ok="1";b.textContent="Confirmer : remplacer les listes actuelles";return}
     b.dataset.ok="";b.textContent="Remettre les listes par défaut";$("cVig").value=vigDefaut($("cLang").value||langueMission());toast("Listes par défaut remises : touche « Enregistrer » pour les garder.",4000)};
+  apqListeMat().then(()=>renderAtMat()).catch(()=>{});
   renderAtelier(null)}
 let MAJ=null;
 /* ---------- brouillon du constat en cours (v1.46) ----------
@@ -3897,7 +3979,7 @@ let MAJ=null;
 const BR={silence:false,minuterie:null,photos:false,charge:false,session:false};
 function etatTexte(){return {mission:CFG.mission.id,t:Date.now(),eq:$("fEq").value,sub:$("fSub").value,act:$("fAct").value,subact:$("fSubAct").value,rep:$("fRep").value,date:$("fDate").value,
   obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,accesLibre:$("fAccesLibre").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,plan:lirePlan(),av:lireAv(),at:lireAtelier()}}
-const aDuContenu=t=>!!(form.photos.length||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||(t.plan&&t.plan.length)||(t.av&&t.av.length)||(t.at&&(t.at.op||t.at.vig.length||t.at.ctl.length))||t.editId);
+const aDuContenu=t=>!!(form.photos.length||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||(t.plan&&t.plan.length)||(t.av&&t.av.length)||(t.at&&(t.at.op||t.at.vig.length||t.at.ctl.length||(t.at.mat&&t.at.mat.length)))||t.editId);
 function planifierBrouillon(photos){if(BR.silence||!DB||!BR.charge) return;if(photos) BR.photos=true;clearTimeout(BR.minuterie);BR.minuterie=setTimeout(()=>sauverBrouillon().catch(()=>{}),photos?300:1000)}
 async function sauverBrouillon(){clearTimeout(BR.minuterie);if(!DB||!BR.charge) return;const t=etatTexte();
   // formulaire vidé : on ne supprime que le brouillon écrit pendant cette session (jamais celui d'avant, pas encore repris)
@@ -4905,7 +4987,8 @@ const TRAD_UI=[
 ["🗑 Effacer le texte","🗑 Clear the text","🗑 Borrar el texto","🗑 Text löschen"],["Confirmer : effacer","Confirm: clear","Confirmar: borrar","Bestätigen: löschen"],
 ["Texte effacé.","Text cleared.","Texto borrado.","Text gelöscht."],["Rien à effacer.","Nothing to clear.","Nada que borrar.","Nichts zu löschen."],
 ["Préparer une visite","Prepare a visit","Preparar una visita","Besuch vorbereiten"],
-["Choisis l'équipement et l'activité : un constat prévu par sous-équipement coché, dans l'ordre de ton parcours (flèches ↑ ↓).","Choose the equipment and the activity: one planned finding per ticked sub-equipment, in the order of your route (↑ ↓ arrows).","Elige el equipo y la actividad: un hallazgo previsto por subequipo marcado, en el orden de tu recorrido (flechas ↑ ↓).","Ausrüstung und Tätigkeit wählen: ein geplanter Befund je angekreuzter Unterausrüstung, in der Reihenfolge deines Rundgangs (Pfeile ↑ ↓)."],
+["Choisis l'équipement et l'activité : un constat prévu par sous-équipement coché, dans l'ordre de ton parcours (flèches ↑ ↓). Plusieurs constats sur le même sous-équipement : touche « ×1 » pour passer à ×2, ×3…","Choose the equipment and the activity: one planned finding per ticked sub-equipment, in the order of your route (↑ ↓ arrows). Several findings on the same sub-equipment: tap “×1” to switch to ×2, ×3…","Elige el equipo y la actividad: un hallazgo previsto por subequipo marcado, en el orden de tu recorrido (flechas ↑ ↓). Varios hallazgos en el mismo subequipo: toca «×1» para pasar a ×2, ×3…","Ausrüstung und Tätigkeit wählen: ein geplanter Befund je angekreuzter Unterausrüstung, in der Reihenfolge deines Rundgangs (Pfeile ↑ ↓). Mehrere Befunde für dieselbe Unterausrüstung: „×1“ tippen, um auf ×2, ×3… zu wechseln."],
+["Nombre de constats prévus (toucher pour changer)","Number of planned findings (tap to change)","Número de hallazgos previstos (toca para cambiar)","Anzahl geplanter Befunde (zum Ändern tippen)"],
 ["Monter","Move up","Subir","Nach oben"],["Descendre","Move down","Bajar","Nach unten"],
 ["Constat suivant","Next finding","Siguiente hallazgo","Nächster Befund"],
 ["{a} : {b} / {c} faits","{a}: {b} / {c} done","{a}: {b} / {c} hechos","{a}: {b} / {c} erledigt"],
@@ -5366,6 +5449,7 @@ const TRAD_UI=[
 ["Opération ITP","ITP operation","Operación ITP","ITP-Arbeitsgang"],
 ["Points de vigilance vérifiés","Checkpoints verified","Puntos de control verificados","Geprüfte Prüfpunkte"],
 ["Contrôles","Checks","Controles","Prüfungen"],
+["Matériel utilisé","Equipment used","Equipo utilizado","Verwendete Ausrüstung"],
 ["Marquer comme photo de l'ITP signé","Mark as photo of the signed ITP","Marcar como foto del ITP firmado","Als Foto des unterschriebenen ITP markieren"]
 ];
 // morceaux de phrase : traduits seulement à l'intérieur d'une phrase reconnue (jamais seuls à l'écran)
