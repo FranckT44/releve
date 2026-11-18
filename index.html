@@ -6,6 +6,7 @@
 <title>The 982 Inspector Toolbox</title>
 <meta name="theme-color" content="#1d2a33">
 <meta name="color-scheme" content="light dark" id="metaScheme">
+<script>try{var z=parseFloat(localStorage.getItem("zoomUI"));if(z>=0.7&&z<=2.5)document.documentElement.style.setProperty("--zoomUI",z)}catch(e){}</script>
 <script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t;document.getElementById("metaScheme").content=t==="light"?"only light":"only dark"}}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -49,6 +50,13 @@ main{padding:14px max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-
 #v-saisie,#v-journal{max-width:720px;margin:0 auto}
 @media (min-width:700px){header .mission{font-size:17px;max-width:min(70vw,720px);min-height:42px;padding:6px 18px}header h1{font-size:19px;flex:0 1 auto}header .langSel{margin-left:auto}}
 [hidden]{display:none!important}
+/* v2.41 : zoom de l'affichage (par appareil, utile en DeX) - l'éditeur photo et les visionneuses ne sont pas zoomés */
+header,main,nav{zoom:var(--zoomUI,1)}
+@media (min-width:1100px){#v-accueil{max-width:960px}}
+.zoomH{display:none}@media (min-width:900px){.zoomH{display:inline-flex;gap:4px}}
+.zoomH button,.zoomRow button{min-height:36px;min-width:44px;padding:2px 8px;font:650 14px var(--font)}
+.zoomH button{background:transparent;color:var(--tab-on);border:1px solid var(--tab-fg);border-radius:999px}
+.zoomRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.zoomRow #zoomVal{font:650 15px var(--mono);min-width:64px;text-align:center}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:12px;margin-bottom:14px}
 .card.c-bleu{background:var(--c-bleu);border-left:4px solid var(--c-bleu-b)}.card.c-vert{background:var(--c-vert);border-left:4px solid var(--c-vert-b)}
 .card.c-ambre{background:var(--c-ambre);border-left:4px solid var(--c-ambre-b)}.card.c-violet{background:var(--c-violet);border-left:4px solid var(--c-violet-b)}
@@ -374,6 +382,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <h1 id="hTitle"><span class="tLong">The 982 Inspector Toolbox</span><span class="tCourt">982 Toolbox</span></h1>
   <button type="button" class="mission" id="hMission" aria-label="Changer de projet"></button>
   <select id="uiLang" class="langSel" data-noi18n title="Langue de l'appli / App language" aria-label="Langue de l'appli / App language"><option value="fr" title="Français">FR</option><option value="en" title="English">EN</option><option value="es" title="Español">ES</option><option value="de" title="Deutsch">DE</option></select>
+  <span class="zoomH"><button type="button" id="zHMoins" title="Réduire l'affichage" aria-label="Réduire l'affichage">A−</button><button type="button" id="zHPlus" title="Agrandir l'affichage" aria-label="Agrandir l'affichage">A+</button></span>
   <button type="button" class="themeBtn" id="bTheme" aria-label="Thème : automatique">🌓</button>
 </header>
 
@@ -779,6 +788,9 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   </div>
   <div class="card">
     <h2>Réglage de ce téléphone</h2>
+    <label>Taille de l'affichage (zoom)</label>
+    <div class="zoomRow"><button type="button" id="zMoins">A−</button><span id="zoomVal">100 %</span><button type="button" id="zPlus">A+</button><button type="button" id="zReset">100 %</button></div>
+    <p class="hint">Agrandit ou réduit les tuiles, textes et boutons (utile en DeX sur grand écran). Ce réglage ne concerne que cet appareil. Sur grand écran, A− / A+ sont aussi dans la barre du haut.</p>
     <label>Sélecteur de photos (bouton « Choisir dans la galerie »)<select id="cPicker">
       <option value="1">1 – Standard</option>
       <option value="2">2 – Une photo à la fois</option>
@@ -904,7 +916,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.40";
+const APP_VERSION="2.41";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2125,6 +2137,15 @@ function appliquerTheme(t){const r=document.documentElement;if(t==="auto") delet
   // « only light » : empêche le navigateur (mode sombre forcé de Samsung / Chrome, DeX) d'assombrir l'appli quand le thème clair est choisi
   $("metaScheme").content=t==="light"?"only light":t==="dark"?"only dark":"light dark";
   const x=THEMES.find(x=>x[0]===t)||THEMES[0];$("bTheme").textContent=x[1];$("bTheme").setAttribute("aria-label","Thème : "+x[2])}
+const ZOOMS=[0.8,0.9,1,1.1,1.25,1.4,1.5,1.75,2];
+function zoomActuel(){try{const z=parseFloat(localStorage.getItem("zoomUI"));if(z>=0.7&&z<=2.5) return z}catch(e){}return 1}
+function appliquerZoom(z,msg){document.documentElement.style.setProperty("--zoomUI",z);try{if(z===1) localStorage.removeItem("zoomUI");else localStorage.setItem("zoomUI",String(z))}catch(e){}
+  const v=$("zoomVal");if(v) v.textContent=Math.round(z*100)+" %";if(msg) toast("Affichage : "+Math.round(z*100)+" %",1500)}
+function pasZoom(d){const z=zoomActuel();let i=ZOOMS.findIndex(x=>x>=z-0.001);if(i<0) i=ZOOMS.length-1;
+  if(d>0) i=ZOOMS[i]>z+0.001?i:Math.min(i+1,ZOOMS.length-1);else i=Math.max(i-1,0);appliquerZoom(ZOOMS[i],true)}
+function initZoom(){appliquerZoom(zoomActuel(),false);
+  for(const [id,d] of [["zMoins",-1],["zPlus",1],["zHMoins",-1],["zHPlus",1]]) $(id).onclick=()=>pasZoom(d);
+  $("zReset").onclick=()=>appliquerZoom(1,true)}
 function initTheme(){appliquerTheme(themeActuel());
   $("bTheme").onclick=()=>{const i=THEMES.findIndex(x=>x[0]===themeActuel());const t=THEMES[(i+1)%THEMES.length];
     try{localStorage.setItem("theme",t[0])}catch(e){}appliquerTheme(t[0]);toast("Thème "+t[2],1500)}}
@@ -5287,6 +5308,11 @@ const TRAD_UI=[
 ["Version de l'appli : {a}","App version: {a}","Versión de la app: {a}","App-Version: {a}"],
 ["Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Un projet déjà présent (même n°) est mis à jour, sinon il est ajouté.","Send the “mission-No.jpg” image via Quick Share, then load it on the other phone. A project already present (same no.) is updated, otherwise it is added.","Envía la imagen «mission-N.º.jpg» por Quick Share y cárgala en el otro teléfono. Un proyecto ya existente (mismo n.º) se actualiza; si no, se añade.","Bild „mission-Nr.jpg“ per Quick Share senden und auf dem anderen Telefon laden. Ein vorhandenes Projekt (gleiche Nr.) wird aktualisiert, sonst hinzugefügt."],
 ["Réglage de ce téléphone","Settings of this phone","Ajustes de este teléfono","Einstellungen dieses Telefons"],
+["Taille de l'affichage (zoom)","Display size (zoom)","Tamaño de la pantalla (zoom)","Anzeigegröße (Zoom)"],
+["Agrandit ou réduit les tuiles, textes et boutons (utile en DeX sur grand écran). Ce réglage ne concerne que cet appareil. Sur grand écran, A− / A+ sont aussi dans la barre du haut.","Enlarges or reduces tiles, text and buttons (useful in DeX on a large screen). This setting only applies to this device. On a large screen, A− / A+ are also in the top bar.","Amplía o reduce mosaicos, textos y botones (útil en DeX en pantalla grande). Este ajuste solo afecta a este dispositivo. En pantalla grande, A− / A+ también están en la barra superior.","Vergrößert oder verkleinert Kacheln, Texte und Schaltflächen (nützlich in DeX auf großem Bildschirm). Diese Einstellung gilt nur für dieses Gerät. Auf großem Bildschirm sind A− / A+ auch in der oberen Leiste."],
+["Affichage : {a} %","Display: {a} %","Pantalla: {a} %","Anzeige: {a} %"],
+["Réduire l'affichage","Reduce display","Reducir la pantalla","Anzeige verkleinern"],
+["Agrandir l'affichage","Enlarge display","Ampliar la pantalla","Anzeige vergrößern"],
 ["Sélecteur de photos (bouton « Choisir dans la galerie »)","Photo picker (“Choose from gallery” button)","Selector de fotos (botón «Elegir de la galería»)","Fotoauswahl (Schaltfläche „Aus der Galerie wählen“)"],
 ["1 – Standard","1 – Standard","1 – Estándar","1 – Standard"],
 ["2 – Une photo à la fois","2 – One photo at a time","2 – Una foto a la vez","2 – Ein Foto nach dem anderen"],
@@ -5560,7 +5586,7 @@ function initLangueUI(){LANGUI.lang=langueUI();
   const s=$("uiLang");if(s) s.onchange=()=>appliquerLangueUI(s.value);appliquerLangueUI(LANGUI.lang)}
 async function start(){
   initLangueUI();
-  initEditeur2();initGalerie();initPrep();initTheme();initCartes();
+  initEditeur2();initGalerie();initPrep();initTheme();initZoom();initCartes();
   initEditeur("fObs");initEditeur("fReco");
   try{DB=await openDB()}catch(e){document.querySelector("main").innerHTML=`<div class="card"><strong>Stockage indisponible.</strong><p class="hint">Ouvre l'appli dans Chrome (pas en navigation privée).</p></div>`;return}
   try{if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist()}catch(e){}
