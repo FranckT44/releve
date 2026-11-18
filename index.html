@@ -935,7 +935,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.51";
+const APP_VERSION="2.52";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3212,7 +3212,7 @@ const APQ_TR={"Conforme":["Conforme","Compliant","Conforme","Konform"],"Non conf
   "Densité":["Densité","Density","Densidad","Dichte"],"Abrasion":["Abrasion","Abrasion","Abrasión","Abrieb"],
   "OK":["OK","OK","OK","OK"],"Acceptable":["Acceptable","Acceptable","Aceptable","Akzeptabel"],"Refusé":["Refusé","Rejected","Rechazado","Abgelehnt"],"À repasser":["À repasser","To be re-tested","A repetir","Zu wiederholen"],"à repasser":["à repasser","to be re-tested","a repetir","zu wiederholen"]};
 const apqTr=(v,l)=>v?(APQ_TR[v]?APQ_TR[v][iLangue(l)]:v):"";
-const APQL={titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION SESSION REPORT","INFORME DE SESIÓN DE PRECUALIFICACIÓN","BERICHT ZUR PRÄQUALIFIKATIONSSITZUNG"],
+const APQL={intro:["Introduction","Introduction","Introducción","Einleitung"],titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION SESSION REPORT","INFORME DE SESIÓN DE PRECUALIFICACIÓN","BERICHT ZUR PRÄQUALIFIKATIONSSITZUNG"],
   h1:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht zur Präqualifikationssitzung"],
   dates:["Dates","Dates","Fechas","Daten"],comment:["Commentaires généraux de la session","General session comments","Comentarios generales de la sesión","Allgemeine Bemerkungen zur Sitzung"],etabli:["Rapport établi par","Report prepared by","Informe elaborado por","Bericht erstellt von"],lieu:["Lieu de réalisation","Location","Lugar de realización","Durchführungsort"],tds:["Fiche technique","Technical data sheet","Ficha técnica","Technisches Datenblatt"],annexes:["Annexes","Appendices","Anexos","Anlagen"],docA:["Document","Document","Documento","Dokument"],fichA:["Fichier","File","Archivo","Datei"],pagesA:["Pages","Pages","Páginas","Seiten"],nonInseree:["non insérée (PDF protégé ou illisible)","not inserted (protected or unreadable PDF)","no insertada (PDF protegido o ilegible)","nicht eingefügt (geschütztes oder unlesbares PDF)"],equip:["Équipement(s) concerné(s)","Equipment concerned","Equipo(s) afectado(s)","Betroffene Ausrüstung"],laboDebut:["Travaux avant résultats labo","Works before lab results","Trabajos antes de resultados","Arbeiten vor Laborergebnis"],psh:["Preshipment test","Preshipment test","Ensayo previo al envío","Preshipment-Test"],labo:["Échantillons pour laboratoire","Samples for laboratory","Muestras para laboratorio","Proben für Labor"],
   oui:["Oui","Yes","Sí","Ja"],non:["Non","No","No","Nein"],perim:["Périmètre","Scope","Alcance","Umfang"],
@@ -3492,6 +3492,8 @@ async function apqRecuperer(a){if(APQ_RECUP_FAIT===APQ_M) return;APQ_RECUP_FAIT=
 
 // v1.90 : équipement(s) concerné(s) — choisis dans la liste des équipements du projet, + précision libre
 function apqEquip(a){const box=$("apqEq");box.innerHTML="";a.equip=a.equip||[];
+  // v2.52 : projet à un seul équipement (atelier) : coché d'office la première fois (décochable)
+  if(!a.equip.length&&!a.equipAuto&&(EQ||[]).length===1){a.equip=[EQ[0].code];a.equipAuto=true;apqSauver()}
   const l=(EQ||[]);if(l.length){const g=apqE("div",{class:"apqeq"});
     for(const e of l){const b=apqE("button",{type:"button","aria-pressed":String(a.equip.includes(e.code)),"data-noi18n":true,title:e.code},e.nom);
       b.onclick=()=>{const i=a.equip.indexOf(e.code);if(i<0) a.equip.push(e.code);else a.equip.splice(i,1);b.setAttribute("aria-pressed",String(i<0));apqSauver()};g.append(b)}
@@ -3509,7 +3511,8 @@ function apqEquip(a){const box=$("apqEq");box.innerHTML="";a.equip=a.equip||[];
   inp.setAttribute("aria-label","Équipement non listé");
   box.append(apqE("label",{class:"apqlbl",text:"Équipement non listé"}),apqE("div",{class:"apqmatadd apqeqadd"},inp,apqE("button",{type:"button",onclick:ajouter},"＋ Ajouter")),
     apqE("div",{class:"apqrow"},apqChamp("Précision (zone, repère…)",a,"equipAutre",null,"ex. zone basse, côté nord")))}
-function apqEquipTexte(a){const n=(a.equip||[]).map(c=>{const e=(EQ||[]).find(x=>x.code===c);return e?e.nom:c});n.push(...(a.equipPlus||[]));if(a.equipAutre&&a.equipAutre.trim()) n.push(a.equipAutre.trim());return n.join(", ")}
+function apqEquipTexte(a){const n=(a.equip||[]).map(c=>{const e=(EQ||[]).find(x=>x.code===c);return e?e.nom:c});n.push(...(a.equipPlus||[]));
+  const pr=(a.equipAutre||"").trim();return n.length?n.join(", ")+(pr?" – "+pr:""):pr}
 // v1.90 : si échantillons au laboratoire, début des travaux autorisé ou non en attente des résultats
 function apqLabo(a){const c=apqE("input",{type:"checkbox"});c.checked=!!a.labo;const box=apqE("div",{class:"apqlabo"});
   const maj=()=>{box.innerHTML="";box.append(apqE("label",{class:"toggle"},c," Échantillons envoyés au laboratoire"));
@@ -3886,7 +3889,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       sessions:(a.sessions||[]).filter(s=>s.methode||(s.applicateurs||[]).length||(s.photos||[]).length||(s.ctrlPhotos||[]).length||(s.commentaire||"").trim())};
     const dates=[...new Set(a.sessions.map(s=>s.date).filter(Boolean))].sort().map(frDate).join(", ");
     this.boite([[pdfL("mission",l),[m.no,m.client].filter(Boolean).join(" – ")],[T("dates"),dates||"–"],...(a.lieu&&a.lieu.trim()?[[T("lieu"),a.lieu.trim()]]:[]),...(this.inspBoite||m.inspecteur?[[pdfL("insp",l),this.inspBoite||m.inspecteur]]:[]),...(apqEquipTexte(a)?[[T("equip"),apqEquipTexte(a)]]:[]),...(a.spec?[[T("spec"),a.spec]]:[]),[T("labo"),a.labo?T("oui"):T("non")],...(a.labo&&a.laboDebut?[[T("laboDebut"),apqTr(a.laboDebut,l)]]:[])],true);
-    if(a.intro&&a.intro.trim()){this.texteBalise(a.intro,M,L,10);this.y+=4}
+    if(a.intro&&a.intro.trim()){this.titreSection(T("intro"));this.texteBalise(a.intro,M,L,10);this.y+=4}
     if(a.perimetre&&a.perimetre.trim()){this.titreSection(T("perim"));this.texteBalise(a.perimetre,M,L,10)}
     // v1.78 : documents de référence
     const docs=(a.docs||[]).filter(d=>d.ref||d.titre);
