@@ -948,7 +948,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.53";
+const APP_VERSION="2.54";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2763,7 +2763,7 @@ async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new
     toast(`« ${f.name} » est dans Téléchargements : glisse-le dans la fenêtre Quick Share, ou clic droit > Envoyer avec Quick Share. Sur le téléphone : Projets > Charger un projet.`,9000)}
   m.envoyeLe=new Date().toISOString();await saveMissions();renderSync()}
 async function importCfg(file){busy("Lecture du fichier…",`${file.name} · ${taille(file.size)}`);await repos();try{await importCfg0(file)}finally{busyFin()}}
-async function importCfg0(file){if(/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)){const nv=await lireNavette(file).catch(()=>null);if(nv){afficherNavette(nv);return}const pr=await lireImageProgramme(file).catch(()=>null);if(pr){afficherProgramme(pr);return}}
+async function importCfg0(file){if(/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)){const bib=await apqBibLire(file).catch(()=>null);if(bib){busyFin();await apqBibImporter(bib);return}const nv=await lireNavette(file).catch(()=>null);if(nv){afficherNavette(nv);return}const pr=await lireImageProgramme(file).catch(()=>null);if(pr){afficherProgramme(pr);return}}
   let j;try{j=/^image\//.test(file.type)||/\.jpe?g$/i.test(file.name)?await lireImageMission(file):JSON.parse(await file.text())}catch(e){j=null}
   if(!j||!j.equipements||!j.activites){toast("Ce fichier n'est pas un fichier de projet valide.");return}
   const d=j.schema==="reglages-releve/1"?{...j.mission,equipements:j.equipements,activites:j.activites}:j; // ancien format accepté
@@ -3589,7 +3589,7 @@ function pstOk(p,x){const v=pstNum(x);if(isNaN(v)) return null;const a=pstNum(p.
 // pdf = sans « ≤ ≥ » (absents des polices du PDF)
 function pstLimTxt(p,l,pdf){const a=String(p.a??"").trim(),b=String(p.b??"").trim();if(!a&&!b) return "";
   const to=["à","to","a","bis"][iLangue(l||"fr")];
-  if(p.t==="max") return (pdf?"max ":"≤ ")+a;if(p.t==="min") return (pdf?"min ":"≥ ")+a;if(p.t==="plage") return `${a} ${to} ${b}`;if(p.t==="cible") return `${a} ± ${b}`;return a}
+  if(p.t==="max") return (pdf?"max ":"≤ ")+a;if(p.t==="min") return (pdf?"min ":"≥ ")+a;if(p.t==="plage") return `${a} ${to} ${b}`;if(p.t==="cible") return b?`${a} ± ${b}`:`${["cible","target","objetivo","Ziel"][iLangue(l||"fr")]} ${a}`;return a}
 // statut d'une palette : "C" conforme, "NC" non conforme, "ACC" non conforme accepté (dérogation), "" incomplet
 function pstStatut(pst,r){let nok=false,vu=false;for(const p of pst.props){const o=pstOk(p,(r.v||{})[p.id]);if(o===false) nok=true;if(o!==null) vu=true}
   return nok?(r.acc?"ACC":"NC"):vu?"C":""}
@@ -3698,6 +3698,48 @@ function apqPstPdf(mk,x,l){const P=x.pst;if(!P||!(P.props||[]).length||!(P.lots|
   for(const L of P.lots) for(const r of L.rows||[]) if((r.com||"").trim()) li.push(`- ${T("pstLot")} ${L.lot||"–"} / ${T("pstPal")} ${r.pal||"–"} : ${r.com.trim()}`);
   mk.texteBalise(li.join("\n"),M,Lw,9.5);if((P.com||"").trim()){mk.y+=2;mk.texteBalise(P.com,M,Lw,9.5)}mk.y+=6}
 
+/* v2.54 : bibliothèque matériaux du PC (fiches techniques TDS + limites des compliance datasheets) : fichier « Bibliothèque matériaux … .jpg »
+   (commentaires JPEG « RELEVE-BIB: » = en-tête JSON releve-bib/1, « RELEVE-BDATA: » = PDF à la suite), chargé comme un projet
+   (Projets › Charger un projet, glisser-déposer, Quick Share). Choisir le produit dans un matériau de préqualification reprend
+   l'utilisation, la fiche technique et les limites de la CDS. */
+let APQ_BIB=null;
+async function apqBibCharger(){if(APQ_BIB) return APQ_BIB;let v=null;try{v=await kvGet("apqBib")}catch(e){}APQ_BIB=v&&v.produits?v:{produits:[]};return APQ_BIB}
+async function apqBibLire(file){const rd=async(a,b)=>new Uint8Array(await file.slice(a,b).arrayBuffer());
+  const s0=await rd(0,2);if(s0[0]!==0xFF||s0[1]!==0xD8) return null;
+  const dec=new TextDecoder(),PA="RELEVE-BIB:",PD="RELEVE-BDATA:",hdr=[],data=[];let pos=2;
+  while(pos+4<=file.size){const b=await rd(pos,pos+4);if(b[0]!==0xFF) break;const mk=b[1],L=b[2]<<8|b[3];
+    if(mk===0xFE){const t=dec.decode(await rd(pos+4,pos+4+15));if(t.startsWith(PA)) hdr.push(await rd(pos+4+PA.length,pos+2+L));else if(t.startsWith(PD)) data.push([pos+4+PD.length,pos+2+L])}
+    else if(mk===0xDA) break;pos+=2+L;if(!hdr.length&&pos>200000) break}
+  if(!hdr.length) return null;const tot=hdr.reduce((x,y)=>x+y.length,0),u=new Uint8Array(tot);let o=0;for(const x of hdr){u.set(x,o);o+=x.length}
+  let h;try{h=JSON.parse(dec.decode(u))}catch(e){return null}if(!h||h.schema!=="releve-bib/1") return null;
+  const cum=[];let c=0;for(const [a,b] of data){cum.push(c);c+=b-a}
+  h._blob=r=>{if(!r) return null;const ps=[];let cur=r.off,need=r.taille;
+    for(let i=0;i<data.length&&need>0;i++){const [a,b]=data[i],len=b-a;if(cur>=cum[i]+len) continue;const d=cur-cum[i],n=Math.min(len-d,need);ps.push(file.slice(a+d,a+d+n));cur+=n;need-=n}
+    return need>0?null:new Blob(ps,{type:"application/pdf"})};
+  return h}
+async function apqBibImporter(h){busy("Chargement de la bibliothèque matériaux…","",0);let nt=0,nc=0;
+  try{const tm=await apqTdsMem(),cm=await apqCdsMem(),l=h.produits||[];let k=0;
+    for(const p of l){k++;busyMaj(p.nom,Math.round(k/Math.max(1,l.length)*100));const cle=apqTdsCle(p.nom);if(!cle) continue;
+      if(p.tdsBlob){const b=h._blob(p.tdsBlob);if(b){const id="apqbib_"+cle.replace(/[^a-z0-9]+/g,"_");
+          await tx("photos","readwrite",s=>s.put({id,entry:"apqtds",type:"application/pdf",prise:null,blob:new File([b],p.tds||(p.nom+".pdf"),{type:"application/pdf"}),thumb:""}));
+          tm[cle]={id,nom:p.tds||(p.nom+".pdf"),taille:b.size,bib:true};nt++}}
+      if((p.props||[]).length){cm[cle]={props:JSON.parse(JSON.stringify(p.props)),le:p.cdsDate||"",ref:p.cds||"",bib:true};nc++}}
+    await kvSet("apqTds",tm);await kvSet("apqCds",cm);
+    const liste={maj:h.maj||"",charge:new Date().toISOString(),produits:l.map(p=>({nom:p.nom,fab:p.fab||"",role:p.role||"",mode:p.mode||"",cds:p.cds||"",cdsDate:p.cdsDate||"",tds:p.tds||"",rem:p.rem||"",nProps:(p.props||[]).length}))};
+    await kvSet("apqBib",liste);APQ_BIB=liste;APQ_TDSMEM=null;APQ_CDS=null;busyFin();
+    toast(`Bibliothèque matériaux chargée (mise à jour du ${h.maj?frDate(h.maj):"?"}) : ${l.length} produit(s), ${nt} fiche(s) technique(s), ${nc} compliance datasheet(s). Préqualification › Matériaux : choisir le produit dans la liste.`,9000);
+    if(!$("v-apq").hidden) renderApq()}
+  catch(e){toast("Bibliothèque non chargée : "+(e&&e.message||e),8000)}finally{busyFin()}}
+function apqBibDatalist(){let dl=$("apqBibDl");if(!dl){dl=document.createElement("datalist");dl.id="apqBibDl";document.body.append(dl)}
+  dl.innerHTML="";for(const p of (APQ_BIB&&APQ_BIB.produits)||[]) dl.append(apqE("option",{value:p.nom,label:[p.fab,p.role,p.cds?"CDS "+(p.cdsDate||""):"sans CDS"].filter(Boolean).join(" · ")}))}
+async function apqBibAppliquer(m){const cle=apqTdsCle(m.produit),p=((APQ_BIB&&APQ_BIB.produits)||[]).find(x=>apqTdsCle(x.nom)===cle);if(!p) return;
+  const fait=[];if(!m.role&&p.role){m.role=p.role;fait.push("utilisation")}
+  const k=(await apqTdsMem())[cle];if(!m.tds&&k&&k.id){m.tds={...k};m.tdsAnnexe=true;fait.push("fiche technique")}
+  const c=(await apqCdsMem())[cle];if(!m.pst&&c&&(c.props||[]).length){m.pst={props:JSON.parse(JSON.stringify(c.props)),lots:[],com:""};APQ_OUV.add("pst"+m.id);fait.push("limites de la CDS")}
+  await apqSauver(true);renderApq();if(fait.length) toast(`Bibliothèque : ${fait.join(", ")} repris pour ${p.nom}.`,5000)}
+function apqBibInfo(m){const p=((APQ_BIB&&APQ_BIB.produits)||[]).find(x=>apqTdsCle(x.nom)===apqTdsCle(m.produit));if(!p) return null;
+  return apqE("p",{class:"hint","data-noi18n":true,text:`📚 ${[p.fab,p.mode,p.cds?`CDS du ${frDate(p.cdsDate)||"?"}`:"pas de CDS dans la bibliothèque",p.tds?"fiche technique":""].filter(Boolean).join(" · ")}`+(p.rem?` – ${p.rem}`:"")})}
+
 async function apqBarreDossiers(){const box=$("apqDos");if(!box) return;const mid=CFG.mission.id,l=await apqDossiers(mid),opts=[];
   for(const k of l){let a=k===APQ_M?APQ:null;if(!a){try{a=await kvGet("apq:"+k)}catch(e){}}const d=await apqDocCourant(k);
     opts.push([k,`${d?d.doc.ref+" Rev"+d.doc.rev:"Préqualification "+apqNum(k)+" (pas encore émise)"} – ${apqTitreCourt(a)||"…"} · ${(a&&a.sessions||[]).length} session(s)`])}
@@ -3713,7 +3755,7 @@ async function apqBarreDossiers(){const box=$("apqDos");if(!box) return;const mi
   nom.querySelector("input").addEventListener("change",()=>apqBarreDossiers());
   box.append(apqE("div",{class:"apqdos"},apqE("label",{},l.length>1?`Préqualifications du projet (${l.length})`:"Préqualification du projet",sel),nv),aide,choix,nom);
   if(apqNum(APQ_M)>1&&apqVideDeContenu(APQ)) box.append(apqE("div",{class:"btns"},apqE("button",{type:"button",class:"ghost",onclick:apqSupprimerVide},"🗑 Supprimer cette préqualification vide")))}
-async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqTdsMem();await apqRecuperer(a);await apqListeMat();
+async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqBibCharger();apqBibDatalist();await apqCdsMem();await apqTdsMem();await apqRecuperer(a);await apqListeMat();
   $("apqMission").textContent=`${CFG.mission.no} · ${CFG.mission.client||""}`;await apqBarreDossiers();
   apqEquip(a);
   const t=$("apqTete");t.innerHTML="";t.append(apqZone("Introduction",a,"intro","Qui, quand, quels matériaux ; applicateurs déjà qualifiés…"),
@@ -3726,10 +3768,12 @@ async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apq
   const ga=$("apqPers");ga.innerHTML="";ga.append(apqGalerie(a));
   const mt=$("apqMat");mt.innerHTML="";
   // v1.83 : photos par matériau (sac / étiquette du lot, certificat / preshipment test, autre)
-  for(const m of a.materiaux){m.photos=m.photos||[];mt.append(apqE("div",{class:"apqmatb"},apqE("div",{class:"apqmat"},apqChamp("Produit",m,"produit",null,"ex. ACTCHEM 85"),apqChoix("Utilisation",m,"role",APQ_ROLES),apqChamp("N° de lots",m,"lots"),
+  for(const m of a.materiaux){m.photos=m.photos||[];const chP=apqChamp("Produit",m,"produit",null,(APQ_BIB.produits||[]).length?"choisir dans la bibliothèque ou taper":"ex. ACTCHEM 85"),ipP=chP.querySelector("input");
+    ipP.setAttribute("list","apqBibDl");ipP.addEventListener("change",()=>apqBibAppliquer(m));
+    mt.append(apqE("div",{class:"apqmatb"},apqE("div",{class:"apqmat"},chP,apqChoix("Utilisation",m,"role",APQ_ROLES),apqChamp("N° de lots",m,"lots"),
     apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce matériau",onclick:async()=>{for(const x of m.photos) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
       a.materiaux.splice(a.materiaux.indexOf(m),1);for(const s of a.sessions) s.mats=(s.mats||[]).filter(x=>x!==m.id);await apqSauver(true);renderApq()}},"✕")),
-    apqE("div",{class:"apqrow"},apqChoix("Preshipment test",m,"psh",APQ_PSH),apqChamp("Réf. du rapport de preshipment test",m,"pshRef",null,"ex. PST-2408-112")),apqTdsBloc(m),apqPstBloc(m,a),
+    apqE("div",{class:"apqrow"},apqChoix("Preshipment test",m,"psh",APQ_PSH),apqChamp("Réf. du rapport de preshipment test",m,"pshRef",null,"ex. PST-2408-112")),apqBibInfo(m),apqTdsBloc(m),apqPstBloc(m,a),
     apqPhotos(m.photos,APQ_SLOTS_M)))}
   mt.append(apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:async()=>{a.materiaux.push({id:apqId(),produit:"",role:"",lots:""});await apqSauver(true);renderApq()}},"＋ Matériau")));
   const g=$("apqGen");g.innerHTML="";g.append(apqZone("Conditions (températures, humidité…)",a,"conditions"),apqE("div",{class:"apqrow"},apqChamp("Origine de l'eau",a,"eau",null,"ex. réseau d'eau potable du site"),apqChamp("Certificat de l'eau (n°, laboratoire, date)",a,"eauCert",null,"ex. analyse n° 2026-118 du 03/11/2026")),apqEauConf(a),
@@ -4856,6 +4900,7 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
    Les listes du projet (équipements, activités, accès, dégâts courants) gardent la langue du projet.
    {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
 const TRAD_UI=[
+["choisir dans la bibliothèque ou taper","choose from the library or type","elegir en la biblioteca o escribir","aus der Bibliothek wählen oder eingeben"],
 ["📊 Preshipment test ↔ compliance datasheet","📊 Preshipment test ↔ compliance datasheet","📊 Ensayo previo al envío ↔ hoja de conformidad","📊 Vorversandprüfung ↔ Konformitätsdatenblatt"],
 ["Limites de la compliance datasheet","Compliance datasheet limits","Límites de la hoja de conformidad","Grenzwerte des Konformitätsdatenblatts"],
 ["Résultats du preshipment test (par lot et par palette)","Preshipment test results (per batch and pallet)","Resultados del ensayo previo al envío (por lote y palé)","Ergebnisse der Vorversandprüfung (je Charge und Palette)"],
