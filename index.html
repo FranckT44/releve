@@ -332,6 +332,7 @@ body.atelier #planCard,body.atelier #avCard,body.atelier .degats{display:none!im
 
 /* v1.75 : préqualification des applicateurs */
 #v-apq textarea{min-height:72px}
+.apqdos{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin:6px 0}.apqdos>label{flex:1 1 280px}.apqdos select{width:100%}
 .apqrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-items:end;margin:4px 0}
 .apqt{grid-template-columns:repeat(auto-fit,minmax(92px,1fr))}.apqt input{min-height:40px;padding:4px 8px;box-sizing:border-box;width:100%}
 .apqmat{display:grid;grid-template-columns:1.3fr 1fr 1.3fr auto;gap:8px;align-items:end;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -565,7 +566,8 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <h2>Préqualification des applicateurs</h2>
     <div class="acc-mission" id="apqMission" data-noi18n></div>
     <p class="stat" id="apqInfo"></p>
-    <p class="hint">Un rapport par projet : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.</p>
+    <div id="apqDos"></div>
+    <p class="hint">Un rapport par préqualification (plusieurs possibles par projet) : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.</p>
     <div id="apqTete"></div>
     <div id="apqRecup" class="card confirm" hidden></div>
   </div>
@@ -930,7 +932,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.46";
+const APP_VERSION="2.47";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2261,7 +2263,7 @@ async function razExecuter(){if(!RAZ||$("razMot").value.trim().toUpperCase()!=="
     if(mode==="tout"){try{localStorage.clear()}catch(e){}try{DB.close()}catch(e){}
       await new Promise(r=>{const q=indexedDB.deleteDatabase("releve-refractaire");q.onsuccess=q.onerror=q.onblocked=()=>r()})}
     else{await tx("entries","readwrite",s=>s.clear());await tx("photos","readwrite",s=>s.clear());await tx("pdfs","readwrite",s=>s.clear());
-      const suppr=RAZ.b.cles.filter(k=>k==="prevus"||k==="prevusFaits"||k==="brouillonTexte"||k==="brouillonPhotos"||k.startsWith("libres:")||k.startsWith("apq:")||k.startsWith("apqSauveLe:"));
+      const suppr=RAZ.b.cles.filter(k=>k==="prevus"||k==="prevusFaits"||k==="brouillonTexte"||k==="brouillonPhotos"||k.startsWith("libres:")||k.startsWith("apq:")||k.startsWith("apqSauveLe:")||k.startsWith("apqEnvoyeLe:")||k.startsWith("apqCourant:"));
       await tx("kv","readwrite",s=>{for(const k of suppr) s.delete(k)});
       for(const m of MISSIONS){delete m.navetteLe;delete m.programme}await saveMissions();
       try{localStorage.removeItem("galPlie");localStorage.removeItem("ctxPrec")}catch(e){}}
@@ -3229,8 +3231,12 @@ const apqLangue=m=>LANGUI.codes.includes(LANGUI.lang)?LANGUI.lang:((m&&m.langue)
 let APQ=null,APQ_M=null,APQ_T=null,APQ_CIBLE=null;const APQ_SRC=new Map();/* pid -> liste qui contient la photo (déplacement) */const APQ_OUV=new Set();
 const apqVide=()=>({v:1,intro:"",perimetre:"",conditions:"",eau:"",labo:false,personnes:[],materiaux:[],sessions:[],resultats:""});
 let APQ_REF=null,APQ_SALE=false,APQ_CONFLIT=false;
-async function apqCharger(){const id=CFG.mission.id;if(APQ&&APQ_M===id) return APQ;let a=null;try{a=await kvGet("apq:"+id)}catch(e){}APQ_REF=a&&a.modifieLe||null;APQ_CONFLIT=false;
-  APQ=a&&a.v?a:apqVide();APQ_M=id;
+async function apqCharger(k){const id=CFG.mission.id;
+  // v2.47 : sans clé = préqualification ouverte du projet actif (kv « apqCourant:<id> », sinon la n° 1)
+  if(!k){if(APQ&&APQ_M&&apqMid(APQ_M)===id) return APQ;let c=null;try{c=await kvGet("apqCourant:"+id)}catch(e){}k=c&&apqMid(c)===id?c:id}
+  if(APQ&&APQ_M===k) return APQ;if(APQ&&APQ_SALE) await apqSauver(true);
+  let a=null;try{a=await kvGet("apq:"+k)}catch(e){}APQ_REF=a&&a.modifieLe||null;APQ_CONFLIT=false;
+  APQ=a&&a.v?a:apqVide();APQ_M=k;
   // v1.79 : inspecteur et certification API (repris du dernier rapport, sinon du projet)
   if(APQ.inspecteur==null){let d=null;try{d=await kvGet("apqInsp")}catch(e){}d=d||{};APQ.inspecteur=d.nom||CFG.mission.inspecteur||"";APQ.apiNo=d.no||"";APQ.apiType=d.type||"936"}
   return APQ}
@@ -3483,8 +3489,48 @@ function apqEauConf(a){if(a.eauConf===true) a.eauConf="oui";const box=apqE("div"
     const b=apqE("button",{type:"button","aria-pressed":String(on)},t);if(on) b.style.background=c;
     b.onclick=()=>{a.eauConf=a.eauConf===k?"":k;apqSauver();renderApq()};box.append(b)}
   return box}
+// v2.47 : plusieurs préqualifications par projet. N° 1 = kv « apq:<id mission> » (inchangé), suivantes = « apq:<id mission>~<n> ».
+// Chaque document APQ émis porte la clé de sa préqualification (doc.apqK ; absente = n° 1, documents d'avant la v2.47).
+const apqMid=k=>String(k||"").split("~")[0];
+const apqNum=k=>{const p=String(k||"").split("~");return p.length>1?(parseInt(p[1],10)||1):1};
+async function apqDossiers(mid){let cles=[];try{cles=await tx("kv","readonly",s=>s.getAllKeys())}catch(e){}
+  const l=new Set([mid]);for(const k of cles||[]) if(typeof k==="string"&&k.startsWith("apq:")&&apqMid(k.slice(4))===mid) l.add(k.slice(4));
+  return [...l].sort((a,b)=>apqNum(a)-apqNum(b))}
+async function apqDocsDossier(k){try{return (await tousPdfs()).filter(p=>p.doc&&p.doc.code==="APQ"&&p.mission&&(p.doc.apqK||p.mission.id)===k)}catch(e){return []}}
+async function apqDocCourant(k){return (await apqDocsDossier(k)).filter(p=>p.doc.statut!=="revisee").sort((a,b)=>b.doc.rev-a.doc.rev)[0]||null}
+function apqTitreCourt(a){return (a&&a.nom||"").trim()||apqTitreDoc(a||{},"fr")||""}
+const apqVideDeContenu=a=>!a||!((a.sessions||[]).length||(a.materiaux||[]).length||(a.personnes||[]).length);
+async function apqOuvrir(k){if(APQ_SALE) await apqSauver(true);clearTimeout(APQ_T);
+  try{await kvSet("apqCourant:"+apqMid(k),k)}catch(e){}APQ=null;APQ_M=null;await apqCharger(k);window.scrollTo(0,0);renderApq()}
+const APQ_ENTETE=["intro","perimetre","labo","laboDebut","inspecteur","apiType","apiNo","lieu","spec","docs","equip","equipAutre","equipPlus"];
+async function apqNouveau(reprendre){const mid=CFG.mission.id;await apqCharger();if(APQ_SALE) await apqSauver(true);
+  const l=await apqDossiers(mid),n=Math.max(...l.map(apqNum))+1,k=mid+"~"+n,a=apqVide();
+  if(reprendre){for(const c of APQ_ENTETE) if(APQ[c]!=null) a[c]=JSON.parse(JSON.stringify(APQ[c]))}
+  else{a.inspecteur=APQ.inspecteur||"";a.apiNo=APQ.apiNo||"";a.apiType=APQ.apiType||"936"}
+  if(APQ.logo&&APQ.logo!=="perso") a.logo=APQ.logo;
+  a.modifieLe=new Date().toISOString();
+  try{await kvSet("apq:"+k,a)}catch(e){toast("Nouvelle préqualification non créée (mémoire pleine ?).",5000);return}
+  toast(`Préqualification ${n} créée : elle aura son propre rapport.`,5000);await apqOuvrir(k)}
+async function apqSupprimerVide(){const k=APQ_M;if(apqNum(k)<2||!apqVideDeContenu(APQ)) return;
+  if((await apqDocsDossier(k)).length){toast("Cette préqualification a déjà un rapport émis : elle est gardée.",5000);return}
+  try{await tx("kv","readwrite",s=>s.delete("apq:"+k))}catch(e){}APQ=null;APQ_M=null;APQ_SALE=false;await apqOuvrir(apqMid(k))}
+async function apqBarreDossiers(){const box=$("apqDos");if(!box) return;const mid=CFG.mission.id,l=await apqDossiers(mid),opts=[];
+  for(const k of l){let a=k===APQ_M?APQ:null;if(!a){try{a=await kvGet("apq:"+k)}catch(e){}}const d=await apqDocCourant(k);
+    opts.push([k,`${d?d.doc.ref+" Rev"+d.doc.rev:"Préqualification "+apqNum(k)+" (pas encore émise)"} – ${apqTitreCourt(a)||"…"} · ${(a&&a.sessions||[]).length} session(s)`])}
+  box.innerHTML="";
+  const sel=apqE("select",{"data-noi18n":true},opts.map(([v,t])=>apqE("option",{value:v,text:t})));sel.value=APQ_M;sel.onchange=()=>apqOuvrir(sel.value);
+  const aide=apqE("p",{class:"hint",hidden:true,text:"Nouvelle préqualification (autre campagne, entreprise ou matériau) : elle aura son propre rapport (numéro APQ suivant). « Reprendre l'en-tête » recopie introduction, périmètre, inspecteur, lieu, spécification, documents et équipements ; matériaux, applicateurs et sessions partent vides."});
+  const choix=apqE("div",{class:"btns",hidden:true},
+    apqE("button",{type:"button",class:"primary",onclick:()=>apqNouveau(true)},"Reprendre l'en-tête de celle-ci"),
+    apqE("button",{type:"button",onclick:()=>apqNouveau(false)},"Partir d'une fiche vierge"),
+    apqE("button",{type:"button",class:"ghost",onclick:()=>{choix.hidden=true;aide.hidden=true}},"Annuler"));
+  const nv=apqE("button",{type:"button",onclick:()=>{const v=choix.hidden;choix.hidden=!v;aide.hidden=!v}},"＋ Nouvelle préqualification");
+  const nom=apqChamp("Intitulé (facultatif, pour s'y retrouver)",APQ,"nom",null,"ex. Gunning entreprise X – mars");
+  nom.querySelector("input").addEventListener("change",()=>apqBarreDossiers());
+  box.append(apqE("div",{class:"apqdos"},apqE("label",{},l.length>1?`Préqualifications du projet (${l.length})`:"Préqualification du projet",sel),nv),aide,choix,nom);
+  if(apqNum(APQ_M)>1&&apqVideDeContenu(APQ)) box.append(apqE("div",{class:"btns"},apqE("button",{type:"button",class:"ghost",onclick:apqSupprimerVide},"🗑 Supprimer cette préqualification vide")))}
 async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apqTdsMem();await apqRecuperer(a);await apqListeMat();
-  $("apqMission").textContent=`${CFG.mission.no} · ${CFG.mission.client||""}`;
+  $("apqMission").textContent=`${CFG.mission.no} · ${CFG.mission.client||""}`;await apqBarreDossiers();
   apqEquip(a);
   const t=$("apqTete");t.innerHTML="";t.append(apqZone("Introduction",a,"intro","Qui, quand, quels matériaux ; applicateurs déjà qualifiés…"),
     apqZone("Périmètre / limites",a,"perimetre","ex. - Démontrer la maîtrise du malaxage\n- Pas d'échantillons pour le laboratoire"),apqLabo(a),apqLogo(a),
@@ -3545,14 +3591,16 @@ async function apqSauvegarder(envoi){envoi=envoi===true;const a=await apqCharger
   try{const pids=apqPids(a),photos=[],blobs=[];let off=0,k=0;
     for(const id of pids){k++;busyMaj(`Photo ${k} / ${pids.length}`,Math.round(k/Math.max(1,pids.length)*90));const p=await getPhoto(id);if(!p||!p.blob) continue;
       photos.push({id,type:p.type||"image/jpeg",prise:p.prise||null,thumb:p.thumb||"",blob:{off,taille:p.blob.size,type:p.blob.type||"image/jpeg"}});blobs.push(p.blob);off+=p.blob.size}
-    const now=new Date(),h={schema:"releve-apq/1",cree:now.toISOString(),version:APP_VERSION,mission:{no:m.no,client:m.client||""},apq:a,photos};
+    const now=new Date(),h={schema:"releve-apq/1",cree:now.toISOString(),version:APP_VERSION,mission:{no:m.no,client:m.client||""},apq:a,photos,
+      apqK:APQ_M,apqN:apqNum(APQ_M),apqNom:apqTitreCourt(a)};const nD=apqNum(APQ_M);
     if(envoi){const so=socMission(m);h.mission={...h.mission,dossierPC:m.dossierPC||"",inspecteur:m.inspecteur||"",societe:so.societe,langueRapport:so.langueRapport};
       h.pc={titre:{fr:apqTitreDoc(a,"fr"),en:apqTitreDoc(a,"en")},equip:apqEquipTexte(a),resultatsLibres:apqSansRedite(a),tr:APQ_TR,lib:APQL,
         verdicts:Object.fromEntries(Object.entries(APQ_V).map(([k,v])=>[k,v.fr])),ctl:APQ_CTL,ech:APQ_ECH,maquette:APQ_MAQUETTE,
-        slots:{mat:APQ_SL_MAT,temp:APQ_SL_TEMP,ech:APQ_SL_ECH,ordre:APQ_ORDRE_PH},equipNoms:Object.fromEntries((EQ||[]).map(e=>[e.code,e.nom]))}}
-    const nom=nomSur(`${envoi?"Envoi PC APQ":"Sauvegarde APQ"} ${m.no} - ${today()} ${pad(now.getHours())}h${pad(now.getMinutes())}`)+".jpg";
+        slots:{mat:APQ_SL_MAT,temp:APQ_SL_TEMP,ech:APQ_SL_ECH,ordre:APQ_ORDRE_PH},equipNoms:Object.fromEntries((EQ||[]).map(e=>[e.code,e.nom]))};
+      h.pc.refs=(await apqDocsDossier(APQ_M)).map(p=>({ref:p.doc.ref,rev:p.doc.rev,statut:p.doc.statut||"",date:p.doc.date||""}))}
+    const nom=nomSur(`${envoi?"Envoi PC APQ":"Sauvegarde APQ"} ${m.no}${nD>1?"-"+nD:""} - ${today()} ${pad(now.getHours())}h${pad(now.getMinutes())}`)+".jpg";
     const c=document.createElement("canvas");c.width=900;c.height=360;const g=c.getContext("2d");g.fillStyle="#1d2a33";g.fillRect(0,0,900,360);g.fillStyle="#c9a227";g.fillRect(0,0,14,360);
-    g.fillStyle="#fff";g.font="bold 40px sans-serif";g.fillText(envoi?"Envoi au PC – préqualification":"Sauvegarde – préqualification",50,90);g.font="28px sans-serif";g.fillText(`Projet ${m.no} ${(m.client||"").slice(0,40)}`,50,140);
+    g.fillStyle="#fff";g.font="bold 40px sans-serif";g.fillText(envoi?"Envoi au PC – préqualification":"Sauvegarde – préqualification",50,90);g.font="28px sans-serif";g.fillText(`Projet ${m.no} ${(m.client||"").slice(0,40)}${nD>1?" – préqualification "+nD:""}`,50,140);
     g.fillStyle="#c9d3d9";g.font="24px sans-serif";g.fillText(`${(a.sessions||[]).length} session(s) · ${photos.length} photo(s) · ${fmtDT(h.cree)}`,50,200);
     g.font="20px sans-serif";g.fillText("The 982 Inspector Toolbox : Préqualification › Restaurer",50,300);
     busyMaj("Assemblage du fichier…",95);await repos();
@@ -3589,18 +3637,18 @@ async function apqChoisirSauvegarde(file){busy("Lecture de la sauvegarde…",`${
   try{const h=await apqLireSauvegarde(file);busyFin();if(!h){toast("Ce fichier n'est pas une sauvegarde de préqualification.",6000);return}
     APQ_REST=h;const a=h.apq||{},n=(a.sessions||[]).length;
     $("apqRestTxt").textContent=`Sauvegarde du ${fmtDT(h.cree)} – projet ${h.mission&&h.mission.no||"?"} : ${n} session(s), ${(h.photos||[]).length} photo(s).`
-      +(h.mission&&h.mission.no!==CFG.mission.no?` Attention : le projet actif est le ${CFG.mission.no}.`:"")+" Le rapport de préqualification actuel du projet actif sera remplacé.";
+      +(h.mission&&h.mission.no!==CFG.mission.no?` Attention : le projet actif est le ${CFG.mission.no}.`:"")+(h.apqK&&apqMid(h.apqK)===CFG.mission.id?` La préqualification ${apqNum(h.apqK)} du projet sera remplacée par cette sauvegarde.`:` La préqualification ouverte (n° ${apqNum(APQ_M)}) sera remplacée.`);
     $("apqRestCard").hidden=false;$("apqRestCard").scrollIntoView({block:"center"})}
   catch(e){busyFin();toast("Lecture impossible : "+(e&&e.message||e),6000)}}
 async function apqRestaurer(){const h=APQ_REST;APQ_REST=null;$("apqRestCard").hidden=true;if(!h) return;
   busy("Restauration…","",0);await repos();
-  try{const id=CFG.mission.id,ph=h.photos||[];let k=0;
+  try{await apqCharger();const id=h.apqK&&apqMid(h.apqK)===CFG.mission.id?h.apqK:APQ_M,ph=h.photos||[];let k=0;
     for(const p of ph){k++;busyMaj(`Photo ${k} / ${ph.length}`,Math.round(k/Math.max(1,ph.length)*100));const blob=h._blob(p.blob);if(!blob) continue;
       await tx("photos","readwrite",s=>s.put({id:p.id,entry:"apq:"+id,type:p.type,prise:p.prise,blob,thumb:p.thumb||""}))}
-    APQ={...apqVide(),...h.apq};APQ_M=id;APQ.modifieLe=new Date().toISOString();await kvSet("apq:"+id,APQ);APQ_REF=APQ.modifieLe;APQ_CONFLIT=false;toast(`Rapport restauré : ${(APQ.sessions||[]).length} session(s), ${ph.length} photo(s).`,6000)}
+    APQ={...apqVide(),...h.apq};APQ_M=id;APQ.modifieLe=new Date().toISOString();await kvSet("apq:"+id,APQ);try{await kvSet("apqCourant:"+apqMid(id),id)}catch(e){}APQ_REF=APQ.modifieLe;APQ_CONFLIT=false;toast(`Rapport restauré : ${(APQ.sessions||[]).length} session(s), ${ph.length} photo(s).`,6000)}
   catch(e){toast("Restauration impossible : "+(e&&e.message||e),8000)}finally{busyFin();renderApq()}}
-async function apqInfoSauve(){const el=$("apqSauveInfo");if(!el) return;let d=null;try{d=await kvGet("apqSauveLe:"+CFG.mission.id)}catch(e){}
-  let e2=null;try{e2=await kvGet("apqEnvoyeLe:"+CFG.mission.id)}catch(e){}
+async function apqInfoSauve(){const el=$("apqSauveInfo");if(!el) return;const kD=APQ_M&&apqMid(APQ_M)===CFG.mission.id?APQ_M:CFG.mission.id;let d=null;try{d=await kvGet("apqSauveLe:"+kD)}catch(e){}
+  let e2=null;try{e2=await kvGet("apqEnvoyeLe:"+kD)}catch(e){}
   el.textContent=(d?`Dernière sauvegarde (fichier) : ${fmtDT(d)}.`:"Aucune sauvegarde en fichier pour ce rapport : pensez à « 💾 Sauvegarder » régulièrement.")+(e2?` Dernier envoi au PC : ${fmtDT(e2)}.`:"")
     +(APQ_DIAG?` Photos de préqualification dans l'appli : ${APQ_DIAG.total}.`:"")}
 function initApqSauve(){$("bApqSave").onclick=()=>apqSauvegarder(false);$("bApqPc").onclick=apqEnvoyerPC;$("bApqRest").onclick=()=>choisirFichier($("iApqRest"));
@@ -3611,11 +3659,11 @@ function initApqSauve(){$("bApqSave").onclick=()=>apqSauvegarder(false);$("bApqP
 // v1.88 : le rapport de préqualification du projet apparaît en tête du Journal (ouvrir pour le compléter, PDF)
 async function apqCarteJournal(j){let a=null;try{a=await apqCharger()}catch(e){return}
   if(!a||!((a.sessions||[]).length||(a.materiaux||[]).length||(a.personnes||[]).length||(a.intro||"").trim())) return;
-  const tous=(a.sessions||[]).flatMap(s=>s.applicateurs||[]),nv=tous.filter(p=>p.verdict).length;
+  const tous=(a.sessions||[]).flatMap(s=>s.applicateurs||[]),nv=tous.filter(p=>p.verdict).length,nDos=(await apqDossiers(CFG.mission.id)).length;
   const ds=[...new Set((a.sessions||[]).map(s=>s.date).filter(Boolean))].sort().map(frDate);
   const c=apqE("div",{class:"card c-jaune apqj"},
     apqE("div",{class:"dayhead"},apqE("h3",{text:"🧪 Préqualification des applicateurs"}),apqE("span",{class:"stat",text:ds.join(", ")})),
-    apqE("p",{class:"hint",text:`${(a.sessions||[]).length} session(s), ${tous.length} applicateur(s) dont ${nv} avec verdict`+(a.modifieLe?` – modifié le ${fmtDT(a.modifieLe)}`:"")}),
+    apqE("p",{class:"hint",text:`${(a.sessions||[]).length} session(s), ${tous.length} applicateur(s) dont ${nv} avec verdict`+(a.modifieLe?` – modifié le ${fmtDT(a.modifieLe)}`:"")+(nDos>1?` · préqualification ${apqNum(APQ_M)} sur ${nDos} (les autres : liste en haut de Préqualification)`:"")}),
     apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:()=>showView("apq")},"Ouvrir / compléter"),apqE("button",{type:"button",onclick:pdfApq},"📄 PDF")));
   j.prepend(c)}
 
@@ -3819,7 +3867,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
 // v2.20 : titre du rapport de préqualification = équipements – Préqualification – méthode(s)
 function apqTitreDoc(a,l){const meth=[...new Set((a.sessions||[]).map(s=>(s.methode||"").trim()).filter(Boolean))];
   return [apqEquipTexte(a)||"",pdfL("preq",l),meth.join(", ")].filter(Boolean).join(" – ")}
-async function construireApq(m,doc){const a=await apqCharger();if(!a.sessions.length&&!a.materiaux.length){toast("Rien à mettre dans le rapport : ajoute au moins un matériau ou une session.");return null}
+async function construireApq(m,doc){const a=await apqCharger(doc.apqK||m.id);doc.apqK=APQ_M;if(!a.sessions.length&&!a.materiaux.length){toast("Rien à mettre dans le rapport : ajoute au moins un matériau ou une session.");return null}
   await apqSauver(true);const l=apqLangue(m);let so=socMission(m);
   if(a.logo==="QUARTIS"||a.logo==="FTA") so=socMission({...m,societe:a.logo});
   const nomI=a.inspecteur||m.inspecteur||"",insp=[nomI,a.apiNo?`API ${a.apiType||"936"} N° ${a.apiNo}`:""].filter(Boolean).join(" – ");
@@ -3832,10 +3880,10 @@ async function construireApq(m,doc){const a=await apqCharger();if(!a.sessions.le
   return {mk,octets,nom,l,so,f:new File([octets],nom,{type:"application/pdf"})}}
 async function pdfApq(){if(PDF_EN_COURS) return;const m=curMission()||CFG.mission;
   // déjà émis : « Créer le PDF » = révision suivante (motif demandé)
-  let ex=null;try{ex=(await tousPdfs()).filter(p=>p.doc&&p.doc.code==="APQ"&&p.doc.statut!=="revisee"&&p.mission&&p.mission.id===m.id).sort((a,b)=>b.doc.rev-a.doc.rev)[0]}catch(e){}
+  await apqCharger();const ex=await apqDocCourant(APQ_M);
   if(ex){await reviserDoc(ex);return}
   PDF_EN_COURS=true;busy("Création du PDF…","");await repos();
-  try{const l=apqLangue(m);const doc={ref:await prochaineRef(m,"APQ"),code:"APQ",rev:0,date:today(),l,hist:[{rev:0,date:today(),motif:pdfL("prem",l)}]};
+  try{const l=apqLangue(m);const doc={ref:await prochaineRef(m,"APQ"),code:"APQ",apqK:APQ_M,rev:0,date:today(),l,hist:[{rev:0,date:today(),motif:pdfL("prem",l)}]};
     const r=await construireApq(m,doc);if(!r) return;busyFin();
     if(!await apercuPdf(r.mk,r.nom)){toast("PDF annulé.");return}
     const garde=tx("pdfs","readwrite",s=>s.put({id:newId(),nom:r.nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:r.so.societe,
@@ -4561,6 +4609,14 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
    Les listes du projet (équipements, activités, accès, dégâts courants) gardent la langue du projet.
    {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
 const TRAD_UI=[
+["＋ Nouvelle préqualification","＋ New prequalification","＋ Nueva precualificación","＋ Neue Präqualifikation"],
+["Reprendre l'en-tête de celle-ci","Reuse the header of this one","Reutilizar el encabezado de esta","Kopf von dieser übernehmen"],
+["Partir d'une fiche vierge","Start from a blank sheet","Empezar con una hoja en blanco","Mit leerem Blatt beginnen"],
+["Préqualification du projet","Project prequalification","Precualificación del proyecto","Präqualifikation des Projekts"],
+["Préqualifications du projet ({a})","Project prequalifications ({a})","Precualificaciones del proyecto ({a})","Präqualifikationen des Projekts ({a})"],
+["Intitulé (facultatif, pour s'y retrouver)","Label (optional, to find your way)","Título (opcional, para orientarse)","Bezeichnung (optional, zur Orientierung)"],
+["🗑 Supprimer cette préqualification vide","🗑 Delete this empty prequalification","🗑 Eliminar esta precualificación vacía","🗑 Diese leere Präqualifikation löschen"],
+["Nouvelle préqualification (autre campagne, entreprise ou matériau) : elle aura son propre rapport (numéro APQ suivant). « Reprendre l'en-tête » recopie introduction, périmètre, inspecteur, lieu, spécification, documents et équipements ; matériaux, applicateurs et sessions partent vides.","New prequalification (another campaign, company or material): it gets its own report (next APQ number). “Reuse the header” copies introduction, scope, inspector, location, specification, documents and equipment; materials, applicators and sessions start empty.","Nueva precualificación (otra campaña, empresa o material): tendrá su propio informe (número APQ siguiente). «Reutilizar el encabezado» copia introducción, alcance, inspector, lugar, especificación, documentos y equipos; materiales, aplicadores y sesiones empiezan vacíos.","Neue Präqualifikation (andere Kampagne, Firma oder anderes Material): sie erhält einen eigenen Bericht (nächste APQ-Nummer). „Kopf übernehmen“ kopiert Einleitung, Umfang, Inspektor, Ort, Spezifikation, Dokumente und Ausrüstungen; Materialien, Verarbeiter und Sitzungen beginnen leer."],
 ["Navette reçue","Shuttle file received","Lanzadera recibida","Shuttle-Datei empfangen"],
 ["Fusionner","Merge","Fusionar","Zusammenführen"],
 ["🔄 Créer la navette","🔄 Create the shuttle file","🔄 Crear la lanzadera","🔄 Shuttle-Datei erstellen"],
@@ -4703,7 +4759,7 @@ const TRAD_UI=[
 ["Préqualification des applicateurs", "Applicator prequalification", "Precualificación de aplicadores", "Präqualifikation der Verarbeiter"],
 ["Préqualification", "Prequalification", "Precualificación", "Präqualifikation"],
 ["Applicateurs, panneaux, verdicts", "Applicators, panels, results", "Aplicadores, paneles, resultados", "Verarbeiter, Paneele, Ergebnisse"],
-["Un rapport par projet : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.", "One report per project: materials, conditions, one session per method and date (measurements, guided photos, applicators with checks and result), then the results. Everything is saved as you go.", "Un informe por proyecto: materiales, condiciones, una sesión por método y fecha (mediciones, fotos guiadas, aplicadores con controles y resultado) y los resultados. Todo se guarda sobre la marcha.", "Ein Bericht pro Projekt: Materialien, Bedingungen, eine Sitzung je Verfahren und Datum (Messwerte, geführte Fotos, Verarbeiter mit Prüfungen und Ergebnis), dann die Ergebnisse. Alles wird laufend gespeichert."],
+["Un rapport par préqualification (plusieurs possibles par projet) : matériaux, conditions, une session par méthode et par date (relevés, photos guidées, applicateurs avec contrôles et verdict), puis les résultats. Tout est enregistré au fur et à mesure.", "One report per prequalification (several possible per project): materials, conditions, one session per method and date (measurements, guided photos, applicators with checks and result), then the results. Everything is saved as you go.", "Un informe por precualificación (varios posibles por proyecto): materiales, condiciones, una sesión por método y fecha (mediciones, fotos guiadas, aplicadores con controles y resultado) y los resultados. Todo se guarda sobre la marcha.", "Ein Bericht pro Präqualifikation (mehrere je Projekt möglich): Materialien, Bedingungen, eine Sitzung je Verfahren und Datum (Messwerte, geführte Fotos, Verarbeiter mit Prüfungen und Ergebnis), dann die Ergebnisse. Alles wird laufend gespeichert."],
 ["📄 Créer le PDF", "📄 Create the PDF", "📄 Crear el PDF", "📄 PDF erstellen"],
 ["1. Matériaux", "1. Materials", "1. Materiales", "1. Materialien"],
 ["2. Conditions générales", "2. General conditions", "2. Condiciones generales", "2. Allgemeine Bedingungen"],
