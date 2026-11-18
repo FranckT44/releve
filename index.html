@@ -402,6 +402,10 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqth input{font-size:13px;min-height:34px;padding:2px 6px;min-width:0}.apqth button{min-height:34px;padding:0 10px}
 .apqv{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.apqv button{min-height:42px}.apqv button[aria-pressed=true]{color:#fff;border-color:transparent;font-weight:700}
 .apqbilan{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:4px}.apqbilan li{display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:4px 0;font-size:14px}
+/* v2.55 : listes déroulantes (et listes modifiables) sur fond vert pâle du logo */
+main select,main input[list]{background-color:#c8edd2!important;color:#12301d!important;border-color:#7fbf95!important}
+main select option{background:#ffffff;color:#12301d}
+main input[list]::placeholder{color:#4f7a5c}
 </style>
 </head>
 <body>
@@ -948,7 +952,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.54";
+const APP_VERSION="2.56";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3290,6 +3294,12 @@ function apqZone(lbl,o,k,ph){const id="apqz"+(++APQ_NZ),lid=id+"l";
   el.addEventListener("input",()=>{if(!el.textContent.trim()&&!el.querySelector("li")) el.innerHTML="";o[k]=versTexte(el);apqSauver()});
   el.addEventListener("blur",()=>bar.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed","false")));
   return apqE("div",{class:"rtewrap"},apqE("span",{class:"rtelab",id:lid},lbl),bar,el)}
+// v2.55 : liste modifiable (choix proposés + saisie libre)
+function apqChoixLibre(lbl,o,k,liste,ph){const id="apqdl_"+k;let dl=document.getElementById(id);if(!dl){dl=document.createElement("datalist");dl.id=id;document.body.append(dl)}
+  dl.innerHTML="";for(const v of liste) dl.append(apqE("option",{value:v}));
+  const i=apqE("input",{type:"text",value:o[k]||"",list:id,placeholder:ph||"choisir ou taper",autocomplete:"off"});i.oninput=()=>{o[k]=i.value;apqSauver()};
+  i.addEventListener("focus",()=>{if(i.value){i.dataset.v=i.value;i.value=""}});i.addEventListener("blur",()=>{if(!i.value&&i.dataset.v){i.value=i.dataset.v}delete i.dataset.v;o[k]=i.value;apqSauver()});
+  return apqE("label",{},lbl,i)}
 function apqChoix(lbl,o,k,liste,apres){const s=apqE("select",{},apqE("option",{value:"",text:"—"}),liste.map(v=>apqE("option",{value:v,text:v})));
   s.value=o[k]||"";s.onchange=()=>{o[k]=s.value;apqSauver();if(apres) apres()};return apqE("label",{},lbl,s)}
 function apqCoche(lbl,o,k){const c=apqE("input",{type:"checkbox"});c.checked=!!o[k];c.onchange=()=>{o[k]=c.checked;apqSauver()};return apqE("label",{class:"toggle"},c," "+lbl)}
@@ -3571,12 +3581,12 @@ async function apqSupprimerVide(){const k=APQ_M;if(apqNum(k)<2||!apqVideDeConten
 const APQ_PST_CAT={eau:[["Eau de gâchage","Mixing water","Agua de amasado","Anmachwasser"],"%","plage"],
   dCru:[["Densité crue","Green density","Densidad en verde","Grünrohdichte"],"g/cm³","max"],
   dSec:[["Densité séchée 110 °C","Dried density 110 °C","Densidad secada 110 °C","Rohdichte getrocknet 110 °C"],"g/cm³","max"],
-  dCuit:[["Densité cuite 815 °C","Fired density 815 °C","Densidad cocida 815 °C","Rohdichte gebrannt 815 °C"],"g/cm³","max"],
+  dCuit:[["Densité après séchage à 815 °C","Fired density 815 °C","Densidad cocida 815 °C","Rohdichte gebrannt 815 °C"],"g/cm³","max"],
   ccsSec:[["CCS séché 110 °C","CCS dried 110 °C","CCS secado 110 °C","KDF getrocknet 110 °C"],"MPa","min"],
-  ccsCuit:[["CCS cuit 815 °C","CCS fired 815 °C","CCS cocido 815 °C","KDF gebrannt 815 °C"],"MPa","min"],
-  cmor:[["CMOR cuit 815 °C","CMOR fired 815 °C","CMOR cocido 815 °C","KBF gebrannt 815 °C"],"MPa","min"],
+  ccsCuit:[["CCS après séchage à 815 °C","CCS fired 815 °C","CCS cocido 815 °C","KDF gebrannt 815 °C"],"MPa","min"],
+  cmor:[["CMOR après séchage à 815 °C","CMOR fired 815 °C","CMOR cocido 815 °C","KBF gebrannt 815 °C"],"MPa","min"],
   plcCS:[["PLC cru – séché","PLC green – dried","PLC verde – secado","PLC grün – getrocknet"],"%","plage"],
-  plcSC:[["PLC séché – cuit","PLC dried – fired","PLC secado – cocido","PLC getrocknet – gebrannt"],"%","plage"],
+  plcSC:[["PLC séché – après séchage à 815 °C","PLC dried – fired","PLC secado – cocido","PLC getrocknet – gebrannt"],"%","plage"],
   abr:[["Abrasion après 815 °C (ASTM C704)","Abrasion after 815 °C (ASTM C704)","Abrasión tras 815 °C (ASTM C704)","Abrieb nach 815 °C (ASTM C704)"],"cc","max"]};
 const APQ_PST_FAM={"Anti-érosion":["eau","dCru","dCuit","ccsCuit","abr"],"Dense":["eau","dCru","dCuit","ccsCuit","plcCS","plcSC"],"Isolant":["eau","dCru","dCuit","ccsCuit","plcCS","plcSC"]};
 const APQ_PST_TYPES=[["max","≤ maximum"],["min","≥ minimum"],["plage","plage (de … à …)"],["cible","cible ± tolérance"]];
@@ -3732,11 +3742,24 @@ async function apqBibImporter(h){busy("Chargement de la bibliothèque matériaux
   catch(e){toast("Bibliothèque non chargée : "+(e&&e.message||e),8000)}finally{busyFin()}}
 function apqBibDatalist(){let dl=$("apqBibDl");if(!dl){dl=document.createElement("datalist");dl.id="apqBibDl";document.body.append(dl)}
   dl.innerHTML="";for(const p of (APQ_BIB&&APQ_BIB.produits)||[]) dl.append(apqE("option",{value:p.nom,label:[p.fab,p.role,p.cds?"CDS "+(p.cdsDate||""):"sans CDS"].filter(Boolean).join(" · ")}))}
-async function apqBibAppliquer(m){const cle=apqTdsCle(m.produit),p=((APQ_BIB&&APQ_BIB.produits)||[]).find(x=>apqTdsCle(x.nom)===cle);if(!p) return;
-  const fait=[];if(!m.role&&p.role){m.role=p.role;fait.push("utilisation")}
-  const k=(await apqTdsMem())[cle];if(!m.tds&&k&&k.id){m.tds={...k};m.tdsAnnexe=true;fait.push("fiche technique")}
-  const c=(await apqCdsMem())[cle];if(!m.pst&&c&&(c.props||[]).length){m.pst={props:JSON.parse(JSON.stringify(c.props)),lots:[],com:""};APQ_OUV.add("pst"+m.id);fait.push("limites de la CDS")}
-  await apqSauver(true);renderApq();if(fait.length) toast(`Bibliothèque : ${fait.join(", ")} repris pour ${p.nom}.`,5000)}
+// v2.56 : changer de produit remplace aussi l'utilisation, la fiche technique et les limites venues de l'ancien produit
+const APQ_BIB_FAIT=new WeakMap();/* matériau -> dernier produit appliqué (évite un 2e passage au « change » de l'ancien champ) */
+async function apqBibAppliquer(m,prev){const L=(APQ_BIB&&APQ_BIB.produits)||[],cle=apqTdsCle(m.produit),p=L.find(x=>apqTdsCle(x.nom)===cle);
+  if(APQ_BIB_FAIT.get(m)===cle) return;APQ_BIB_FAIT.set(m,cle);
+  const chg=prev!==undefined&&apqTdsCle(prev)!==cle,pp=chg?L.find(x=>apqTdsCle(x.nom)===apqTdsCle(prev)):null;
+  const fait=[],retire=[];
+  // utilisation : celle du nouveau produit, sauf si elle avait été choisie à la main
+  if(p&&p.role&&(!m.role||(chg&&(!pp||m.role===pp.role)))){if(m.role!==p.role) fait.push("utilisation");m.role=p.role}
+  // fiche technique : celle connue pour le nouveau produit ; sinon celle de l'ancien produit est retirée
+  const k=(await apqTdsMem())[cle];
+  if(chg){if(k&&k.id){m.tds={...k};m.tdsAnnexe=true;m.tdsPour=m.produit;fait.push("fiche technique")}else if(m.tds){retire.push(`fiche technique « ${m.tds.nom} »`);delete m.tds}}
+  else if(!m.tds&&k&&k.id){m.tds={...k};m.tdsAnnexe=true;m.tdsPour=m.produit;fait.push("fiche technique")}
+  // limites de la CDS : remplacées tant qu'aucun résultat de preshipment n'est saisi
+  const c=(await apqCdsMem())[cle],aRes=!!(m.pst&&(m.pst.lots||[]).some(x=>(x.rows||[]).length));
+  if(chg&&m.pst&&aRes){toast("Des résultats de preshipment test sont saisis : les limites de la CDS sont gardées (vérifiez-les dans le bloc 📊).",8000)}
+  else if(chg||!m.pst){const av=!!m.pst;if(c&&(c.props||[]).length){m.pst={props:JSON.parse(JSON.stringify(c.props)),lots:[],com:""};APQ_OUV.add("pst"+m.id);fait.push("limites de la CDS")}else if(chg&&av){m.pst=null;retire.push("limites de la CDS")}}
+  await apqSauver(true);renderApq();
+  if(fait.length||retire.length) toast([fait.length?`Bibliothèque : ${fait.join(", ")} repris pour ${m.produit}.`:"",retire.length?`Retiré (ancien produit) : ${retire.join(", ")}.`:""].filter(Boolean).join(" "),7000)}
 function apqBibInfo(m){const p=((APQ_BIB&&APQ_BIB.produits)||[]).find(x=>apqTdsCle(x.nom)===apqTdsCle(m.produit));if(!p) return null;
   return apqE("p",{class:"hint","data-noi18n":true,text:`📚 ${[p.fab,p.mode,p.cds?`CDS du ${frDate(p.cdsDate)||"?"}`:"pas de CDS dans la bibliothèque",p.tds?"fiche technique":""].filter(Boolean).join(" · ")}`+(p.rem?` – ${p.rem}`:"")})}
 
@@ -3769,8 +3792,8 @@ async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apq
   const mt=$("apqMat");mt.innerHTML="";
   // v1.83 : photos par matériau (sac / étiquette du lot, certificat / preshipment test, autre)
   for(const m of a.materiaux){m.photos=m.photos||[];const chP=apqChamp("Produit",m,"produit",null,(APQ_BIB.produits||[]).length?"choisir dans la bibliothèque ou taper":"ex. ACTCHEM 85"),ipP=chP.querySelector("input");
-    ipP.setAttribute("list","apqBibDl");ipP.addEventListener("change",()=>apqBibAppliquer(m));
-    mt.append(apqE("div",{class:"apqmatb"},apqE("div",{class:"apqmat"},chP,apqChoix("Utilisation",m,"role",APQ_ROLES),apqChamp("N° de lots",m,"lots"),
+    ipP.setAttribute("list","apqBibDl");ipP.addEventListener("focus",()=>{ipP.dataset.prev=m.produit||""});ipP.addEventListener("change",()=>apqBibAppliquer(m,ipP.dataset.prev));
+    mt.append(apqE("div",{class:"apqmatb"},apqE("div",{class:"apqmat"},chP,apqChoixLibre("Utilisation",m,"role",[...new Set([...APQ_ROLES,...((APQ_BIB&&APQ_BIB.produits)||[]).map(x=>x.role),...a.materiaux.map(x=>x.role)].filter(Boolean))]),apqChamp("N° de lots",m,"lots"),
     apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce matériau",onclick:async()=>{for(const x of m.photos) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
       a.materiaux.splice(a.materiaux.indexOf(m),1);for(const s of a.sessions) s.mats=(s.mats||[]).filter(x=>x!==m.id);await apqSauver(true);renderApq()}},"✕")),
     apqE("div",{class:"apqrow"},apqChoix("Preshipment test",m,"psh",APQ_PSH),apqChamp("Réf. du rapport de preshipment test",m,"pshRef",null,"ex. PST-2408-112")),apqBibInfo(m),apqTdsBloc(m),apqPstBloc(m,a),
@@ -3953,7 +3976,7 @@ async function apqTdsAjouter(f){const m=APQ_TDS_CIBLE;APQ_TDS_CIBLE=null;if(!m||
   if(!/pdf$/i.test(f.type||"")&&!/\.pdf$/i.test(f.name||"")){toast("Choisissez un fichier PDF.",5000);return}
   busy("Ajout de la fiche technique…",f.name);
   try{const id="apqdoc_"+newId();await tx("photos","readwrite",s=>s.put({id,entry:"apqtds",type:"application/pdf",prise:null,blob:f,thumb:""}));
-    m.tds={id,nom:f.name,taille:f.size};m.tdsAnnexe=true;
+    m.tds={id,nom:f.name,taille:f.size};m.tdsAnnexe=true;m.tdsPour=m.produit||"";
     const mem=await apqTdsMem();if(apqTdsCle(m.produit)){mem[apqTdsCle(m.produit)]={...m.tds};try{await kvSet("apqTds",mem)}catch(e){}}
     await apqSauver(true);toast(`Fiche technique ajoutée${m.produit?" pour "+m.produit:""} : elle sera reproposée pour ce produit dans les autres projets.`,6000)}
   catch(e){toast("Fiche non ajoutée : "+(e&&e.message||e),6000)}finally{busyFin();renderApq()}}
@@ -4900,6 +4923,7 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
    Les listes du projet (équipements, activités, accès, dégâts courants) gardent la langue du projet.
    {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
 const TRAD_UI=[
+["choisir ou taper","choose or type","elegir o escribir","wählen oder eingeben"],
 ["choisir dans la bibliothèque ou taper","choose from the library or type","elegir en la biblioteca o escribir","aus der Bibliothek wählen oder eingeben"],
 ["📊 Preshipment test ↔ compliance datasheet","📊 Preshipment test ↔ compliance datasheet","📊 Ensayo previo al envío ↔ hoja de conformidad","📊 Vorversandprüfung ↔ Konformitätsdatenblatt"],
 ["Limites de la compliance datasheet","Compliance datasheet limits","Límites de la hoja de conformidad","Grenzwerte des Konformitätsdatenblatts"],
