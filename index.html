@@ -218,6 +218,7 @@ nav button{position:relative}nav .badge{position:absolute;top:4px;left:calc(50% 
 .gvbas{padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px}#gvLeg{width:100%;box-sizing:border-box;font-size:16px;min-height:44px}
 .gvacts{display:grid;grid-template-columns:1fr 1fr 1.2fr;padding:2px 0}.gvacts .gvinc{grid-column:1/-1;min-height:40px}.gvacts button{min-height:44px;font-size:14px}.gvinc{font-size:15px}.gvinc input{width:22px;height:22px}
 body:not(.atelier) #atCard{display:none!important}
+body.atelier .tArret,body:not(.atelier) .tAtelier{display:none}
 body.atelier #planCard,body.atelier #avCard,body.atelier .degats{display:none!important}
 .thumb button.itp{top:auto;bottom:24px;right:auto;left:4px;width:auto;min-height:26px;border-radius:6px;padding:0 7px;font:700 12px var(--font)}
 .thumb button.itp.on{background:#6a4fc4}
@@ -464,7 +465,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   </div>
 
   <div class="card c-ambre">
-    <h2>Constat</h2>
+    <h2><span class="tArret">Constat sur site (IPR / IR)</span><span class="tAtelier">Constat atelier (WIR)</span></h2>
     <div class="chips" id="grav" role="group" aria-label="Gravité"></div>
     <label>Accès au revêtement inspecté<select id="fAcces"></select></label>
     <label id="lAccesLibre" hidden>Préciser l'accès (texte libre)<input type="text" id="fAccesLibre" autocomplete="off" maxlength="160" placeholder="ex. : depuis la nacelle, par la trappe de visite…"></label>
@@ -480,7 +481,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   </div>
 
   <div class="card c-violet" id="atCard">
-    <h2>Contrôle atelier (WIR)</h2>
+    <h2>Contrôles atelier (ITP, vigilance)</h2>
     <label>Opération ITP (n° et intitulé)<input type="text" id="fOpItp" autocomplete="off" maxlength="160" placeholder="ex. : 5.2 – Installation des ancrages"></label>
     <label>Liste des points de vigilance<select id="atVigSel"></select></label>
     <p class="hint">Coche les points vérifiés : ils sont repris dans le WIR.</p>
@@ -903,7 +904,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.39";
+const APP_VERSION="2.40";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -5078,6 +5079,9 @@ const TRAD_UI=[
 ["annotée","annotated","anotada","beschriftet"],
 ["hors rapport","not in report","fuera del informe","nicht im Bericht"],
 ["Constat","Finding","Hallazgo","Befund"],
+["Constat sur site (IPR / IR)","On-site finding (IPR / IR)","Hallazgo en sitio (IPR / IR)","Befund vor Ort (IPR / IR)"],
+["Constat atelier (WIR)","Workshop finding (WIR)","Hallazgo en taller (WIR)","Werkstattbefund (WIR)"],
+["Contrôles atelier (ITP, vigilance)","Workshop checks (ITP, checkpoints)","Controles en taller (ITP, puntos de control)","Werkstattprüfungen (ITP, Prüfpunkte)"],
 ["Gravité","Severity","Gravedad","Schweregrad"],
 ["OK","OK","OK","OK"],
 ["Mineur","Minor","Menor","Gering"],
