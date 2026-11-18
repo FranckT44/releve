@@ -347,6 +347,19 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;align-items:start}
 @media (min-width:701px){.apqgrid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
 .apqplus{min-height:36px;font-size:13px}
+.apqpst{margin:8px 0;border:1px solid var(--line);border-radius:8px;padding:4px 8px}.apqpst>summary{cursor:pointer;font-weight:600;padding:6px 0}
+.pstlrow{display:grid;grid-template-columns:minmax(150px,2fr) 80px minmax(140px,1.3fr) 90px 90px auto auto;gap:6px;align-items:center;margin:4px 0}
+.pstlrow input,.pstlrow select{min-height:36px;padding:2px 6px;min-width:0}
+@media(max-width:700px){.pstlrow{grid-template-columns:1fr 1fr 1fr}}
+.pstscroll{overflow-x:auto}.psttab{border-collapse:collapse;font-size:13px}.psttab th,.psttab td{border:1px solid var(--line);padding:3px;text-align:center;vertical-align:middle}
+.psttab th{font-weight:600;font-size:12px;min-width:70px}.psttab th small{font-weight:400;color:var(--muted)}
+.psttab input.pstn{width:74px;min-height:32px;padding:2px 4px;text-align:center}
+.psttab td.nok{background:rgba(179,38,30,.45)}.psttab td.ok{background:rgba(46,125,79,.2)}
+.psttab td.pstst{font-weight:700;min-width:96px;color:#fff;font-size:12px}.psttab td.st-c{background:#2e7d4f}.psttab td.st-nc{background:#b3261e}.psttab td.st-acc{background:#a88000}
+.pstcom{min-width:230px;text-align:left!important}.pstcom input[type=text]{width:100%;min-height:32px}
+.pstbadge{font-weight:600;border-radius:6px;padding:1px 6px;margin-left:6px}.pstbadge.ok{background:rgba(46,125,79,.35)}.pstbadge.nok{background:rgba(179,38,30,.45)}
+.pstloth{display:flex;gap:8px;align-items:center;margin:10px 0 4px;flex-wrap:wrap}.pstlotn{max-width:180px;min-height:34px}
+.pstcol textarea{width:100%;font-family:monospace;font-size:12px}
 .apqvide{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;align-items:center}
 .apqvide .apqcadre{grid-column:1/-1;aspect-ratio:4/3;border:2px dashed var(--accent);border-radius:6px;background:var(--accent-soft);display:grid;place-content:center;gap:8px;text-align:center;padding:8px;font-size:13px;color:var(--muted)}
 .apqvide input{font-size:13px;min-height:34px;padding:2px 6px;min-width:0}.apqvide button{min-height:34px;padding:0 10px}
@@ -935,7 +948,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.52";
+const APP_VERSION="2.53";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3212,7 +3225,11 @@ const APQ_TR={"Conforme":["Conforme","Compliant","Conforme","Konform"],"Non conf
   "Densité":["Densité","Density","Densidad","Dichte"],"Abrasion":["Abrasion","Abrasion","Abrasión","Abrieb"],
   "OK":["OK","OK","OK","OK"],"Acceptable":["Acceptable","Acceptable","Aceptable","Akzeptabel"],"Refusé":["Refusé","Rejected","Rechazado","Abgelehnt"],"À repasser":["À repasser","To be re-tested","A repetir","Zu wiederholen"],"à repasser":["à repasser","to be re-tested","a repetir","zu wiederholen"]};
 const apqTr=(v,l)=>v?(APQ_TR[v]?APQ_TR[v][iLangue(l)]:v):"";
-const APQL={intro:["Introduction","Introduction","Introducción","Einleitung"],titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION SESSION REPORT","INFORME DE SESIÓN DE PRECUALIFICACIÓN","BERICHT ZUR PRÄQUALIFIKATIONSSITZUNG"],
+const APQL={pstT:["Preshipment test / compliance datasheet","Preshipment test / compliance datasheet","Ensayo previo al envío / hoja de conformidad","Vorversandprüfung / Konformitätsdatenblatt"],
+  pstLot:["Lot","Batch","Lote","Charge"],pstPal:["Palette","Pallet","Palé","Palette"],pstLim:["Limite (CDS)","Limit (CDS)","Límite (CDS)","Grenzwert (CDS)"],pstSt:["Statut","Status","Estado","Status"],
+  pstC:["Conforme","Compliant","Conforme","Konform"],pstNC:["Non conforme","Non-compliant","No conforme","Nicht konform"],pstAcc:["Accepté (dérogation)","Accepted (deviation)","Aceptado (desviación)","Akzeptiert (Abweichung)"],
+  pstGlob:["Résultat global","Overall result","Resultado global","Gesamtergebnis"],pstRes:["{a} / {b} palette(s) conforme(s) ou acceptée(s)","{a} / {b} pallet(s) compliant or accepted","{a} / {b} palé(s) conforme(s) o aceptado(s)","{a} / {b} Palette(n) konform oder akzeptiert"],
+  intro:["Introduction","Introduction","Introducción","Einleitung"],titre:["RAPPORT DE SESSION DE PRÉQUALIFICATION","PREQUALIFICATION SESSION REPORT","INFORME DE SESIÓN DE PRECUALIFICACIÓN","BERICHT ZUR PRÄQUALIFIKATIONSSITZUNG"],
   h1:["Rapport de session de préqualification","Prequalification session report","Informe de sesión de precualificación","Bericht zur Präqualifikationssitzung"],
   dates:["Dates","Dates","Fechas","Daten"],comment:["Commentaires généraux de la session","General session comments","Comentarios generales de la sesión","Allgemeine Bemerkungen zur Sitzung"],etabli:["Rapport établi par","Report prepared by","Informe elaborado por","Bericht erstellt von"],lieu:["Lieu de réalisation","Location","Lugar de realización","Durchführungsort"],tds:["Fiche technique","Technical data sheet","Ficha técnica","Technisches Datenblatt"],annexes:["Annexes","Appendices","Anexos","Anlagen"],docA:["Document","Document","Documento","Dokument"],fichA:["Fichier","File","Archivo","Datei"],pagesA:["Pages","Pages","Páginas","Seiten"],nonInseree:["non insérée (PDF protégé ou illisible)","not inserted (protected or unreadable PDF)","no insertada (PDF protegido o ilegible)","nicht eingefügt (geschütztes oder unlesbares PDF)"],equip:["Équipement(s) concerné(s)","Equipment concerned","Equipo(s) afectado(s)","Betroffene Ausrüstung"],laboDebut:["Travaux avant résultats labo","Works before lab results","Trabajos antes de resultados","Arbeiten vor Laborergebnis"],psh:["Preshipment test","Preshipment test","Ensayo previo al envío","Preshipment-Test"],labo:["Échantillons pour laboratoire","Samples for laboratory","Muestras para laboratorio","Proben für Labor"],
   oui:["Oui","Yes","Sí","Ja"],non:["Non","No","No","Nein"],perim:["Périmètre","Scope","Alcance","Umfang"],
@@ -3549,6 +3566,138 @@ async function apqNouveau(reprendre){const mid=CFG.mission.id;await apqCharger()
 async function apqSupprimerVide(){const k=APQ_M;if(apqNum(k)<2||!apqVideDeContenu(APQ)) return;
   if((await apqDocsDossier(k)).length){toast("Cette préqualification a déjà un rapport émis : elle est gardée.",5000);return}
   try{await tx("kv","readwrite",s=>s.delete("apq:"+k))}catch(e){}APQ=null;APQ_M=null;APQ_SALE=false;await apqOuvrir(apqMid(k))}
+// v2.53 : preshipment test (PST) comparé à la compliance datasheet (CDS), par matériau : limites de la CDS (mémorisées par produit),
+// résultats par lot et par palette, cellules hors limite, statut calculé, dérogation de l'inspecteur, verdict -> « Preshipment test »
+const APQ_PST_CAT={eau:[["Eau de gâchage","Mixing water","Agua de amasado","Anmachwasser"],"%","plage"],
+  dCru:[["Densité crue","Green density","Densidad en verde","Grünrohdichte"],"g/cm³","max"],
+  dSec:[["Densité séchée 110 °C","Dried density 110 °C","Densidad secada 110 °C","Rohdichte getrocknet 110 °C"],"g/cm³","max"],
+  dCuit:[["Densité cuite 815 °C","Fired density 815 °C","Densidad cocida 815 °C","Rohdichte gebrannt 815 °C"],"g/cm³","max"],
+  ccsSec:[["CCS séché 110 °C","CCS dried 110 °C","CCS secado 110 °C","KDF getrocknet 110 °C"],"MPa","min"],
+  ccsCuit:[["CCS cuit 815 °C","CCS fired 815 °C","CCS cocido 815 °C","KDF gebrannt 815 °C"],"MPa","min"],
+  cmor:[["CMOR cuit 815 °C","CMOR fired 815 °C","CMOR cocido 815 °C","KBF gebrannt 815 °C"],"MPa","min"],
+  plcCS:[["PLC cru – séché","PLC green – dried","PLC verde – secado","PLC grün – getrocknet"],"%","plage"],
+  plcSC:[["PLC séché – cuit","PLC dried – fired","PLC secado – cocido","PLC getrocknet – gebrannt"],"%","plage"],
+  abr:[["Abrasion après 815 °C (ASTM C704)","Abrasion after 815 °C (ASTM C704)","Abrasión tras 815 °C (ASTM C704)","Abrieb nach 815 °C (ASTM C704)"],"cc","max"]};
+const APQ_PST_FAM={"Anti-érosion":["eau","dCru","dCuit","ccsCuit","abr"],"Dense":["eau","dCru","dCuit","ccsCuit","plcCS","plcSC"],"Isolant":["eau","dCru","dCuit","ccsCuit","plcCS","plcSC"]};
+const APQ_PST_TYPES=[["max","≤ maximum"],["min","≥ minimum"],["plage","plage (de … à …)"],["cible","cible ± tolérance"]];
+const pstNum=x=>{const s=String(x??"").trim().replace(/\s/g,"").replace("−","-").replace(",",".");if(!/^[-+]?\d*\.?\d+$/.test(s)) return NaN;return parseFloat(s)};
+const pstLib=(p,l)=>p.cat&&APQ_PST_CAT[p.cat]?APQ_PST_CAT[p.cat][0][iLangue(l||"fr")]:(p.lib||"?");
+function pstOk(p,x){const v=pstNum(x);if(isNaN(v)) return null;const a=pstNum(p.a),b=pstNum(p.b),e=1e-9;
+  if(p.t==="max") return isNaN(a)?null:v<=a+e;if(p.t==="min") return isNaN(a)?null:v>=a-e;
+  if(p.t==="plage") return isNaN(a)||isNaN(b)?null:v>=Math.min(a,b)-e&&v<=Math.max(a,b)+e;
+  if(p.t==="cible") return isNaN(a)||isNaN(b)?null:Math.abs(v-a)<=b+e;return null}
+// pdf = sans « ≤ ≥ » (absents des polices du PDF)
+function pstLimTxt(p,l,pdf){const a=String(p.a??"").trim(),b=String(p.b??"").trim();if(!a&&!b) return "";
+  const to=["à","to","a","bis"][iLangue(l||"fr")];
+  if(p.t==="max") return (pdf?"max ":"≤ ")+a;if(p.t==="min") return (pdf?"min ":"≥ ")+a;if(p.t==="plage") return `${a} ${to} ${b}`;if(p.t==="cible") return `${a} ± ${b}`;return a}
+// statut d'une palette : "C" conforme, "NC" non conforme, "ACC" non conforme accepté (dérogation), "" incomplet
+function pstStatut(pst,r){let nok=false,vu=false;for(const p of pst.props){const o=pstOk(p,(r.v||{})[p.id]);if(o===false) nok=true;if(o!==null) vu=true}
+  return nok?(r.acc?"ACC":"NC"):vu?"C":""}
+function pstBilan(pst){const rs=(pst.lots||[]).flatMap(L=>L.rows||[]),st=rs.map(r=>pstStatut(pst,r)).filter(Boolean);
+  return {n:st.length,c:st.filter(x=>x==="C").length,nc:st.filter(x=>x==="NC").length,acc:st.filter(x=>x==="ACC").length,
+    verdict:!st.length?"":st.includes("NC")?"Non conforme":"Conforme"}}
+let APQ_CDS=null;
+async function apqCdsMem(){if(APQ_CDS) return APQ_CDS;let v=null;try{v=await kvGet("apqCds")}catch(e){}APQ_CDS=v&&typeof v==="object"?v:{};return APQ_CDS}
+let APQ_CDS_T=null;
+function apqCdsGarder(m){const k=apqTdsCle(m.produit);if(!k||!m.pst) return;clearTimeout(APQ_CDS_T);
+  APQ_CDS_T=setTimeout(async()=>{const mem=await apqCdsMem();mem[k]={props:JSON.parse(JSON.stringify(m.pst.props)),le:today()};try{await kvSet("apqCds",mem)}catch(e){}},500)}
+const pstPropId=()=>"p"+Math.random().toString(36).slice(2,8);
+function pstPropsFamille(role){return (APQ_PST_FAM[role]||APQ_PST_FAM.Dense).map(c=>({id:pstPropId(),cat:c,lib:"",u:APQ_PST_CAT[c][1],t:APQ_PST_CAT[c][2],a:"",b:""}))}
+// texte collé (Excel : colonnes tabulées ; PDF : valeurs séparées par des espaces, limites « ≤… », « a to b » et PASS / FAIL ignorés)
+function pstLire(txt){const num=s=>!isNaN(pstNum(s)),out=[];let lot="";
+  for(let ln of String(txt||"").split(/\r?\n/)){if(!ln.trim()) continue;let cells;
+    const limite=c=>/^[≤≥<>]/.test(c)||/\s(to|à)\s/i.test(c)||/^(pass|fail|ok|nok|n\/a|conforme|non conforme)$/i.test(c);
+    if(ln.includes("\t")) cells=ln.split("\t").map(x=>x.trim()).filter(c=>c&&!limite(c));
+    else cells=ln.replace(/[≤≥<>]=?\s*[-+−]?\d*[.,]?\d+/g," ").replace(/[-+−]?\d*[.,]?\d+\s+(?:to|à)\s+[-+−]?\d*[.,]?\d+/gi," ").replace(/\b(PASS|FAIL|NOK|OK)\b/gi," ").split(/\s+/).filter(Boolean);
+    if(!cells.length) continue;
+    // ligne de lot : « SU12039-1 », « Lot 2408-17 », « Batch: 2408-17 » (pas de nombre seul, au plus 3 mots)
+    if(cells.length<=3&&!cells.some(num)&&cells.some(c=>/\d/.test(c))){lot=cells.filter(c=>!/^(lot|lots|batch|charge|n°|no\.?|nr\.?)[:.]?$/i.test(c)).join(" ").replace(/^[:#]\s*/,"");continue}
+    if(cells.length>=2&&num(cells[0])){out.push({lot,pal:cells[0],vals:cells.slice(1).filter(num)});continue}
+    if(cells.length>=3&&!num(cells[0])&&num(cells[1])&&/\d/.test(cells[0])){lot=cells[0];out.push({lot,pal:cells[1],vals:cells.slice(2).filter(num)})}}
+  return out.filter(r=>r.vals.length)}
+function apqPstBloc(m,a){const cle="pst"+m.id,d=apqE("details",{class:"apqpst"});d.open=APQ_OUV.has(cle);d.ontoggle=()=>d.open?APQ_OUV.add(cle):APQ_OUV.delete(cle);
+  const som=apqE("summary",{});d.append(som);const corps=apqE("div",{});d.append(corps);
+  const resume=()=>{const B=m.pst?pstBilan(m.pst):null;som.innerHTML="";som.append(apqE("span",{text:"📊 Preshipment test ↔ compliance datasheet"}));
+    if(B&&B.n) som.append(apqE("span",{class:"pstbadge "+(B.nc?"nok":"ok"),"data-noi18n":true,text:` ${B.c+B.acc} / ${B.n} conforme(s)`+(B.acc?` dont ${B.acc} par dérogation`:"")+(B.nc?` · ${B.nc} non conforme(s)`:"")}))};
+  const draw=async()=>{corps.innerHTML="";resume();
+    if(!m.pst){const mem=(await apqCdsMem())[apqTdsCle(m.produit)];
+      corps.append(apqE("p",{class:"hint",text:"Compare les résultats du preshipment test (par lot et par palette) aux limites de la compliance datasheet du produit. Les limites sont gardées pour ce produit (prochains projets)."}),
+        apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:async()=>{m.pst={props:mem?JSON.parse(JSON.stringify(mem.props)):pstPropsFamille(m.role),lots:[],com:""};
+          await apqSauver(true);draw()}},mem?`Commencer (limites mémorisées pour ${m.produit})`:`Commencer (liste type ${m.role||"Dense"})`)));return}
+    const P=m.pst;P.lots=P.lots||[];const refs=[];
+    // --- limites de la CDS
+    corps.append(apqE("p",{class:"apqst",text:"Limites de la compliance datasheet"}));
+    const tl=apqE("div",{class:"pstlim"});
+    P.props.forEach((p,i)=>{const lib=apqE("input",{type:"text",value:pstLib(p),"aria-label":"Propriété"});
+      if(p.cat){lib.readOnly=true;lib.title="Propriété type (libellé traduit dans le rapport)"}else lib.oninput=()=>{p.lib=lib.value;apqSauver();apqCdsGarder(m)};
+      const u=apqE("input",{type:"text",value:p.u||"","aria-label":"Unité",class:"pstu"});u.oninput=()=>{p.u=u.value;apqSauver();apqCdsGarder(m)};
+      const ty=apqE("select",{"aria-label":"Type de limite"},APQ_PST_TYPES.map(([v,t])=>apqE("option",{value:v,text:t})));ty.value=p.t||"max";
+      ty.onchange=()=>{p.t=ty.value;apqSauver();apqCdsGarder(m);draw()};
+      const lim=(k,ph)=>{const x=apqE("input",{type:"text",inputMode:"decimal",value:p[k]??"",placeholder:ph,class:"pstn"});x.oninput=()=>{p[k]=x.value;apqSauver();apqCdsGarder(m);maj()};return x};
+      const deux=p.t==="plage"||p.t==="cible";
+      tl.append(apqE("div",{class:"pstlrow"},lib,u,ty,lim("a",p.t==="cible"?"cible":p.t==="plage"?"de":"valeur"),deux?lim("b",p.t==="cible"?"± tol.":"à"):apqE("span",{}),
+        apqE("button",{type:"button",class:"ghost",title:"Monter","aria-label":"Monter",disabled:i===0,onclick:()=>{P.props.splice(i-1,0,P.props.splice(i,1)[0]);apqSauver();apqCdsGarder(m);draw()}},"↑"),
+        apqE("button",{type:"button",class:"ghost","aria-label":"Retirer la propriété",onclick:()=>{P.props.splice(i,1);apqSauver();apqCdsGarder(m);draw()}},"✕")))});
+    const ajP=apqE("select",{"aria-label":"Ajouter une propriété"},apqE("option",{value:"",text:"＋ Propriété…"}),
+      Object.entries(APQ_PST_CAT).map(([k,v])=>apqE("option",{value:k,text:v[0][0]})),apqE("option",{value:"_libre",text:"Autre (libellé libre)"}));
+    ajP.onchange=()=>{const c=ajP.value;if(!c) return;P.props.push(c==="_libre"?{id:pstPropId(),cat:null,lib:"",u:"",t:"max",a:"",b:""}:{id:pstPropId(),cat:c,lib:"",u:APQ_PST_CAT[c][1],t:APQ_PST_CAT[c][2],a:"",b:""});apqSauver();apqCdsGarder(m);draw()};
+    corps.append(tl,apqE("div",{class:"btns"},ajP,apqE("button",{type:"button",class:"ghost",title:"Remplace la liste par la liste type de l'utilisation choisie (limites déjà saisies gardées)",onclick:()=>{
+      const nv=pstPropsFamille(m.role);for(const p of nv){const old=P.props.find(q=>q.cat===p.cat);if(old) Object.assign(p,{id:old.id,t:old.t,a:old.a,b:old.b,u:old.u})}P.props=nv;apqSauver();apqCdsGarder(m);draw()}},`Liste type ${m.role||"Dense"}`)));
+    // --- résultats par lot / palette
+    corps.append(apqE("p",{class:"apqst",text:"Résultats du preshipment test (par lot et par palette)"}));
+    const lotsTxt=()=>{const l=String(m.lots||"").split(/[,;]\s*/).map(x=>x.trim()).filter(Boolean);let chg=false;for(const L of P.lots) if(L.lot&&!l.includes(L.lot)){l.push(L.lot);chg=true}if(chg){m.lots=l.join(", ");apqSauver()}return chg};
+    for(const L of P.lots){L.rows=L.rows||[];const wrap=apqE("div",{class:"pstlot"});
+      const ln=apqE("input",{type:"text",value:L.lot||"",placeholder:"N° de lot",class:"pstlotn","aria-label":"N° de lot"});ln.oninput=()=>{L.lot=ln.value;apqSauver()};ln.onchange=()=>{if(lotsTxt()) renderApq()};
+      const bil=apqE("span",{class:"hint","data-noi18n":true});
+      wrap.append(apqE("div",{class:"pstloth"},apqE("b",{text:"Lot "}),ln,bil,apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce lot",onclick:()=>{P.lots.splice(P.lots.indexOf(L),1);apqSauver(true);draw()}},"✕")));
+      const tb=apqE("table",{class:"psttab"});
+      tb.append(apqE("tr",{},apqE("th",{text:"Palette"}),P.props.map(p=>apqE("th",{"data-noi18n":true},pstLib(p)+(p.u?` (${p.u})`:""),apqE("br",{}),apqE("small",{text:pstLimTxt(p,"fr")}))),apqE("th",{text:"Statut"}),apqE("th",{text:"Dérogation / commentaire"}),apqE("th",{})));
+      for(const r of L.rows){r.v=r.v||{};const tr=apqE("tr",{});const pal=apqE("input",{type:"text",value:r.pal||"",class:"pstn","aria-label":"Palette"});pal.oninput=()=>{r.pal=pal.value;apqSauver()};
+        tr.append(apqE("td",{},pal));
+        for(const p of P.props){const x=apqE("input",{type:"text",inputMode:"decimal",value:r.v[p.id]??"",class:"pstn"});const td=apqE("td",{},x);x.oninput=()=>{r.v[p.id]=x.value;apqSauver();maj()};refs.push({td,p,r,x});tr.append(td)}
+        const st=apqE("td",{class:"pstst"});const acc=apqE("input",{type:"checkbox",title:"Accepter cette palette malgré l'écart (dérogation)"});acc.checked=!!r.acc;acc.onchange=()=>{r.acc=acc.checked;apqSauver();maj()};
+        const com=apqE("input",{type:"text",value:r.com||"",placeholder:"ex. acceptable en service non abrasif"});com.oninput=()=>{r.com=com.value;apqSauver()};
+        tr.append(st,apqE("td",{class:"pstcom"},apqE("label",{class:"toggle",title:"Accepter malgré l'écart"},acc," acceptée"),com),
+          apqE("td",{},apqE("button",{type:"button",class:"ghost","aria-label":"Retirer la palette",onclick:()=>{L.rows.splice(L.rows.indexOf(r),1);apqSauver(true);draw()}},"✕")));
+        refs.push({st,r,acc});tb.append(tr)}
+      refs.push({bil,L});
+      wrap.append(apqE("div",{class:"pstscroll"},tb),apqE("div",{class:"btns"},apqE("button",{type:"button",class:"ghost",onclick:()=>{const R=L.rows,n=R.length?pstNum(R[R.length-1].pal):0,p=R.length>1?pstNum(R[R.length-2].pal):NaN,pas=!isNaN(p)&&n-p>0?n-p:1;R.push({pal:isNaN(n)?"":String(n+pas),v:{},com:""});apqSauver(true);draw()}},"＋ Palette")));
+      corps.append(wrap)}
+    const lotsM=String(m.lots||"").split(/[,;]\s*/).map(x=>x.trim()).filter(x=>x&&!P.lots.some(L=>L.lot===x));
+    corps.append(apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:()=>{P.lots.push({lot:lotsM[0]||"",rows:[{pal:"1",v:{},com:""}]});apqSauver(true);draw()}},lotsM.length?`＋ Lot (${lotsM[0]})`:"＋ Lot")));
+    // --- coller un tableau
+    const ta=apqE("textarea",{rows:"3",placeholder:"Coller ici un tableau copié d'Excel ou du PDF du preshipment test (Ctrl+V), puis « Importer ». Une ligne par palette ; une ligne ne contenant que le n° de lot ouvre ce lot. Les valeurs sont prises dans l'ordre des propriétés ci-dessus ; limites et PASS / FAIL ignorés."});
+    corps.append(apqE("details",{class:"pstcol"},apqE("summary",{text:"📋 Coller un tableau (Excel, PDF)"}),ta,apqE("div",{class:"btns"},apqE("button",{type:"button",class:"primary",onclick:async()=>{
+      const l=pstLire(ta.value);if(!l.length){toast("Aucune ligne de résultats reconnue (une ligne = n° de palette puis les valeurs).",6000);return}
+      let ec=0;for(const x of l){if(x.vals.length!==P.props.length) ec++;let L=P.lots.find(z=>z.lot===(x.lot||(P.lots[0]&&P.lots[0].lot)||""));
+        if(!L){L={lot:x.lot||lotsM[0]||"",rows:[]};P.lots.push(L)}const v={};P.props.forEach((p,i)=>{if(i<x.vals.length) v[p.id]=x.vals[i]});
+        const ex=L.rows.find(r=>String(r.pal)===String(x.pal));if(ex) ex.v=v;else L.rows.push({pal:x.pal,v,com:""})}
+      lotsTxt();await apqSauver(true);toast(`${l.length} palette(s) importée(s).`+(ec?` Attention : ${ec} ligne(s) n'ont pas autant de valeurs que de propriétés (${P.props.length}) : vérifiez l'ordre des propriétés.`:""),ec?9000:4000);renderApq()}},"Importer"))));
+    // --- bilan, verdict
+    const glob=apqE("div",{class:"pstglob"});corps.append(glob,apqZone("Commentaires sur le preshipment test",P,"com","ex. densité crue 5 à 7 % au-dessus de la CDS, densité cuite conforme : accepté"));
+    const maj=()=>{for(const x of refs){if(x.td){const o=pstOk(x.p,x.x.value);x.td.className=o===false?"nok":o===true?"ok":""}
+        if(x.st){const s=pstStatut(P,x.r);x.st.textContent={C:"Conforme",NC:"Non conforme",ACC:"Accepté (dérogation)","":"–"}[s];x.st.className="pstst "+({C:"st-c",NC:"st-nc",ACC:"st-acc"}[s]||"")}
+        if(x.bil){const st=(x.L.rows||[]).map(r=>pstStatut(P,r)).filter(Boolean);x.bil.textContent=st.length?` ${st.filter(s=>s!=="NC").length} / ${st.length} palette(s) conforme(s) ou acceptée(s)`:""}}
+      const B=pstBilan(P);glob.innerHTML="";resume();
+      if(B.n){glob.append(apqE("p",{"data-noi18n":true},apqE("b",{text:"Résultat : "}),apqE("span",{class:B.nc?"pstbadge nok":"pstbadge ok",text:B.verdict}),` – ${B.c} conforme(s)`+(B.acc?`, ${B.acc} acceptée(s) par dérogation`:"")+(B.nc?`, ${B.nc} non conforme(s)`:"")+` sur ${B.n} palette(s)`));
+        if(m.psh!==B.verdict) glob.append(apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:()=>{m.psh=B.verdict;apqSauver(true);renderApq()}},`Reporter « ${B.verdict} » dans « Preshipment test »`)))}};
+    maj()};
+  draw();return d}
+
+// rapport PDF de l'appli : tableau par matériau (après le tableau des matériaux)
+function apqPstPdf(mk,x,l){const P=x.pst;if(!P||!(P.props||[]).length||!(P.lots||[]).some(L=>(L.rows||[]).length)) return;
+  const T=k=>apqL(k,l),M=mk.M,Lw=mk.W-2*M;mk.y+=4;mk.paragraphe([{t:`${T("pstT")} – ${x.produit||"?"}`,b:true}],M,Lw,10);mk.y+=2;
+  const n=P.props.length,wp=Math.min(.13,.64/Math.max(1,n)),rest=1-wp*n;
+  const cols=[{t:T("pstLot"),w:rest*.36},{t:T("pstPal"),w:rest*.2},...P.props.map(p=>({t:pstLib(p,l)+(p.u?` (${p.u})`:""),w:wp})),{t:T("pstSt"),w:rest*.44}];
+  const rows=[[{t:T("pstLim"),b:true},"",...P.props.map(p=>({t:pstLimTxt(p,l,true)||"–",b:true})),""]];
+  for(const L of P.lots) (L.rows||[]).forEach((r,i)=>{const s=pstStatut(P,r);
+    rows.push([i?"":(L.lot||"–"),r.pal||"–",...P.props.map(p=>{const v=String((r.v||{})[p.id]??"").trim(),o=pstOk(p,v);return {t:v||"–",c:o===false?"0.72 0.10 0.10":null,b:o===false}}),
+      s?{t:T({C:"pstC",NC:"pstNC",ACC:"pstAcc"}[s]),pill:{C:"0.18 0.49 0.31",NC:"0.70 0.15 0.12",ACC:"0.66 0.50 0.00"}[s]}:"–"])});
+  mk.tableau(cols,rows,{s:7.6});
+  const B=pstBilan(P),li=[`**${T("pstGlob")} : ${apqTr(B.verdict,l)}** – `+T("pstRes").replace("{a}",B.c+B.acc).replace("{b}",B.n)];
+  for(const L of P.lots) for(const r of L.rows||[]) if((r.com||"").trim()) li.push(`- ${T("pstLot")} ${L.lot||"–"} / ${T("pstPal")} ${r.pal||"–"} : ${r.com.trim()}`);
+  mk.texteBalise(li.join("\n"),M,Lw,9.5);if((P.com||"").trim()){mk.y+=2;mk.texteBalise(P.com,M,Lw,9.5)}mk.y+=6}
+
 async function apqBarreDossiers(){const box=$("apqDos");if(!box) return;const mid=CFG.mission.id,l=await apqDossiers(mid),opts=[];
   for(const k of l){let a=k===APQ_M?APQ:null;if(!a){try{a=await kvGet("apq:"+k)}catch(e){}}const d=await apqDocCourant(k);
     opts.push([k,`${d?d.doc.ref+" Rev"+d.doc.rev:"Préqualification "+apqNum(k)+" (pas encore émise)"} – ${apqTitreCourt(a)||"…"} · ${(a&&a.sessions||[]).length} session(s)`])}
@@ -3580,7 +3729,7 @@ async function renderApq(){const a=await apqCharger(),y=window.scrollY;await apq
   for(const m of a.materiaux){m.photos=m.photos||[];mt.append(apqE("div",{class:"apqmatb"},apqE("div",{class:"apqmat"},apqChamp("Produit",m,"produit",null,"ex. ACTCHEM 85"),apqChoix("Utilisation",m,"role",APQ_ROLES),apqChamp("N° de lots",m,"lots"),
     apqE("button",{type:"button",class:"ghost","aria-label":"Retirer ce matériau",onclick:async()=>{for(const x of m.photos) try{await tx("photos","readwrite",st=>st.delete(x.pid))}catch(e){}
       a.materiaux.splice(a.materiaux.indexOf(m),1);for(const s of a.sessions) s.mats=(s.mats||[]).filter(x=>x!==m.id);await apqSauver(true);renderApq()}},"✕")),
-    apqE("div",{class:"apqrow"},apqChoix("Preshipment test",m,"psh",APQ_PSH),apqChamp("Réf. du rapport de preshipment test",m,"pshRef",null,"ex. PST-2408-112")),apqTdsBloc(m),
+    apqE("div",{class:"apqrow"},apqChoix("Preshipment test",m,"psh",APQ_PSH),apqChamp("Réf. du rapport de preshipment test",m,"pshRef",null,"ex. PST-2408-112")),apqTdsBloc(m),apqPstBloc(m,a),
     apqPhotos(m.photos,APQ_SLOTS_M)))}
   mt.append(apqE("div",{class:"btns"},apqE("button",{type:"button",onclick:async()=>{a.materiaux.push({id:apqId(),produit:"",role:"",lots:""});await apqSauver(true);renderApq()}},"＋ Matériau")));
   const g=$("apqGen");g.innerHTML="";g.append(apqZone("Conditions (températures, humidité…)",a,"conditions"),apqE("div",{class:"apqrow"},apqChamp("Origine de l'eau",a,"eau",null,"ex. réseau d'eau potable du site"),apqChamp("Certificat de l'eau (n°, laboratoire, date)",a,"eauCert",null,"ex. analyse n° 2026-118 du 03/11/2026")),apqEauConf(a),
@@ -3632,7 +3781,7 @@ async function apqSauvegarder(envoi){envoi=envoi===true;const a=await apqCharger
       h.pc={titre:{fr:apqTitreDoc(a,"fr"),en:apqTitreDoc(a,"en")},equip:apqEquipTexte(a),resultatsLibres:apqSansRedite(a),tr:APQ_TR,lib:APQL,
         verdicts:Object.fromEntries(Object.entries(APQ_V).map(([k,v])=>[k,v.fr])),ctl:APQ_CTL,ech:APQ_ECH,maquette:APQ_MAQUETTE,
         slots:{mat:APQ_SL_MAT,temp:APQ_SL_TEMP,ech:APQ_SL_ECH,ordre:APQ_ORDRE_PH},equipNoms:Object.fromEntries((EQ||[]).map(e=>[e.code,e.nom]))};
-      h.pc.refs=(await apqDocsDossier(APQ_M)).map(p=>({ref:p.doc.ref,rev:p.doc.rev,statut:p.doc.statut||"",date:p.doc.date||""}))}
+      h.pc.pstCat=APQ_PST_CAT;h.pc.refs=(await apqDocsDossier(APQ_M)).map(p=>({ref:p.doc.ref,rev:p.doc.rev,statut:p.doc.statut||"",date:p.doc.date||""}))}
     const nom=nomSur(`${envoi?"Envoi PC APQ":"Sauvegarde APQ"} ${m.no}${nD>1?"-"+nD:""} - ${today()} ${pad(now.getHours())}h${pad(now.getMinutes())}`)+".jpg";
     const c=document.createElement("canvas");c.width=900;c.height=360;const g=c.getContext("2d");g.fillStyle="#1d2a33";g.fillRect(0,0,900,360);g.fillStyle="#c9a227";g.fillRect(0,0,14,360);
     g.fillStyle="#fff";g.font="bold 40px sans-serif";g.fillText(envoi?"Envoi au PC – préqualification":"Sauvegarde – préqualification",50,90);g.font="28px sans-serif";g.fillText(`Projet ${m.no} ${(m.client||"").slice(0,40)}${nD>1?" – préqualification "+nD:""}`,50,140);
@@ -3856,7 +4005,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
     for(const r of rows){this.txt(M+8,this.y+10,r.k,"B",8.5,"0.40 0.40 0.40");let yy=this.y;
       for(const ln of r.ll){let cx=M+160;for(const m of ln){if(m.t!==" ") this.txt(cx,yy+10,m.t,m.f,s);cx+=m.w}yy+=lh}this.y=Math.max(yy,this.y+lh)+3}
     this.y=y0+h+6}
-  tableau(cols,rows){const M=this.M,L=this.W-2*M,s=8.6,pad=4,lh=s*1.3;const xs=[];this.place(2*(lh+2*pad)+lh+8);let x=M;for(const c of cols){xs.push(x);x+=c.w*L}
+  tableau(cols,rows,o){const M=this.M,L=this.W-2*M,s=o&&o.s||8.6,pad=4,lh=s*1.3;const xs=[];this.place(2*(lh+2*pad)+lh+8);let x=M;for(const c of cols){xs.push(x);x+=c.w*L}
     const ligne=(cells,ent)=>{const z=cells.map((c,i)=>{const cc=c&&typeof c==="object"?c:{t:String(c??"")};
         return {cc,ll:cc.pill?[[{t:cc.t,f:"B",w:0}]]:this.lignes([{t:cc.t,b:ent||cc.b}],cols[i].w*L-2*pad,s)}});
       const h=Math.max(1,...z.map(q=>q.ll.length))*lh+2*pad;
@@ -3864,7 +4013,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       if(ent) this.rect(M,this.y,L,h,"0.85 0.85 0.85");
       z.forEach(({cc,ll},i)=>{let yy=this.y+pad;
         if(cc.pill){const dispo=cols[i].w*L-2*pad;let fs=s,w=pdfLargeur(cc.t,"B",s)+10;if(w>dispo){fs=s*(dispo-10)/(w-10);w=dispo}this.rect(xs[i]+pad,yy-0.5,w,lh+1,cc.pill);this.txt(xs[i]+pad+5,yy+s*0.95,cc.t,"B",fs,"1 1 1");return}
-        for(const ln of ll){let cx=xs[i]+pad;for(const m of ln){if(m.t!==" ") this.txt(cx,yy+s*0.95,m.t,m.f,s);cx+=m.w}yy+=lh}});
+        for(const ln of ll){let cx=xs[i]+pad;for(const m of ln){if(m.t!==" ") this.txt(cx,yy+s*0.95,m.t,m.f,s,cc.c||undefined);cx+=m.w}yy+=lh}});
       this.cadre(M,this.y,L,h,"0.70 0.70 0.70",0.5);xs.slice(1).forEach(xx=>this.trait(xx,this.y,xx,this.y+h,"0.70 0.70 0.70",0.5));this.y+=h};
     ligne(cols.map(c=>c.t),true);for(const r of rows) ligne(r,false);this.y+=8}
   // v1.87 : chaque photo et sa légende dans un cadre (comme les tableaux photo des rapports)
@@ -3905,6 +4054,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
       const avecPsh=a.materiaux.some(x=>x.psh||x.pshRef);
       if(avecPsh) this.tableau([{t:T("produit"),w:.28},{t:T("role"),w:.18},{t:T("lots"),w:.28},{t:T("psh"),w:.26}],a.materiaux.map(x=>[{t:x.produit||"–",b:true},apqTr(x.role,l)||"–",x.lots||"–",[apqTr(x.psh,l),x.pshRef].filter(Boolean).join(" – ")||"–"]));
       else this.tableau([{t:T("produit"),w:.38},{t:T("role"),w:.24},{t:T("lots"),w:.38}],a.materiaux.map(x=>[{t:x.produit||"–",b:true},apqTr(x.role,l)||"–",x.lots||"–"]));
+      for(const x of a.materiaux) apqPstPdf(this,x,l);
       const pm=[];for(const x of a.materiaux) pm.push(...await this.photos((x.photos||[]).map(y=>({...y,leg:y.leg||[x.produit,y.slot==="Autre"?"":apqTr(y.slot,l)].filter(Boolean).join(" – ")})),null));
       if(pm.length) this.grille(pm)}
     if((a.conditions&&a.conditions.trim())||a.eau||a.eauCert||a.eauConf||(a.eauPhotos||[]).length){this.titreSection("2. "+T("gen"));if(a.conditions) this.texteBalise(a.conditions,M,L,10);
@@ -4706,6 +4856,13 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
    Les listes du projet (équipements, activités, accès, dégâts courants) gardent la langue du projet.
    {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
 const TRAD_UI=[
+["📊 Preshipment test ↔ compliance datasheet","📊 Preshipment test ↔ compliance datasheet","📊 Ensayo previo al envío ↔ hoja de conformidad","📊 Vorversandprüfung ↔ Konformitätsdatenblatt"],
+["Limites de la compliance datasheet","Compliance datasheet limits","Límites de la hoja de conformidad","Grenzwerte des Konformitätsdatenblatts"],
+["Résultats du preshipment test (par lot et par palette)","Preshipment test results (per batch and pallet)","Resultados del ensayo previo al envío (por lote y palé)","Ergebnisse der Vorversandprüfung (je Charge und Palette)"],
+["Dérogation / commentaire","Deviation / comment","Desviación / comentario","Abweichung / Bemerkung"],
+["＋ Palette","＋ Pallet","＋ Palé","＋ Palette"],["＋ Lot","＋ Batch","＋ Lote","＋ Charge"],["📋 Coller un tableau (Excel, PDF)","📋 Paste a table (Excel, PDF)","📋 Pegar una tabla (Excel, PDF)","📋 Tabelle einfügen (Excel, PDF)"],
+["Importer","Import","Importar","Importieren"],["＋ Propriété…","＋ Property…","＋ Propiedad…","＋ Eigenschaft…"],["Autre (libellé libre)","Other (free label)","Otro (texto libre)","Andere (freier Text)"],
+["Commentaires sur le preshipment test","Comments on the preshipment test","Comentarios sobre el ensayo previo al envío","Bemerkungen zur Vorversandprüfung"],
 ["👁 Aperçu PDF","👁 PDF preview","👁 Vista previa PDF","👁 PDF-Vorschau"],
 ["Aperçu – rien n'est émis","Preview – nothing is issued","Vista previa – no se emite nada","Vorschau – nichts wird ausgegeben"],
 ["📄 Émettre ce rapport…","📄 Issue this report…","📄 Emitir este informe…","📄 Diesen Bericht ausgeben…"],
