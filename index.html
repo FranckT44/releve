@@ -698,6 +698,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
       </div>
       <div class="row2"><label>Rapports émis au nom de<select id="nSoc"><option value="QUARTIS">QUARTIS (consultant)</option><option value="FTA">Mon entreprise (compte propre)</option></select></label>
         <label id="lNActSoc" hidden>Activité affichée<select id="nActSoc"><option value="API 936 Consultancy">API 936 Consultancy</option><option value="API 982 Consultancy">API 982 Consultancy</option></select></label></div>
+      <label>Langue des rapports (WIR, IPR, IR)<select id="nLangRap"><option value="fr">Français</option><option value="en">English</option></select></label>
       <div class="btns"><button class="primary" id="bNewOk" type="button">Créer le projet</button><button id="bNewCancel" type="button">Annuler</button></div>
     </div>
     <div id="archCard" class="card confirm" hidden>
@@ -714,6 +715,8 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <label>Client / site<input type="text" id="cClient"></label>
     <div class="row2"><label>Rapports émis au nom de<select id="cSoc"><option value="QUARTIS">QUARTIS (consultant)</option><option value="FTA">Mon entreprise (compte propre)</option></select></label>
       <label id="lActSoc" hidden>Activité affichée dans l'en-tête<select id="cActSoc"><option value="API 936 Consultancy">API 936 Consultancy</option><option value="API 982 Consultancy">API 982 Consultancy</option></select></label></div>
+    <label>Langue des rapports (WIR, IPR, IR)<select id="cLangRap"><option value="fr">Français</option><option value="en">English</option></select></label>
+    <p class="hint">Langue des rapports générés sur le PC, indépendante de la société : un projet en compte propre peut être rédigé en anglais pour un client anglophone. Elle part avec les constats et met à jour « Paramètres rapports.txt ».</p>
     <p class="hint">Change le logo et l'en-tête des IPR / IR générés sur le PC pour ce projet (dossier 982 Toolbox\Sociétés).</p>
     <label>Type de projet<select id="cType"><option value="arret">Arrêt d'unité (IPR / IR)</option><option value="atelier">Préfabrication atelier (WIR)</option></select></label>
     <label>Dossier du projet sur le PC<input type="text" id="cDir"></label>
@@ -927,7 +930,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.44";
+const APP_VERSION="2.45";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2656,7 +2659,7 @@ function renderSync(){const m=curMission();const el=$("syncInfo");if(!m||!el) re
   el.className="sync "+cls;el.textContent=txt;
   $("mWarn").hidden=MISSIONS.filter(x=>!x.archive).every(estSynchro)}
 /* ---------- société émettrice des rapports (v1.48) : QUARTIS ou compte propre (dossier _OUTILS\Sociétés\FTA) ---------- */
-function socMission(m){const societe=m&&m.societe||"QUARTIS";return {societe,activiteSociete:societe==="FTA"?(m.activiteSociete||"API 936 Consultancy"):""}}
+function socMission(m){const societe=m&&m.societe||"QUARTIS";return {societe,activiteSociete:societe==="FTA"?(m.activiteSociete||"API 936 Consultancy"):"",langueRapport:m&&(m.langueRapport==="fr"||m.langueRapport==="en")?m.langueRapport:(societe==="FTA"?"fr":"en")}}
 function libelleSociete(m){const s=socMission(m);return s.societe==="FTA"?`Compte propre – ${s.activiteSociete}`:"Pour QUARTIS"}
 function majChoixSoc(sel,lab){$(lab).hidden=$(sel).value!=="FTA"}
 function missionLabel(m){return `${m.no} – ${m.client||"sans nom"}${m.archive?" (archivé)":""}`}
@@ -2664,7 +2667,7 @@ function renderCfg(){
   const show=$("mShowArch").checked;const sel=$("mSel");sel.innerHTML="";
   for(const m of MISSIONS.filter(m=>show||!m.archive||m.id===CFG.mission.id)){const o=document.createElement("option");o.value=m.id;o.textContent=missionLabel(m);sel.append(o)}
   sel.value=CFG.mission.id;const cur=curMission();$("bArch").textContent=cur&&cur.archive?"Désarchiver":"Archiver";
-  $("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur||"";$("cClient").value=CFG.mission.client||"";$("cDir").value=CFG.mission.dossierPC||"";{const so=socMission(cur);$("cSoc").value=so.societe;$("cActSoc").value=so.activiteSociete||"API 936 Consultancy";majChoixSoc("cSoc","lActSoc")}$("cLang").value=langueMission();$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites;$("cType").value=cur&&cur.typeProjet==="atelier"?"atelier":"arret";$("cVig").value=cur&&cur.vigilance||"";majVigCard();
+  $("cNo").value=CFG.mission.no;$("cInsp").value=CFG.mission.inspecteur||"";$("cClient").value=CFG.mission.client||"";$("cDir").value=CFG.mission.dossierPC||"";{const so=socMission(cur);$("cSoc").value=so.societe;$("cActSoc").value=so.activiteSociete||"API 936 Consultancy";$("cLangRap").value=so.langueRapport;majChoixSoc("cSoc","lActSoc")}$("cLang").value=langueMission();$("cEq").value=CFG.equipements;$("cAct").value=CFG.activites;$("cType").value=cur&&cur.typeProjet==="atelier"?"atelier":"arret";$("cVig").value=cur&&cur.vigilance||"";majVigCard();
   const f=$("nFrom");f.innerHTML="";
   const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;f.append(o)};
   add("copy:"+CFG.mission.id,`Copie du projet ${CFG.mission.no}`);
@@ -2700,8 +2703,8 @@ async function majMissionConstats(m){const liste=(await allEntries()).filter(e=>
 async function saveCfg(){
   const eq=parseTree($("cEq").value),ac=parseTree($("cAct").value);if(!eq.length||!ac.length){toast("Il faut au moins un équipement et une activité.");return}
   if(!$("cNo").value.trim()){toast("Indique le n° de projet.");return}
-  const m=curMission();const nv={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),societe:$("cSoc").value,activiteSociete:$("cSoc").value==="FTA"?$("cActSoc").value:"",equipements:$("cEq").value,activites:$("cAct").value,typeProjet:$("cType").value,vigilance:$("cVig").value};
-  const change=Object.keys(nv).some(k=>(k==="societe"?socMission(m).societe:k==="activiteSociete"?socMission(m).activiteSociete:k==="typeProjet"?(m.typeProjet||"arret"):(m[k]||""))!==nv[k]);
+  const m=curMission();const nv={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),societe:$("cSoc").value,activiteSociete:$("cSoc").value==="FTA"?$("cActSoc").value:"",langueRapport:$("cLangRap").value,equipements:$("cEq").value,activites:$("cAct").value,typeProjet:$("cType").value,vigilance:$("cVig").value};
+  const change=Object.keys(nv).some(k=>(k==="societe"?socMission(m).societe:k==="activiteSociete"?socMission(m).activiteSociete:k==="langueRapport"?socMission(m).langueRapport:k==="typeProjet"?(m.typeProjet||"arret"):(m[k]||""))!==nv[k]);
   const ren=detecterRenommages(parseTree(m.equipements),eq);
   if(ren.length&&!saveCfg.force){const n=(await constatsTouches(ren)).length;
     if(n){REN_EN_ATTENTE={ren};
@@ -2719,7 +2722,7 @@ async function createMission(){
   if(MISSIONS.some(m=>m.no===no&&!m.archive)){toast(`Le projet ${no} existe déjà.`);return}
   const [kind,ref]=$("nFrom").value.split(":");const src=kind==="copy"?MISSIONS.find(m=>m.id===ref):TEMPLATES[ref];
   const lang=$("nLang").value||"fr";
-  const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",equipements:kind==="tpl"&&lang!=="fr"&&src.equipementsEn?src.equipementsEn:src.equipements,activites:convertirActivites(src.activites,lang),dico:kind==="copy"&&src.dico?JSON.parse(JSON.stringify(src.dico)):[],modifieLe:new Date().toISOString()};
+  const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",langueRapport:$("nLangRap").value,equipements:kind==="tpl"&&lang!=="fr"&&src.equipementsEn?src.equipementsEn:src.equipements,activites:convertirActivites(src.activites,lang),dico:kind==="copy"&&src.dico?JSON.parse(JSON.stringify(src.dico)):[],modifieLe:new Date().toISOString()};
   {const at=kind==="tpl"?ref==="atelier":src.typeProjet==="atelier";m.typeProjet=at?"atelier":"arret";m.vigilance=kind==="copy"&&src.vigilance?src.vigilance:at?vigDefaut(lang):""}
   MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
   toast(`Projet ${no} créé : vérifie le dossier PC et complète les listes`,4000)}
@@ -2754,7 +2757,7 @@ async function appliquerImport(d){$("impCard").hidden=true;IMPORT_EN_ATTENTE=nul
   let m=MISSIONS.find(x=>x.no===d.no);const maj=!!m;
   if(!m){m={id:newId(),archive:false};MISSIONS.push(m)}
   const v=d.modifieLe||new Date().toISOString();
-  Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",societe:d.societe||"QUARTIS",activiteSociete:d.activiteSociete||"",equipements:d.equipements,activites:d.activites,typeProjet:d.typeProjet==="atelier"?"atelier":"arret",vigilance:d.vigilance||"",dico:Array.isArray(d.dico)?d.dico:(m.dico||[]),archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
+  Object.assign(m,{no:d.no,client:d.client||"",langue:d.langue||"fr",inspecteur:d.inspecteur||CFG.mission.inspecteur,dossierPC:d.dossierPC||"",societe:d.societe||"QUARTIS",activiteSociete:d.activiteSociete||"",langueRapport:d.langueRapport==="fr"||d.langueRapport==="en"?d.langueRapport:"",equipements:d.equipements,activites:d.activites,typeProjet:d.typeProjet==="atelier"?"atelier":"arret",vigilance:d.vigilance||"",dico:Array.isArray(d.dico)?d.dico:(m.dico||[]),archive:false,modifieLe:v,versionRecue:v,recuLe:new Date().toISOString()});
   await saveMissions();await switchMission(m.id);toast(maj?`Projet ${m.no} mis à jour`:`Projet ${m.no} ajouté`)}
 /* ---------- v1.67 : programme d'arrêt préparé sur le PC (« Préparer l'arrêt », 982 Toolbox) ----------
    image programme-<N°>.jpg : JSON {schema:"releve-programme/1", id, mission:{no}, lignes:[{eq:{nom,code}, sub, act, lining, rem}]}
@@ -5354,6 +5357,8 @@ const TRAD_UI=[
 ["Version de l'appli : {a}","App version: {a}","Versión de la app: {a}","App-Version: {a}"],
 ["Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Un projet déjà présent (même n°) est mis à jour, sinon il est ajouté.","Send the “mission-No.jpg” image via Quick Share, then load it on the other phone. A project already present (same no.) is updated, otherwise it is added.","Envía la imagen «mission-N.º.jpg» por Quick Share y cárgala en el otro teléfono. Un proyecto ya existente (mismo n.º) se actualiza; si no, se añade.","Bild „mission-Nr.jpg“ per Quick Share senden und auf dem anderen Telefon laden. Ein vorhandenes Projekt (gleiche Nr.) wird aktualisiert, sonst hinzugefügt."],
 ["Réglage de ce téléphone","Settings of this phone","Ajustes de este teléfono","Einstellungen dieses Telefons"],
+["Langue des rapports (WIR, IPR, IR)","Report language (WIR, IPR, IR)","Idioma de los informes (WIR, IPR, IR)","Berichtssprache (WIR, IPR, IR)"],
+["Langue des rapports générés sur le PC, indépendante de la société : un projet en compte propre peut être rédigé en anglais pour un client anglophone. Elle part avec les constats et met à jour « Paramètres rapports.txt ».","Language of the reports generated on the PC, independent of the company: a project on your own account can be written in English for an English-speaking client. It travels with the findings and updates “Paramètres rapports.txt”.","Idioma de los informes generados en el PC, independiente de la empresa: un proyecto por cuenta propia puede redactarse en inglés para un cliente anglófono. Viaja con los hallazgos y actualiza «Paramètres rapports.txt».","Sprache der am PC erstellten Berichte, unabhängig von der Firma: ein Projekt auf eigene Rechnung kann für einen englischsprachigen Kunden auf Englisch verfasst werden. Sie wird mit den Befunden übertragen und aktualisiert „Paramètres rapports.txt“."],
 ["Commentaire sur ce point (facultatif)","Comment on this point (optional)","Comentario sobre este punto (opcional)","Kommentar zu diesem Punkt (optional)"],
 ["Ajouter un commentaire à ce point","Add a comment to this point","Añadir un comentario a este punto","Kommentar zu diesem Punkt hinzufügen"],
 ["Coche les points vérifiés : ils sont repris dans le WIR. 💬 : ajouter un commentaire au point (il suit le point dans le rapport).","Tick the points checked: they are included in the WIR. 💬: add a comment to the point (it follows the point in the report).","Marca los puntos verificados: se incluyen en el WIR. 💬: añadir un comentario al punto (aparece tras el punto en el informe).","Geprüfte Punkte ankreuzen: sie werden in den WIR übernommen. 💬: Kommentar zum Punkt hinzufügen (er folgt dem Punkt im Bericht)."],
@@ -5670,7 +5675,7 @@ async function start(){
   $("bPurgeYes").onclick=purge;$("bPurgeNo").onclick=()=>$("purgeConfirm").hidden=true;
   $("bCfgSave").onclick=saveCfg;
   $("mSel").onchange=e=>switchMission(e.target.value);$("mShowArch").onchange=renderCfg;$("hMission").onclick=()=>showView("reglages");
-  $("bNew").onclick=()=>{renderCfg();$("nLang").value=langueMission();{const so=socMission(curMission());$("nSoc").value=so.societe;$("nActSoc").value=so.activiteSociete||"API 936 Consultancy";majChoixSoc("nSoc","lNActSoc")}$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>$("newCard").hidden=true;$("bNewOk").onclick=createMission;
+  $("bNew").onclick=()=>{renderCfg();$("nLang").value=langueMission();{const so=socMission(curMission());$("nSoc").value=so.societe;$("nActSoc").value=so.activiteSociete||"API 936 Consultancy";$("nLangRap").value=so.langueRapport;majChoixSoc("nSoc","lNActSoc")}$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>$("newCard").hidden=true;$("bNewOk").onclick=createMission;$("nSoc").addEventListener("change",()=>{$("nLangRap").value=$("nSoc").value==="FTA"?"fr":"en"});
   $("bArch").onclick=toggleArchive;$("cSoc").onchange=()=>majChoixSoc("cSoc","lActSoc");$("nSoc").onchange=()=>majChoixSoc("nSoc","lNActSoc");
   $("cLang").onchange=e=>changerLangue(e.target.value);
   $("bRenAll").onclick=()=>finirRenommage(true);$("bRenOnly").onclick=()=>finirRenommage(false);$("bRenCancel").onclick=()=>{$("renCard").hidden=true;REN_EN_ATTENTE=null};
