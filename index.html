@@ -347,7 +347,10 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 .apqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;align-items:start}
 @media (min-width:701px){.apqgrid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
 .apqplus{min-height:36px;font-size:13px}
-.apqslot.drop{outline:3px dashed var(--accent);outline-offset:2px;background:var(--accent-soft)}
+.apqvide{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;align-items:center}
+.apqvide .apqcadre{grid-column:1/-1;aspect-ratio:4/3;border:2px dashed var(--accent);border-radius:6px;background:var(--accent-soft);display:grid;place-content:center;gap:8px;text-align:center;padding:8px;font-size:13px;color:var(--muted)}
+.apqvide input{font-size:13px;min-height:34px;padding:2px 6px;min-width:0}.apqvide button{min-height:34px;padding:0 10px}
+.depot.drop,.apqslot.drop{outline:3px dashed var(--accent);outline-offset:2px;background:var(--accent-soft)}
 .apqmatb{padding:6px 0 10px;border-bottom:1px solid var(--line)}.apqmatb .apqmat{border-bottom:0}
 .apqdoc{display:grid;grid-template-columns:1fr 2fr 70px auto;gap:8px;align-items:end;padding:4px 0;border-bottom:1px solid var(--line)}@media (max-width:560px){.apqdoc{grid-template-columns:1fr 70px}.apqdoc>label:nth-child(2){grid-column:1/-1;grid-row:2}.apqdoc>button{grid-row:1;grid-column:3}}
 .apqpers{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-items:start}.apqfiche{border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface)}.apqfiche .apqgrid{grid-template-columns:1fr}.apqfiche .apqrow{grid-template-columns:1fr}.apqpers>.btns{grid-column:1/-1}
@@ -932,7 +935,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.48";
+const APP_VERSION="2.50";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3285,9 +3288,10 @@ function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
       const pid=e.dataTransfer&&e.dataTransfer.getData("text/x-apq-photo");
       if(pid){const src=APQ_SRC.get(pid);if(!src) return;const i=src.findIndex(z=>z.pid===pid);if(i<0) return;const [x]=src.splice(i,1);
         x.slot=sl;liste.push(x);apqSauver(true).then(renderApq);return}
-      const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])].filter(apqFichierOk);if(fs.length){APQ_CIBLE={liste,slot:sl};apqAjouterPhotos(fs)}};
+      const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])].filter(apqFichierOk);if(fs.length){const vd=box.querySelector(".apqvide input");APQ_CIBLE={liste,slot:sl,leg:vd?vd.value.trim():""};apqAjouterPhotos(fs)}};
     // v2.48 : la case survolée (ou touchée) reçoit le Ctrl+V (capture d'écran, image copiée, PDF copié dans l'explorateur)
-    box.onmouseenter=()=>{APQ_COLLE={liste,slot:sl,nom:nomC}};box.addEventListener("pointerdown",()=>{APQ_COLLE={liste,slot:sl,nom:nomC}});
+    const viser=()=>{if(APQ_COLLE&&APQ_COLLE.vide&&APQ_COLLE.vide.isConnected&&box.contains(APQ_COLLE.vide)) return;APQ_COLLE={liste,slot:sl,nom:nomC};DEPOT=null};
+    box.onmouseenter=viser;box.addEventListener("pointerdown",viser);
     // v1.76 : plusieurs photos par case (toucher à nouveau, ou en choisir plusieurs d'un coup)
     // v1.89 : sur téléphone / tablette, deux boutons comme les constats : 📷 (appareil photo) et 🖼️ (galerie, avec le réglage du sélecteur)
     const cam=()=>{APQ_CIBLE={liste,slot:sl};choisirFichier($("iApqCam"))};
@@ -3300,7 +3304,16 @@ function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
       const del=apqE("button",{type:"button",class:"ghost","aria-label":"Retirer la photo",onclick:async()=>{liste.splice(liste.indexOf(x),1);
         try{await tx("photos","readwrite",s=>s.delete(x.pid))}catch(e){}await apqSauver(true);renderApq()}},"✕");
       box.append(apqE("div",{class:"apqth"},im,lg,del))}
-    if(ph.length&&!APQ_MOBILE) box.append(apqE("button",{type:"button",class:"ghost apqplus",onclick:ajout},"＋ Ajouter"));
+    // v2.49 : « ＋ Ajouter » (PC) ouvre d'abord une case photo vide : y glisser une photo / un PDF, Ctrl+V, ou 📂 Parcourir ; légende possible avant
+    if(ph.length&&!APQ_MOBILE){const plus=apqE("button",{type:"button",class:"ghost apqplus"},"＋ Ajouter");
+      plus.onclick=()=>{plus.hidden=true;const lg=apqE("input",{type:"text",placeholder:sl==="Autre"?"Légende":sl,"aria-label":"Légende de la photo"});
+        const cible=()=>({liste,slot:sl,nom:nomC,leg:lg.value.trim()});
+        const v=apqE("div",{class:"apqvide"},
+          apqE("div",{class:"apqcadre"},apqE("span",{text:"Glisser une photo ou un PDF ici, ou Ctrl+V (capture d'écran)"}),
+            apqE("div",{},apqE("button",{type:"button",onclick:()=>{APQ_CIBLE=cible();choisirFichier($("iApq"))}},"📂 Parcourir…"))),
+          lg,apqE("button",{type:"button",class:"ghost","aria-label":"Annuler",onclick:()=>{v.remove();plus.hidden=false;if(APQ_COLLE&&APQ_COLLE.vide===v) APQ_COLLE=null}},"✕"));
+        APQ_COLLE={...cible(),vide:v,get leg(){return lg.value.trim()}};DEPOT=null;plus.before(v);lg.focus()};
+      box.append(plus)}
     g.append(box)}
   return g}
 // v2.13 : annotation des photos de préqualification avec l'éditeur des constats (photo d'origine gardée, comme pour les constats)
@@ -3330,7 +3343,7 @@ async function apqAjouterPhotos(files){const c=APQ_CIBLE;APQ_CIBLE=null;if(!c||!
     let k=0;for(const {f,leg} of items){k++;busyMaj(`Photo ${k} / ${items.length}`,Math.round(k/items.length*100));
       const pid="apq_"+newId(),prise=(await exifDate(f))||localIso(f.lastModified||Date.now());
       const thumb=await makeThumb(f);await tx("photos","readwrite",s=>s.put({id:pid,entry:"apq:"+APQ_M,type:f.type,prise,blob:f,thumb}));
-      c.liste.push({pid,slot:c.slot,leg})}
+      c.liste.push({pid,slot:c.slot,leg:c.leg?(leg?c.leg+" – "+leg:c.leg):leg})}
     await apqSauver(true)}
   catch(e){toast("Photo non ajoutée : "+(e&&e.message||e),6000)}finally{busyFin();renderApq()}}
 // v1.95 : « Refusé » peut être combiné avec « À repasser » (p.repasser)
@@ -3722,7 +3735,8 @@ async function apqVoir(x){const p=await getPhoto(x.pid);if(!p) return;const u=UR
 let APQ_TDSMEM=null,APQ_TDS_CIBLE=null;
 const apqTdsCle=p=>String(p||"").trim().toLowerCase();
 async function apqTdsMem(){if(APQ_TDSMEM) return APQ_TDSMEM;let v=null;try{v=await kvGet("apqTds")}catch(e){}APQ_TDSMEM=v&&typeof v==="object"?v:{};return APQ_TDSMEM}
-function apqTdsBloc(m){const box=apqE("div",{class:"apqtds"});const mem=APQ_TDSMEM||{};
+function apqTdsBloc(m){const box=apqE("div",{class:"apqtds",title:"Fiche technique : glisser le PDF ici, ou Ctrl+V d'un PDF copié dans l'explorateur"});const mem=APQ_TDSMEM||{};
+  zoneDepot(box,$("iApqTds"),"Fiche technique "+(m.produit||""),()=>{APQ_TDS_CIBLE=m});
   const choisir=()=>{APQ_TDS_CIBLE=m;choisirFichier($("iApqTds"))};
   if(m.tds){const c=apqE("input",{type:"checkbox"});c.checked=m.tdsAnnexe!==false;c.onchange=()=>{m.tdsAnnexe=c.checked;apqSauver()};
     box.append(apqE("span",{class:"apqtdsn","data-noi18n":true,text:`📄 ${m.tds.nom} (${taille(m.tds.taille||0)})`}),
@@ -3751,13 +3765,58 @@ async function apqPdfLib(){if(window.PDFLib) return window.PDFLib;
   return window.PDFLib}
 // v1.91 : PDF protégés (fréquent pour les fiches des fabricants) : pages rendues en images avec pdf.js (chargé seulement si besoin)
 let APQ_PDFJS=null,APQ_COLLE=null;
+/* v2.50 : partout où l'appli va chercher un fichier (photos des constats, photos hors constat, fiche technique, restauration APQ,
+   programme d'arrêt CSV, projet, navette) : glisser-déposer sur la zone et Ctrl+V quand la souris est dessus (PC, DeX).
+   Le fichier est remis à l'entrée <input type=file> de la zone, comme s'il avait été choisi dans l'explorateur.
+   Entrées photo (data-photo) : un PDF devient une photo par page (pdf.js). */
+let DEPOT=null;
+function depotLivrer(input,files,avant){if(avant) avant();const dt=new DataTransfer();for(const f of files) dt.items.add(f);input.files=dt.files;input.dispatchEvent(new Event("change"))}
+function depotAccepte(input,f){if(!f) return false;if(input.dataset.photo&&(apqEstPdf(f)||String(f.type).startsWith("image/"))) return true;
+  const acc=(input.getAttribute("accept")||"*/*").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean),nm=String(f.name||"").toLowerCase(),ty=String(f.type||"").toLowerCase();
+  return acc.some(a=>a==="*/*"||(a.startsWith(".")&&nm.endsWith(a))||(a.endsWith("/*")&&ty.startsWith(a.slice(0,-1)))||a===ty)}
+function zoneDepot(el,input,nom,avant,aide){if(!el||!input) return;el.classList.add("depot");
+  const viser=()=>{DEPOT={input,nom,avant,el};APQ_COLLE=null};
+  el.addEventListener("mouseenter",viser);el.addEventListener("pointerdown",viser);
+  const fichiers=e=>e.dataTransfer&&[...(e.dataTransfer.types||[])].includes("Files");
+  el.addEventListener("dragover",e=>{if(fichiers(e)){e.preventDefault();e.stopPropagation();el.classList.add("drop")}});
+  el.addEventListener("dragleave",e=>{if(!el.contains(e.relatedTarget)) el.classList.remove("drop")});
+  el.addEventListener("drop",e=>{if(!fichiers(e)) return;e.preventDefault();e.stopPropagation();el.classList.remove("drop");
+    const fs=[...e.dataTransfer.files].filter(f=>depotAccepte(input,f));if(!fs.length){toast("Ce type de fichier n'est pas accepté ici.",4000);return}
+    depotLivrer(input,input.multiple?fs:fs.slice(0,1),avant)});
+  if(aide&&!APQ_MOBILE&&!el.querySelector(".depotaide")) el.append(apqE("p",{class:"hint depotaide",text:aide}))}
+document.addEventListener("paste",e=>{if(e.defaultPrevented||!DEPOT||!DEPOT.el.isConnected||!DEPOT.el.offsetParent) return;
+  const cd=e.clipboardData;let fs=[...(cd&&cd.files||[])];
+  if(!fs.length) for(const it of cd&&cd.items||[]){if(it.kind==="file"){const f=it.getAsFile();if(f) fs.push(f)}}
+  fs=fs.filter(f=>depotAccepte(DEPOT.input,f));if(!fs.length) return;e.preventDefault();
+  const n=new Date(),nm=`Capture ${today()} ${pad(n.getHours())}h${pad(n.getMinutes())}`;
+  fs=fs.map(f=>f.name&&f.name!=="image.png"?f:new File([f],nm+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type,lastModified:Date.now()}));
+  toast(`Collé : ${DEPOT.nom}.`,3000);depotLivrer(DEPOT.input,DEPOT.input.multiple?fs:fs.slice(0,1),DEPOT.avant)});
+// un fichier lâché hors d'une zone ne doit pas faire quitter l'appli (le navigateur l'ouvrirait à la place)
+document.addEventListener("dragover",e=>{if(e.dataTransfer&&[...(e.dataTransfer.types||[])].includes("Files")) e.preventDefault()});
+document.addEventListener("drop",e=>{if(e.dataTransfer&&[...(e.dataTransfer.types||[])].includes("Files")&&!e.defaultPrevented){e.preventDefault();toast("Lâchez le fichier sur la zone prévue (cadre qui s'éclaire).",4000)}});
+// entrée photo : PDF -> photos (une par page), avant le traitement normal de l'entrée
+function entreePhotoPdf(input){if(!input||input.dataset.photo) return;input.dataset.photo="1";
+  input.addEventListener("change",async e=>{if(input._conv){input._conv=false;return}const fs=[...(input.files||[])];if(!fs.some(apqEstPdf)) return;
+    e.stopImmediatePropagation();busy("Lecture du PDF…","",0);const out=[];
+    try{for(const f of fs){if(!apqEstPdf(f)){out.push(f);continue}try{for(const x of await apqPdfEnImages(f)) out.push(x.f)}catch(er){toast(`PDF illisible (${f.name}) : `+(er&&er.message||er),7000)}}}
+    finally{busyFin()}
+    if(!out.length) return;const dt=new DataTransfer();out.forEach(f=>dt.items.add(f));input.files=dt.files;input._conv=true;input.dispatchEvent(new Event("change"))},true)}
+function initDepots(){entreePhotoPdf($("iGal"));entreePhotoPdf($("iLibGal"));
+  if(!APQ_MOBILE) $("iLibGal").setAttribute("accept","image/*,application/pdf,.pdf");
+  const aide="Sur PC : glisser-déposer le fichier ici, ou survoler cette zone et Ctrl+V.";
+  zoneDepot($("bGal").closest(".card"),$("iGal"),"photos du constat",null,"Sur PC : glisser des photos ou un PDF ici, ou survoler cette zone et Ctrl+V (capture d'écran).");
+  zoneDepot($("gLibGal").closest(".btns"),$("iLibGal"),"photos hors constat");
+  zoneDepot($("apqFin"),$("iApqRest"),"restauration de la préqualification");
+  zoneDepot($("bTOpen").closest(".card"),$("iCsv"),"programme d'arrêt (CSV)",null,aide);
+  zoneDepot($("bCfgImport").closest(".card"),$("iCfg"),"chargement du projet",null,aide);
+  zoneDepot($("bNavLoad").closest(".card"),$("iNav"),"navette",null,aide)}
 document.addEventListener("paste",e=>{const v=$("v-apq");if(!v||v.hidden||!APQ_COLLE) return;
   const fs=[...(e.clipboardData&&e.clipboardData.files||[])].filter(apqFichierOk);
   if(!fs.length){for(const it of e.clipboardData&&e.clipboardData.items||[]){if(it.kind==="file"){const f=it.getAsFile();if(apqFichierOk(f)) fs.push(f)}}}
   if(!fs.length) return;e.preventDefault();
   const n=new Date(),nm=`Capture ${today()} ${pad(n.getHours())}h${pad(n.getMinutes())}`;
   const l=fs.map(f=>f.name&&f.name!=="image.png"?f:new File([f],nm+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type,lastModified:Date.now()}));
-  APQ_CIBLE={liste:APQ_COLLE.liste,slot:APQ_COLLE.slot};toast(`Collé dans « ${APQ_COLLE.nom} ».`,3000);apqAjouterPhotos(l)});
+  APQ_CIBLE={liste:APQ_COLLE.liste,slot:APQ_COLLE.slot,leg:APQ_COLLE.leg||""};toast(`Collé dans « ${APQ_COLLE.nom} ».`,3000);apqAjouterPhotos(l)});
 async function apqPdfJs(){if(APQ_PDFJS) return APQ_PDFJS;const m=await import(new URL("pdfjs.min.mjs",location.href).href);
   m.GlobalWorkerOptions.workerSrc=new URL("pdfjs.worker.min.mjs",location.href).href;APQ_PDFJS=m;return m}
 async function apqAnnexes(a,l){const out=[];
@@ -4633,6 +4692,10 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
    Les listes du projet (équipements, activités, accès, dégâts courants) gardent la langue du projet.
    {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
 const TRAD_UI=[
+["Sur PC : glisser des photos ou un PDF ici, ou survoler cette zone et Ctrl+V (capture d'écran).","On PC: drop photos or a PDF here, or hover over this area and press Ctrl+V (screenshot).","En PC: arrastra fotos o un PDF aquí, o pasa el ratón por esta zona y pulsa Ctrl+V (captura).","Am PC: Fotos oder ein PDF hierher ziehen oder über diesen Bereich fahren und Strg+V drücken (Bildschirmfoto)."],
+["Sur PC : glisser-déposer le fichier ici, ou survoler cette zone et Ctrl+V.","On PC: drop the file here, or hover over this area and press Ctrl+V.","En PC: arrastra el archivo aquí, o pasa el ratón por esta zona y pulsa Ctrl+V.","Am PC: Datei hierher ziehen oder über diesen Bereich fahren und Strg+V drücken."],
+["Glisser une photo ou un PDF ici, ou Ctrl+V (capture d'écran)","Drop a photo or a PDF here, or Ctrl+V (screenshot)","Arrastra una foto o un PDF aquí, o Ctrl+V (captura de pantalla)","Foto oder PDF hierher ziehen oder Strg+V (Bildschirmfoto)"],
+["📂 Parcourir…","📂 Browse…","📂 Examinar…","📂 Durchsuchen…"],
 ["＋ Nouvelle préqualification","＋ New prequalification","＋ Nueva precualificación","＋ Neue Präqualifikation"],
 ["Reprendre l'en-tête de celle-ci","Reuse the header of this one","Reutilizar el encabezado de esta","Kopf von dieser übernehmen"],
 ["Partir d'une fiche vierge","Start from a blank sheet","Empezar con una hoja en blanco","Mit leerem Blatt beginnen"],
@@ -5749,7 +5812,7 @@ async function start(){
   $("addNom").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();validerAjout()}};
   $("bCam").onclick=()=>$("iCam").click();$("bGal").onclick=()=>$("iGal").click();
   const appliquerPicker=v=>{const g=$("iGal");const cfg={"1":["image/*",true],"2":["image/*",false],"3":["image/jpeg,image/heic,image/heif,image/png",true],"4":["*/*",true]}[v]||["image/*",true];
-    g.setAttribute("accept",cfg[0]);g.multiple=cfg[1];$("cPicker").value=v};
+    g.setAttribute("accept",APQ_MOBILE||cfg[0]==="*/*"?cfg[0]:cfg[0]+",application/pdf,.pdf");g.multiple=cfg[1];$("cPicker").value=v};
   kvGet("picker").then(v=>appliquerPicker(v||"1")).catch(()=>appliquerPicker("1"));
   $("cPicker").onchange=e=>{appliquerPicker(e.target.value);kvSet("picker",e.target.value).catch(()=>{});toast("Sélecteur de photos : variante "+e.target.value+". Essaie « Choisir dans la galerie ».")};
   $("iCam").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};$("iGal").onchange=e=>{const f=[...e.target.files];e.target.value="";addFiles(f)};
@@ -5772,7 +5835,7 @@ async function start(){
   $("bRenAll").onclick=()=>finirRenommage(true);$("bRenOnly").onclick=()=>finirRenommage(false);$("bRenCancel").onclick=()=>{$("renCard").hidden=true;REN_EN_ATTENTE=null};
   $("pasteBox").oninput=majCollage;$("bPasteReplace").onclick=()=>appliquerCollage(true);$("bPasteAdd").onclick=()=>appliquerCollage(false);
   $("bImpOk").onclick=()=>IMPORT_EN_ATTENTE&&appliquerImport(IMPORT_EN_ATTENTE);$("bProgOk").onclick=appliquerProgramme;$("bNavOk").onclick=appliquerNavette;$("bNavCancel").onclick=()=>{$("navCard").hidden=true;NAV_EN_ATTENTE=null};$("bNavette").onclick=creerNavette;$("bProgCancel").onclick=()=>{$("progCard").hidden=true;PROG_EN_ATTENTE=null};$("bImpCancel").onclick=()=>{$("impCard").hidden=true;IMPORT_EN_ATTENTE=null};$("bArchOk").onclick=doArchive;$("bArchCancel").onclick=()=>$("archCard").hidden=true;$("bCfgExport").onclick=exportCfg;$("bCfgImport").onclick=()=>choisirFichier($("iCfg"));$("iCfg").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];if(f) importCfg(f);else busyFin();e.target.value=""};
-  $("bNavLoad").onclick=()=>choisirFichier($("iNav"));$("iNav").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];if(f) chargerNavette(f);else busyFin();e.target.value=""};
+  initDepots();$("bNavLoad").onclick=()=>choisirFichier($("iNav"));$("iNav").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];if(f) chargerNavette(f);else busyFin();e.target.value=""};
   initBusy();initConstats();initApq();
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.v));
   initTrad();initAccueil();initEnvoi();initAtelier();initBrouillon();showView("accueil");
