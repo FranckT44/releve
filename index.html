@@ -576,7 +576,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
   <div class="card c-violet"><h2>Sessions (méthode et date)</h2><div id="apqSes"></div></div>
   <div class="card c-jaune"><h2>3. Résultats</h2><div id="apqRes"></div></div>
   <div class="card c-bleu" id="apqFin">
-    <div class="btns"><button class="primary" id="bApqPdf" type="button">📄 Créer le PDF</button><button id="bApqSave" type="button">💾 Sauvegarder</button><button id="bApqRest" type="button">📂 Restaurer</button><button id="bApqPh" type="button">⬇️ Photos</button></div>
+    <div class="btns"><button class="primary" id="bApqPdf" type="button">📄 Créer le PDF</button><button id="bApqPc" type="button">📤 Envoyer au PC</button><button id="bApqSave" type="button">💾 Sauvegarder</button><button id="bApqRest" type="button">📂 Restaurer</button><button id="bApqPh" type="button">⬇️ Photos</button></div>
     <p class="hint" id="apqSauveInfo"></p>
     <p class="hint">Sur PC : glissez des photos depuis l'explorateur directement sur une case photo.</p>
     <div id="apqRestCard" class="card confirm" hidden><strong>Restaurer une sauvegarde</strong><div id="apqRestTxt" class="path"></div>
@@ -930,7 +930,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.45";
+const APP_VERSION="2.46";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3537,15 +3537,22 @@ function initApq(){$("iApq").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.ta
 function apqPids(a){const l=[];const ph=x=>{for(const p of x||[]) l.push(p.pid)};
   ph(a.eauPhotos);ph(a.recup);ph(a.logoPhotos);for(const q of a.personnes||[]) ph(q.photos);for(const m of a.materiaux||[]){ph(m.photos);if(m.tds&&m.tds.id) l.push(m.tds.id)}
   for(const s of a.sessions||[]){ph(s.photos);ph(s.ctrlPhotos);for(const p of s.applicateurs||[]) ph(p.photos)}return [...new Set(l)]}
-async function apqSauvegarder(){const a=await apqCharger();await apqSauver(true);const m=curMission()||CFG.mission;
+// v2.46 : « 📤 Envoyer au PC » = le même fichier que la sauvegarde (données + photos), nommé « Envoi PC APQ … », avec ce qu'il faut
+// au PC pour le rapport Word (titre, équipements en clair, textes et listes de l'appli) ; rangé dans <projet>\APQ par le rangement du PC
+async function apqEnvoyerPC(){return apqSauvegarder(true)}
+async function apqSauvegarder(envoi){envoi=envoi===true;const a=await apqCharger();await apqSauver(true);const m=curMission()||CFG.mission;
   busy("Sauvegarde du rapport…","",0);await repos();
   try{const pids=apqPids(a),photos=[],blobs=[];let off=0,k=0;
     for(const id of pids){k++;busyMaj(`Photo ${k} / ${pids.length}`,Math.round(k/Math.max(1,pids.length)*90));const p=await getPhoto(id);if(!p||!p.blob) continue;
       photos.push({id,type:p.type||"image/jpeg",prise:p.prise||null,thumb:p.thumb||"",blob:{off,taille:p.blob.size,type:p.blob.type||"image/jpeg"}});blobs.push(p.blob);off+=p.blob.size}
     const now=new Date(),h={schema:"releve-apq/1",cree:now.toISOString(),version:APP_VERSION,mission:{no:m.no,client:m.client||""},apq:a,photos};
-    const nom=nomSur(`Sauvegarde APQ ${m.no} - ${today()} ${pad(now.getHours())}h${pad(now.getMinutes())}`)+".jpg";
+    if(envoi){const so=socMission(m);h.mission={...h.mission,dossierPC:m.dossierPC||"",inspecteur:m.inspecteur||"",societe:so.societe,langueRapport:so.langueRapport};
+      h.pc={titre:{fr:apqTitreDoc(a,"fr"),en:apqTitreDoc(a,"en")},equip:apqEquipTexte(a),resultatsLibres:apqSansRedite(a),tr:APQ_TR,lib:APQL,
+        verdicts:Object.fromEntries(Object.entries(APQ_V).map(([k,v])=>[k,v.fr])),ctl:APQ_CTL,ech:APQ_ECH,maquette:APQ_MAQUETTE,
+        slots:{mat:APQ_SL_MAT,temp:APQ_SL_TEMP,ech:APQ_SL_ECH,ordre:APQ_ORDRE_PH},equipNoms:Object.fromEntries((EQ||[]).map(e=>[e.code,e.nom]))}}
+    const nom=nomSur(`${envoi?"Envoi PC APQ":"Sauvegarde APQ"} ${m.no} - ${today()} ${pad(now.getHours())}h${pad(now.getMinutes())}`)+".jpg";
     const c=document.createElement("canvas");c.width=900;c.height=360;const g=c.getContext("2d");g.fillStyle="#1d2a33";g.fillRect(0,0,900,360);g.fillStyle="#c9a227";g.fillRect(0,0,14,360);
-    g.fillStyle="#fff";g.font="bold 40px sans-serif";g.fillText("Sauvegarde – préqualification",50,90);g.font="28px sans-serif";g.fillText(`Projet ${m.no} ${(m.client||"").slice(0,40)}`,50,140);
+    g.fillStyle="#fff";g.font="bold 40px sans-serif";g.fillText(envoi?"Envoi au PC – préqualification":"Sauvegarde – préqualification",50,90);g.font="28px sans-serif";g.fillText(`Projet ${m.no} ${(m.client||"").slice(0,40)}`,50,140);
     g.fillStyle="#c9d3d9";g.font="24px sans-serif";g.fillText(`${(a.sessions||[]).length} session(s) · ${photos.length} photo(s) · ${fmtDT(h.cree)}`,50,200);
     g.font="20px sans-serif";g.fillText("The 982 Inspector Toolbox : Préqualification › Restaurer",50,300);
     busyMaj("Assemblage du fichier…",95);await repos();
@@ -3560,8 +3567,9 @@ async function apqSauvegarder(){const a=await apqCharger();await apqSauver(true)
       while(reste>0){while(cum[j]+blobs[j].size<=cur) j++;const d=cur-cum[j],n=Math.min(blobs[j].size-d,reste);mx.push(blobs[j].slice(d,d+n));cur+=n;reste-=n}
       seg(pd,len,...mx)}
     parts.push(jpg.subarray(2));const f=new File(parts,nom,{type:"image/jpeg"});busyFin();
-    try{await kvSet("apqSauveLe:"+APQ_M,h.cree)}catch(e){}
-    await partagerImage(f,`« ${f.name} » est dans Téléchargements : gardez-le (dossier du projet par exemple). Pour le recharger : Préqualification › 📂 Restaurer.`);apqInfoSauve()}
+    try{await kvSet(envoi?"apqEnvoyeLe:"+APQ_M:"apqSauveLe:"+APQ_M,h.cree)}catch(e){}
+    await partagerImage(f,envoi?`« ${f.name} » est dans Téléchargements : envoyez-le au PC (Quick Share) ; le rangement le place dans le dossier APQ du projet. Il sert aussi de sauvegarde (📂 Restaurer).`
+      :`« ${f.name} » est dans Téléchargements : gardez-le (dossier du projet par exemple). Pour le recharger : Préqualification › 📂 Restaurer.`);apqInfoSauve()}
   catch(e){toast("Sauvegarde impossible : "+(e&&e.message||e),8000)}finally{busyFin()}}
 async function apqLireSauvegarde(file){const rd=async(a,b)=>new Uint8Array(await file.slice(a,b).arrayBuffer());
   const s0=await rd(0,2);if(s0[0]!==0xFF||s0[1]!==0xD8) return null;
@@ -3592,9 +3600,10 @@ async function apqRestaurer(){const h=APQ_REST;APQ_REST=null;$("apqRestCard").hi
     APQ={...apqVide(),...h.apq};APQ_M=id;APQ.modifieLe=new Date().toISOString();await kvSet("apq:"+id,APQ);APQ_REF=APQ.modifieLe;APQ_CONFLIT=false;toast(`Rapport restauré : ${(APQ.sessions||[]).length} session(s), ${ph.length} photo(s).`,6000)}
   catch(e){toast("Restauration impossible : "+(e&&e.message||e),8000)}finally{busyFin();renderApq()}}
 async function apqInfoSauve(){const el=$("apqSauveInfo");if(!el) return;let d=null;try{d=await kvGet("apqSauveLe:"+CFG.mission.id)}catch(e){}
-  el.textContent=(d?`Dernière sauvegarde (fichier) : ${fmtDT(d)}.`:"Aucune sauvegarde en fichier pour ce rapport : pensez à « 💾 Sauvegarder » régulièrement.")
+  let e2=null;try{e2=await kvGet("apqEnvoyeLe:"+CFG.mission.id)}catch(e){}
+  el.textContent=(d?`Dernière sauvegarde (fichier) : ${fmtDT(d)}.`:"Aucune sauvegarde en fichier pour ce rapport : pensez à « 💾 Sauvegarder » régulièrement.")+(e2?` Dernier envoi au PC : ${fmtDT(e2)}.`:"")
     +(APQ_DIAG?` Photos de préqualification dans l'appli : ${APQ_DIAG.total}.`:"")}
-function initApqSauve(){$("bApqSave").onclick=apqSauvegarder;$("bApqRest").onclick=()=>choisirFichier($("iApqRest"));
+function initApqSauve(){$("bApqSave").onclick=()=>apqSauvegarder(false);$("bApqPc").onclick=apqEnvoyerPC;$("bApqRest").onclick=()=>choisirFichier($("iApqRest"));
   $("iApqRest").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];e.target.value="";if(f) apqChoisirSauvegarde(f);else busyFin()};
   $("iApqRest").addEventListener("cancel",busyFin);$("bApqRestOk").onclick=apqRestaurer;$("bApqRestNo").onclick=()=>{APQ_REST=null;$("apqRestCard").hidden=true}}
 
@@ -5357,6 +5366,8 @@ const TRAD_UI=[
 ["Version de l'appli : {a}","App version: {a}","Versión de la app: {a}","App-Version: {a}"],
 ["Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Un projet déjà présent (même n°) est mis à jour, sinon il est ajouté.","Send the “mission-No.jpg” image via Quick Share, then load it on the other phone. A project already present (same no.) is updated, otherwise it is added.","Envía la imagen «mission-N.º.jpg» por Quick Share y cárgala en el otro teléfono. Un proyecto ya existente (mismo n.º) se actualiza; si no, se añade.","Bild „mission-Nr.jpg“ per Quick Share senden und auf dem anderen Telefon laden. Ein vorhandenes Projekt (gleiche Nr.) wird aktualisiert, sonst hinzugefügt."],
 ["Réglage de ce téléphone","Settings of this phone","Ajustes de este teléfono","Einstellungen dieses Telefons"],
+["📤 Envoyer au PC","📤 Send to PC","📤 Enviar al PC","📤 An PC senden"],
+["Dernier envoi au PC : {a}.","Last sent to PC: {a}.","Último envío al PC: {a}.","Zuletzt an PC gesendet: {a}."],
 ["Langue des rapports (WIR, IPR, IR)","Report language (WIR, IPR, IR)","Idioma de los informes (WIR, IPR, IR)","Berichtssprache (WIR, IPR, IR)"],
 ["Langue des rapports générés sur le PC, indépendante de la société : un projet en compte propre peut être rédigé en anglais pour un client anglophone. Elle part avec les constats et met à jour « Paramètres rapports.txt ».","Language of the reports generated on the PC, independent of the company: a project on your own account can be written in English for an English-speaking client. It travels with the findings and updates “Paramètres rapports.txt”.","Idioma de los informes generados en el PC, independiente de la empresa: un proyecto por cuenta propia puede redactarse en inglés para un cliente anglófono. Viaja con los hallazgos y actualiza «Paramètres rapports.txt».","Sprache der am PC erstellten Berichte, unabhängig von der Firma: ein Projekt auf eigene Rechnung kann für einen englischsprachigen Kunden auf Englisch verfasst werden. Sie wird mit den Befunden übertragen und aktualisiert „Paramètres rapports.txt“."],
 ["Commentaire sur ce point (facultatif)","Comment on this point (optional)","Comentario sobre este punto (opcional)","Kommentar zu diesem Punkt (optional)"],
