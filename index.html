@@ -237,6 +237,11 @@ body.atelier #planCard,body.atelier #avCard,body.atelier .degats{display:none!im
 .thumb button.itp.on{background:#6a4fc4}
 #atVig label.toggle{display:flex;gap:8px;align-items:flex-start;margin:4px 0}
 #atVig .vigX{font-style:italic}
+/* v2.44 : commentaire facultatif par point de vigilance (💬) */
+#atVig .vigItem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 6px;align-items:start}
+#atVig .vigNoteBtn{min-height:34px;min-width:42px;padding:2px 6px;font-size:16px;background:transparent;border:1px solid var(--line);border-radius:8px;margin-top:2px;opacity:.75}
+#atVig .vigNoteBtn.on{background:var(--c-jaune);border-color:var(--c-jaune-b);opacity:1}
+#atVig .vigNote{grid-column:1/-1;margin:0 0 8px 30px;min-height:38px;width:auto}
 .atRow{display:grid;grid-template-columns:1fr 1fr auto;grid-template-areas:"d r r" "n n n" "m m x";gap:6px;align-items:end;padding:8px 0;border-top:1px dashed var(--line)}
 .atRow>label:nth-child(1){grid-area:d}.atRow>label:nth-child(2){grid-area:n}.atRow>label:nth-child(3){grid-area:r}.atRow .atRem{grid-area:m}.atRow .atDel{grid-area:x;min-height:44px;width:52px}
 #atVig label.toggle input{flex:none}
@@ -499,7 +504,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
     <h2>Contrôles atelier (ITP, vigilance)</h2>
     <label>Opération ITP (n° et intitulé)<input type="text" id="fOpItp" autocomplete="off" maxlength="160" placeholder="ex. : 5.2 – Installation des ancrages"></label>
     <label>Liste des points de vigilance<select id="atVigSel"></select></label>
-    <p class="hint">Coche les points vérifiés : ils sont repris dans le WIR.</p>
+    <p class="hint">Coche les points vérifiés : ils sont repris dans le WIR. 💬 : ajouter un commentaire au point (il suit le point dans le rapport).</p>
     <div id="atVig"></div>
     <div id="atMatBox" hidden><p class="atGrp">Matériel utilisé</p><div id="atMat"></div></div>
     <p class="atGrp">Contrôles datés</p>
@@ -922,7 +927,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.42";
+const APP_VERSION="2.44";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1005,7 +1010,7 @@ Inspection finale [4]`},
 - Materials – Pre-shipment tests
 - Equipment used
 - Application records
-- Sampling`,activites:`Types de matériel [1]
+- Sampling`,activites:`Réception du matériel [1]
 Matériaux [2]
 Contrôle dimensionnel [3]
 Préparation de surface [4]
@@ -1015,7 +1020,8 @@ Installation des revêtements [7]
 - Coffrage / coulage [7a]
 - Hand packing [7b]
 - Gunning [7c]
-- Fiber installation [7d]`},
+- Fiber installation [7d]
+Inspection après séchage [8]`},
  vide:{nom:"Projet vide",equipements:`Équipement 1 [EQ1]
 - Général`,activites:`Inspection [1]`}
 };
@@ -2566,6 +2572,8 @@ const DICO=[
  {fr:"Gunitage",en:"Gunning",es:"Gunitado",de:"Torkretieren"},
  {fr:"Inspection finale",en:"Final inspection",es:"Inspección final",de:"Endinspektion"},
  {fr:"Types de matériel",en:"Material types",es:"Tipos de material",de:"Materialarten"},
+ {fr:"Réception du matériel",en:"Material receipt inspection",es:"Recepción del material",de:"Wareneingangskontrolle"},
+ {fr:"Inspection après séchage",en:"Inspection after drying",es:"Inspección después del secado",de:"Inspektion nach dem Trocknen"},
  {fr:"Matériaux",en:"Materials",es:"Materiales",de:"Werkstoffe"},
  {fr:"Contrôle dimensionnel",en:"Dimensional inspection",es:"Control dimensional",de:"Maßkontrolle"},
  {fr:"Préqualification",en:"Prequalification",es:"Precalificación",de:"Vorqualifizierung"},
@@ -3863,14 +3871,15 @@ function initMaj(){if(!("serviceWorker" in navigator)) return;let rechargee=fals
 /* ---------- v2.27 : projets « Préfabrication atelier » (WIR) ----------
    Carte « Contrôle atelier » de la saisie : opération ITP, points de vigilance cochés (listes du projet, par opération)
    et contrôles datés (date, contrôle, résultat OK / NOK / Reporté / S.O., remarque). Repris par le PC dans le WIR. */
-const VIG_DEF={fr:`Types de matériel
+const VIG_DEF={fr:`Réception du matériel
 - Matériel conforme à la commande (type, quantité)
-- Identification / marquage des pièces
+- Identification / marquage du matériel
 Matériaux – Essais pre-shipment
 - Certificats d'essais pre-shipment reçus pour chaque lot
-- Compliance data sheet (CDS) reçue et conforme
-- Résultats conformes aux exigences de la spécification
+- Compliance data sheet (CDS) disponible
+- Résultats d'essais conformes aux exigences de la spécification
 - Lots testés identiques aux lots livrés et utilisés
+- Conditions de stockage
 Matériel utilisé
 - Matériel conforme à la procédure de mise en œuvre (type, capacité)
 - Malaxeur propre, en bon état, palettes non usées
@@ -3901,7 +3910,7 @@ Préparation de surface
 Installation du système d'ancrage
 - Type et nuance des ancrages conformes au plan
 - Pas et orientation des ancrages
-- Soudage des ancrages (pattern WP2, cordon complet, sans caniveau)
+- Soudage des ancrages (cordon complet, sans caniveau)
 - Jonctions sur plats d'arrêt
 - Connexions entre panneaux d'hexmetal
 - Hauteur des bandes / retombées
@@ -3910,20 +3919,25 @@ Installation du système d'ancrage
 Préqualification
 - Panneau d'essai réalisé dans les conditions de l'atelier
 - Prélèvement des échantillons
-- Résultats d'essais conformes (densité, résistance, retrait)
+- Résultats d'essais en laboratoire conformes (densité, résistance, retrait)
 Installation des revêtements
-- Remplissage complet de l'hexmetal (sans vide)
+- Inspection visuelle du garnissage
+- Test au marteau à panne ronde 225 g – matériau durci, pas de son creux
+- Remplissage de l'hexmetal (ni trop, ni trop peu), matériau plaqué contre les barres
 - Arasage / surépaisseur < 1 mm
-- Test au marteau (pas de son creux)
-- Cure et séchage`,
-en:`Types of material
+- Défauts de surface (bullage – surface / répartition / profondeur)
+Inspection après séchage
+- Fissuration (largeur, répartition)
+- Intégrité structurelle du garnissage`,
+en:`Material receipt inspection
 - Material as per purchase order (type, quantity)
-- Identification / marking of parts
+- Identification / marking of material
 Materials – Pre-shipment tests
 - Pre-shipment test certificates received for each batch
-- Compliance data sheet (CDS) received and compliant
-- Results compliant with the specification requirements
+- Compliance data sheet (CDS) available
+- Test results compliant with the specification requirements
 - Tested batches identical to batches delivered and used
+- Storage conditions
 Equipment used
 - Equipment as per installation procedure (type, capacity)
 - Mixer clean, in good condition, paddles not worn
@@ -3943,7 +3957,7 @@ Sampling
 - Sent to laboratory: yes / no (laboratory, shipping date)
 - Samples with / without needles according to areas
 - Sample storage and curing
-Dimensional check
+Dimensional inspection
 - Dimensions as per drawing
 - Lining thickness
 - Flatness / ovality
@@ -3954,7 +3968,7 @@ Surface preparation
 Anchoring system installation
 - Anchor type and grade as per drawing
 - Anchor pitch and orientation
-- Anchor welding (WP2 pattern, full weld, no undercut)
+- Anchor welding (full weld, no undercut)
 - Junctions on stop plates
 - Connections between hexmetal panels
 - Strip height / overlaps
@@ -3963,12 +3977,16 @@ Anchoring system installation
 Prequalification
 - Test panel made under workshop conditions
 - Sampling
-- Test results compliant (density, strength, shrinkage)
+- Laboratory test results compliant (density, strength, shrinkage)
 Lining installation
-- Hexmetal completely filled (no voids)
+- Visual inspection of the lining
+- Hammer test with 225 g ball-peen hammer – material hardened, no hollow sound
+- Hexmetal filling (neither too much nor too little), material packed against the bars
 - Levelling / overthickness < 1 mm
-- Hammer test (no hollow sound)
-- Curing and drying`};
+- Surface defects (blistering – area / distribution / depth)
+Inspection after drying
+- Cracking (width, distribution)
+- Structural integrity of the lining`};
 function vigDefaut(l){return VIG_DEF[l]||VIG_DEF[l==="fr"?"fr":"en"]}
 const estAtelier=()=>CFG&&CFG.mission&&CFG.mission.typeProjet==="atelier";
 const estLegItp=l=>/^ITP\b/i.test(String(l||"").trim());
@@ -3982,7 +4000,10 @@ function vigPourActivite(){if(typeof estSubInfo==="function"&&estSubInfo()) retu
   for(const n of [sub,sub.split(/\s+[–-]\s+/)[0]]){const k=norm(n);const t=k&&L.find(x=>norm(x.nom)===k);if(t) return t.nom}
   for(const n of [sa&&sa.nom,a&&a.nom].filter(Boolean)){const k=norm(n);const t=L.find(x=>norm(x.nom)===k)||L.find(x=>norm(x.nom)&&(k.includes(norm(x.nom))||norm(x.nom).includes(k)));if(t) return t.nom}
   return ""}
-function lireVig(){return [...document.querySelectorAll("#atVig input:checked")].map(c=>c.value)}
+const VIG_SEP=" – ";
+// un point coché est gardé tel quel, ou « point – commentaire » s'il a un commentaire
+function vigSplit(c,pts){c=String(c||"");for(const p of [...pts].sort((a,b)=>b.length-a.length)){if(c===p) return [p,""];if(c.startsWith(p+VIG_SEP)) return [p,c.slice(p.length+VIG_SEP.length).trim()]}return null}
+function lireVig(){return [...document.querySelectorAll("#atVig .vigItem")].filter(d=>d.querySelector(".vigCase").checked).map(d=>{const p=d.dataset.p,n=(d.querySelector(".vigNote").value||"").trim();return n?p+VIG_SEP+n:p})}
 function lireCtl(){return [...document.querySelectorAll("#atCtl .atRow")].map(d=>({date:d.querySelector(".atDate").value,controle:d.querySelector(".atNom").value.trim(),resultat:d.querySelector(".atRes").value,remarque:d.querySelector(".atRemI").value.trim()}))
   .filter(x=>x.controle||x.remarque||x.resultat)}
 // v2.31 : sous-équipement « Matériel utilisé » : matériel choisi comme dans l'APQ (liste partagée « apqMateriels »)
@@ -4006,9 +4027,20 @@ function remplirSelVig(choix){const sel=$("atVigSel");const L=vigListes();sel.in
   const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;sel.append(o)};add("","(aucune liste)");for(const x of L) add(x.nom,x.nom);
   sel.value=L.some(x=>x.nom===choix)?choix:""}
 function renderVig(coches){coches=coches||[];const box=$("atVig");box.innerHTML="";const t=vigListes().find(x=>x.nom===$("atVigSel").value);
-  const pts=t?t.points.slice():[];const extra=coches.filter(c=>!pts.includes(c));
-  for(const p of [...pts,...extra]){const l=document.createElement("label");l.className="toggle"+(pts.includes(p)?"":" vigX");l.dataset.noi18n="";
-    const c=document.createElement("input");c.type="checkbox";c.value=p;c.checked=coches.includes(p);const sp=document.createElement("span");sp.textContent=p;l.append(c,sp);box.append(l)}
+  const pts=t?t.points.slice():[];const notes=new Map(),extra=[];const T=x=>tradUI(x)||x;
+  for(const c of coches){const sp=vigSplit(c,pts);if(sp) notes.set(sp[0],sp[1]);else extra.push(c)}
+  for(const [p,dansListe] of [...pts.map(x=>[x,true]),...extra.map(x=>[x,false])]){
+    const d=document.createElement("div");d.className="vigItem";d.dataset.p=p;
+    const l=document.createElement("label");l.className="toggle"+(dansListe?"":" vigX");
+    const c=document.createElement("input");c.type="checkbox";c.className="vigCase";c.value=p;c.checked=dansListe?notes.has(p):true;
+    const sp=document.createElement("span");sp.textContent=p;l.append(c,sp);
+    const note=document.createElement("input");note.type="text";note.className="vigNote";note.maxLength=200;note.autocomplete="off";note.placeholder=T("Commentaire sur ce point (facultatif)");note.value=dansListe?(notes.get(p)||""):"";note.hidden=!note.value;
+    const bt=document.createElement("button");bt.type="button";bt.className="vigNoteBtn"+(note.value?" on":"");bt.textContent="💬";bt.title=T("Ajouter un commentaire à ce point");bt.setAttribute("aria-label",bt.title);
+    if(!dansListe) bt.hidden=true;
+    bt.onclick=()=>{note.hidden=!note.hidden;if(!note.hidden) note.focus();else if(!note.value.trim()) bt.classList.remove("on")};
+    note.oninput=()=>{if(note.value.trim()&&!c.checked) c.checked=true;bt.classList.toggle("on",!!note.value.trim());planifierBrouillon(false)};
+    c.onchange=()=>planifierBrouillon(false);
+    d.append(l,bt,note);box.append(d)}
   if(!pts.length&&!extra.length) box.innerHTML='<p class="hint">Aucun point de vigilance pour cette opération (listes dans l\'onglet Projets).</p>';
   const dl=$("atCtlList");dl.innerHTML="";for(const p of pts){const o=document.createElement("option");o.value=p;dl.append(o)}}
 function ctlLigne(x){x=x||{};const d=document.createElement("div");d.className="atRow";
@@ -4019,7 +4051,7 @@ function ctlLigne(x){x=x||{};const d=document.createElement("div");d.className="
   d.querySelector(".atDel").onclick=()=>{d.remove();planifierBrouillon(false)};$("atCtl").append(d);return d}
 function renderAtelier(d){if(!$("atCard")) return;d=d||{op:"",vig:[],ctl:[]};$("fOpItp").value=d.op||"";
   let choix=vigPourActivite();const vig=d.vig||[];
-  if(vig.length){const L=vigListes();const best=L.map(x=>[x.nom,vig.filter(p=>x.points.includes(p)).length]).sort((a,b)=>b[1]-a[1])[0];if(best&&best[1]) choix=best[0]}
+  if(vig.length){const L=vigListes();const best=L.map(x=>[x.nom,vig.filter(p=>vigSplit(p,x.points)).length]).sort((a,b)=>b[1]-a[1])[0];if(best&&best[1]) choix=best[0]}
   AT_SEL_AUTO=!vig.length;remplirSelVig(choix);renderVig(vig);$("atCtl").innerHTML="";for(const c of d.ctl||[]) ctlLigne(c);AT_MAT=Array.isArray(d.mat)?d.mat.slice():[];renderAtMat();majAtMat()}
 function majAtelier(){if(!$("atCard")||!estAtelier()) return;if(!majAtelier.lie){majAtelier.lie=true;$("fSub").addEventListener("change",()=>{majAtelier();majInfo()})}majAtMat();const v=lireVig();
   if(AT_SEL_AUTO||!v.length){const c=vigPourActivite();if(c!==$("atVigSel").value||$("atVigSel").options.length!==vigListes().length+1){remplirSelVig(c);renderVig(v)}}}
@@ -5322,6 +5354,9 @@ const TRAD_UI=[
 ["Version de l'appli : {a}","App version: {a}","Versión de la app: {a}","App-Version: {a}"],
 ["Envoie l'image « mission-N°.jpg » par Quick Share, puis charge-le sur l'autre téléphone. Un projet déjà présent (même n°) est mis à jour, sinon il est ajouté.","Send the “mission-No.jpg” image via Quick Share, then load it on the other phone. A project already present (same no.) is updated, otherwise it is added.","Envía la imagen «mission-N.º.jpg» por Quick Share y cárgala en el otro teléfono. Un proyecto ya existente (mismo n.º) se actualiza; si no, se añade.","Bild „mission-Nr.jpg“ per Quick Share senden und auf dem anderen Telefon laden. Ein vorhandenes Projekt (gleiche Nr.) wird aktualisiert, sonst hinzugefügt."],
 ["Réglage de ce téléphone","Settings of this phone","Ajustes de este teléfono","Einstellungen dieses Telefons"],
+["Commentaire sur ce point (facultatif)","Comment on this point (optional)","Comentario sobre este punto (opcional)","Kommentar zu diesem Punkt (optional)"],
+["Ajouter un commentaire à ce point","Add a comment to this point","Añadir un comentario a este punto","Kommentar zu diesem Punkt hinzufügen"],
+["Coche les points vérifiés : ils sont repris dans le WIR. 💬 : ajouter un commentaire au point (il suit le point dans le rapport).","Tick the points checked: they are included in the WIR. 💬: add a comment to the point (it follows the point in the report).","Marca los puntos verificados: se incluyen en el WIR. 💬: añadir un comentario al punto (aparece tras el punto en el informe).","Geprüfte Punkte ankreuzen: sie werden in den WIR übernommen. 💬: Kommentar zum Punkt hinzufügen (er folgt dem Punkt im Bericht)."],
 ["Taille de l'affichage (zoom)","Display size (zoom)","Tamaño de la pantalla (zoom)","Anzeigegröße (Zoom)"],
 ["Agrandit ou réduit les tuiles, textes et boutons (utile en DeX sur grand écran). Ce réglage ne concerne que cet appareil. Sur grand écran, A− / A+ sont aussi dans la barre du haut.","Enlarges or reduces tiles, text and buttons (useful in DeX on a large screen). This setting only applies to this device. On a large screen, A− / A+ are also in the top bar.","Amplía o reduce mosaicos, textos y botones (útil en DeX en pantalla grande). Este ajuste solo afecta a este dispositivo. En pantalla grande, A− / A+ también están en la barra superior.","Vergrößert oder verkleinert Kacheln, Texte und Schaltflächen (nützlich in DeX auf großem Bildschirm). Diese Einstellung gilt nur für dieses Gerät. Auf großem Bildschirm sind A− / A+ auch in der oberen Leiste."],
 ["Affichage : {a} %","Display: {a} %","Pantalla: {a} %","Anzeige: {a} %"],
