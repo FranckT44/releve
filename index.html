@@ -932,7 +932,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.47";
+const APP_VERSION="2.48";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3285,12 +3285,14 @@ function apqPhotos(liste,slots,sansAutre){const g=apqE("div",{class:"apqgrid"});
       const pid=e.dataTransfer&&e.dataTransfer.getData("text/x-apq-photo");
       if(pid){const src=APQ_SRC.get(pid);if(!src) return;const i=src.findIndex(z=>z.pid===pid);if(i<0) return;const [x]=src.splice(i,1);
         x.slot=sl;liste.push(x);apqSauver(true).then(renderApq);return}
-      const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])].filter(f=>f.type.startsWith("image/"));if(fs.length){APQ_CIBLE={liste,slot:sl};apqAjouterPhotos(fs)}};
+      const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])].filter(apqFichierOk);if(fs.length){APQ_CIBLE={liste,slot:sl};apqAjouterPhotos(fs)}};
+    // v2.48 : la case survolée (ou touchée) reçoit le Ctrl+V (capture d'écran, image copiée, PDF copié dans l'explorateur)
+    box.onmouseenter=()=>{APQ_COLLE={liste,slot:sl,nom:nomC}};box.addEventListener("pointerdown",()=>{APQ_COLLE={liste,slot:sl,nom:nomC}});
     // v1.76 : plusieurs photos par case (toucher à nouveau, ou en choisir plusieurs d'un coup)
     // v1.89 : sur téléphone / tablette, deux boutons comme les constats : 📷 (appareil photo) et 🖼️ (galerie, avec le réglage du sélecteur)
     const cam=()=>{APQ_CIBLE={liste,slot:sl};choisirFichier($("iApqCam"))};
     if(APQ_MOBILE){box.append(apqE("div",{class:"apqtitre",text:ph.length?`✓ ${nomC} (${ph.length})`:nomC}),apqE("div",{class:"apqbt"},apqE("button",{type:"button",onclick:cam},"📷 Photo"),apqE("button",{type:"button",onclick:ajout},"🖼️ Galerie")))}
-    else box.append(apqE("button",{type:"button",title:"Ajouter une ou plusieurs photos",onclick:ajout},ph.length?apqE("span",{},"✓ ",nomC,apqE("span",{class:"apqn",text:` (${ph.length})`})):"📷 "+nomC));
+    else box.append(apqE("button",{type:"button",title:"Ajouter une ou plusieurs photos ou un PDF (chaque page devient une photo) · ou glisser-déposer ici · ou survoler la case et Ctrl+V (capture d'écran)",onclick:ajout},ph.length?apqE("span",{},"✓ ",nomC,apqE("span",{class:"apqn",text:` (${ph.length})`})):"📷 "+nomC));
     for(const x of ph){const im=apqE("img",{alt:"",draggable:"true",title:"Toucher pour annoter · glisser vers une autre case pour déplacer la photo"});getPhoto(x.pid).then(p=>{if(p){im.src=p.thumb;if(p.annot) im.closest(".apqth")?.classList.add("annotee")}});
       im.onclick=()=>apqAnnoter(ph,ph.indexOf(x));
       APQ_SRC.set(x.pid,liste);im.ondragstart=e=>{e.dataTransfer.setData("text/x-apq-photo",x.pid);e.dataTransfer.effectAllowed="move"};
@@ -3309,11 +3311,26 @@ async function apqAnnoter(ph,i,quandFini){if(i<0) return;const src=ph.map(x=>({p
     apres:async j=>{const it=src[j];
       await tx("photos","readwrite",s=>{const r=s.get(it.pid);r.onsuccess=()=>{const p=r.result;if(!p) return;Object.assign(p,{blob:it.blob,orig:it.orig||null,annot:it.annot||null,thumb:it.thumb,type:it.type||"image/jpeg"});s.put(p)}});
       apqSauver(true)}})}
+// v2.48 : un PDF (certificat, preshipment test…) devient une photo par page (pdf.js) ; légende = nom du fichier + page
+const apqEstPdf=f=>f&&(f.type==="application/pdf"||/\.pdf$/i.test(f.name||""));
+const apqFichierOk=f=>f&&(String(f.type).startsWith("image/")||apqEstPdf(f));
+async function apqPdfEnImages(f){const J=await apqPdfJs(),out=[];const tk=J.getDocument({data:new Uint8Array(await f.arrayBuffer())});const doc=await tk.promise;
+  const base=String(f.name||"PDF").replace(/\.pdf$/i,""),n=Math.min(doc.numPages,30);if(doc.numPages>30) toast(`${doc.numPages} pages : seules les 30 premières sont prises.`,6000);
+  try{for(let i=1;i<=n;i++){busyMaj(`${base} : page ${i} / ${n}`,Math.round(i/n*100));
+      const pg=await doc.getPage(i),v1=pg.getViewport({scale:1}),sc=Math.min(2.5,2000/Math.max(v1.width,v1.height)),v=pg.getViewport({scale:sc});
+      const c=document.createElement("canvas");c.width=Math.ceil(v.width);c.height=Math.ceil(v.height);const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);
+      await pg.render({canvasContext:g,canvas:c,viewport:v}).promise;pg.cleanup();
+      const b=await new Promise(r=>c.toBlob(r,"image/jpeg",0.88));
+      out.push({f:new File([b],nomSur(`${base}${n>1?" p"+i:""}`)+".jpg",{type:"image/jpeg",lastModified:f.lastModified||Date.now()}),leg:n>1?`${base} – p. ${i}/${n}`:base})}}
+  finally{try{await tk.destroy()}catch(e){}}
+  return out}
 async function apqAjouterPhotos(files){const c=APQ_CIBLE;APQ_CIBLE=null;if(!c||!files.length) return;busy("Ajout des photos…","",0);
-  try{let k=0;for(const f of files){if(!f.type.startsWith("image/")) continue;k++;busyMaj(`Photo ${k} / ${files.length}`,Math.round(k/files.length*100));
+  try{const items=[];for(const f of files){if(apqEstPdf(f)){busyMaj(`Lecture de ${f.name||"PDF"}…`,0);try{items.push(...await apqPdfEnImages(f))}catch(e){toast(`PDF illisible (${f.name}) : `+(e&&e.message||e),7000)}}
+      else if(String(f.type).startsWith("image/")) items.push({f,leg:""})}
+    let k=0;for(const {f,leg} of items){k++;busyMaj(`Photo ${k} / ${items.length}`,Math.round(k/items.length*100));
       const pid="apq_"+newId(),prise=(await exifDate(f))||localIso(f.lastModified||Date.now());
       const thumb=await makeThumb(f);await tx("photos","readwrite",s=>s.put({id:pid,entry:"apq:"+APQ_M,type:f.type,prise,blob:f,thumb}));
-      c.liste.push({pid,slot:c.slot,leg:""})}
+      c.liste.push({pid,slot:c.slot,leg})}
     await apqSauver(true)}
   catch(e){toast("Photo non ajoutée : "+(e&&e.message||e),6000)}finally{busyFin();renderApq()}}
 // v1.95 : « Refusé » peut être combiné avec « À repasser » (p.repasser)
@@ -3574,8 +3591,8 @@ function initApq(){$("iApq").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.ta
   $("iApqTds").onchange=e=>{ATTENTE_FICHIER=null;const f=e.target.files[0];e.target.value="";if(f) apqTdsAjouter(f);else busyFin()};$("iApqTds").addEventListener("cancel",busyFin);
   $("iApqCam").onchange=e=>{ATTENTE_FICHIER=null;const fs=[...e.target.files];e.target.value="";if(fs.length) apqAjouterPhotos(fs);else busyFin()};$("iApqCam").addEventListener("cancel",busyFin);
   // le bouton 🖼️ suit le réglage « Sélecteur de photos » des constats
-  const pk=v=>{const c={"1":["image/*",true],"2":["image/*",false],"3":["image/jpeg,image/heic,image/heif,image/png",true],"4":["*/*",true]}[v]||["image/*",true];$("iApq").setAttribute("accept",c[0]);$("iApq").multiple=c[1]};
-  kvGet("picker").then(v=>pk(v||"1")).catch(()=>{});$("cPicker").addEventListener("change",e=>pk(e.target.value));$("bApqPh").onclick=apqExporterPhotos;$("bApqPdf").onclick=pdfApq;initApqSauve();
+  const pk=v=>{const c={"1":["image/*",true],"2":["image/*",false],"3":["image/jpeg,image/heic,image/heif,image/png",true],"4":["*/*",true]}[v]||["image/*",true];$("iApq").setAttribute("accept",APQ_MOBILE||c[0]==="*/*"?c[0]:c[0]+",application/pdf,.pdf");$("iApq").multiple=c[1]};
+  kvGet("picker").then(v=>pk(v||"1")).catch(()=>pk("1"));$("cPicker").addEventListener("change",e=>pk(e.target.value));$("bApqPh").onclick=apqExporterPhotos;$("bApqPdf").onclick=pdfApq;initApqSauve();
   document.addEventListener("visibilitychange",()=>{if(document.hidden&&APQ&&APQ_SALE) apqSauver(true)})}
 /* ---------- v1.84 : sauvegarde / restauration du rapport APQ (avec les photos) ----------
    Fichier image « Sauvegarde APQ <N°> - AAAA-MM-JJ HHhMM.jpg » : carte lisible + commentaires JPEG
@@ -3733,7 +3750,14 @@ async function apqPdfLib(){if(window.PDFLib) return window.PDFLib;
   await new Promise((ok,ko)=>{const s=document.createElement("script");s.src="pdf-lib.min.js";s.onload=ok;s.onerror=()=>ko(new Error("module d'assemblage PDF indisponible"));document.head.append(s)});
   return window.PDFLib}
 // v1.91 : PDF protégés (fréquent pour les fiches des fabricants) : pages rendues en images avec pdf.js (chargé seulement si besoin)
-let APQ_PDFJS=null;
+let APQ_PDFJS=null,APQ_COLLE=null;
+document.addEventListener("paste",e=>{const v=$("v-apq");if(!v||v.hidden||!APQ_COLLE) return;
+  const fs=[...(e.clipboardData&&e.clipboardData.files||[])].filter(apqFichierOk);
+  if(!fs.length){for(const it of e.clipboardData&&e.clipboardData.items||[]){if(it.kind==="file"){const f=it.getAsFile();if(apqFichierOk(f)) fs.push(f)}}}
+  if(!fs.length) return;e.preventDefault();
+  const n=new Date(),nm=`Capture ${today()} ${pad(n.getHours())}h${pad(n.getMinutes())}`;
+  const l=fs.map(f=>f.name&&f.name!=="image.png"?f:new File([f],nm+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type,lastModified:Date.now()}));
+  APQ_CIBLE={liste:APQ_COLLE.liste,slot:APQ_COLLE.slot};toast(`Collé dans « ${APQ_COLLE.nom} ».`,3000);apqAjouterPhotos(l)});
 async function apqPdfJs(){if(APQ_PDFJS) return APQ_PDFJS;const m=await import(new URL("pdfjs.min.mjs",location.href).href);
   m.GlobalWorkerOptions.workerSrc=new URL("pdfjs.worker.min.mjs",location.href).href;APQ_PDFJS=m;return m}
 async function apqAnnexes(a,l){const out=[];
