@@ -935,7 +935,7 @@ details.apqs>summary>span:first-child::before{content:"▸ ";color:var(--muted)}
 
 <script>
 "use strict";
-const APP_VERSION="2.50";
+const APP_VERSION="2.51";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1918,6 +1918,8 @@ function initCartes(){lireEtatCartes();
     if(cartes.length>=2){const bar=document.createElement("div");bar.className="cbar";
       bar.innerHTML=`<button type="button" class="ghost">Tout replier</button><button type="button" class="ghost">Tout déplier</button>`;
       const [bR,bD]=bar.querySelectorAll("button");bR.onclick=()=>cartes.forEach(c=>basculerCarte(c,true));bD.onclick=()=>cartes.forEach(c=>basculerCarte(c,false));
+      // v2.51 : préqualification : aperçu du rapport en cours, sans rien émettre
+      if(sec.id==="v-apq"){const bA=document.createElement("button");bA.type="button";bA.textContent="👁 Aperçu PDF";bA.title="Voir le rapport tel qu'il est maintenant (rien n'est émis ni enregistré)";bA.onclick=()=>apqApercu();bar.append(bA)}
       sec.prepend(bar)}});
   // une carte de confirmation (programme, renommage, envoi…) qui apparaît dans une carte fermée l'ouvre
   new MutationObserver(ms=>{for(const m of ms){const t=m.target;if(t.nodeType===1&&!t.hidden&&t.classList.contains("confirm")) ouvrirCarte(t.parentElement)}})
@@ -3950,7 +3952,7 @@ function PdfApqClasse(){return class PdfApq extends PdfRapide{
 // v2.20 : titre du rapport de préqualification = équipements – Préqualification – méthode(s)
 function apqTitreDoc(a,l){const meth=[...new Set((a.sessions||[]).map(s=>(s.methode||"").trim()).filter(Boolean))];
   return [apqEquipTexte(a)||"",pdfL("preq",l),meth.join(", ")].filter(Boolean).join(" – ")}
-async function construireApq(m,doc){const a=await apqCharger(doc.apqK||m.id);doc.apqK=APQ_M;if(!a.sessions.length&&!a.materiaux.length){toast("Rien à mettre dans le rapport : ajoute au moins un matériau ou une session.");return null}
+async function construireApq(m,doc,apercu){const a=await apqCharger(doc.apqK||m.id);doc.apqK=APQ_M;if(!a.sessions.length&&!a.materiaux.length){toast("Rien à mettre dans le rapport : ajoute au moins un matériau ou une session.");return null}
   await apqSauver(true);const l=apqLangue(m);let so=socMission(m);
   if(a.logo==="QUARTIS"||a.logo==="FTA") so=socMission({...m,societe:a.logo});
   const nomI=a.inspecteur||m.inspecteur||"",insp=[nomI,a.apiNo?`API ${a.apiType||"936"} N° ${a.apiNo}`:""].filter(Boolean).join(" – ");
@@ -3958,9 +3960,18 @@ async function construireApq(m,doc){const a=await apqCharger(doc.apqK||m.id);doc
   mk.pied=`${apqL("etabli",l)} : ${[nomI,frDate(today())].filter(Boolean).join(" – ")}`;
   if(a.logo==="perso"&&(a.logoPhotos||[]).length){const ph=await getPhoto(a.logoPhotos[0].pid);if(ph&&ph.blob){try{mk.logoPerso=await jpegPdf(ph.blob,600)}catch(e){}}}
   doc.titre=apqTitreDoc(a,l);doc.l=l;mk.doc=doc;const ann=await apqAnnexes(a,l);await mk.rapport(a,ann);mk.historique();
-  const nom=nomSur(`${doc.ref} Rev${doc.rev} - ${doc.titre}`)+".pdf";
+  const nom=nomSur(`${doc.ref} Rev${doc.rev} - ${doc.titre}`)+".pdf";if(apercu) return {mk,nom,l,so};
   let octets=await mk.octets();if(ann.some(x=>x.pages)){busy("Ajout des annexes…","");await repos();try{octets=await apqFusion(octets,ann)}catch(e){toast("Annexes non ajoutées : "+(e&&e.message||e),8000)}}
   return {mk,octets,nom,l,so,f:new File([octets],nom,{type:"application/pdf"})}}
+// v2.51 : aperçu du rapport en cours (n° et révision qu'aurait le prochain PDF ; fiches techniques non ajoutées) ; « Émettre » enchaîne sur « Créer le PDF »
+async function apqApercu(){if(PDF_EN_COURS) return;const m=curMission()||CFG.mission;let ok=false;PDF_EN_COURS=true;busy("Aperçu du rapport…","");await repos();
+  try{await apqCharger();const ex=await apqDocCourant(APQ_M),l=apqLangue(m);let doc;
+    if(ex){const rev=(ex.doc.rev||0)+1;doc={...ex.doc,rev,date:today(),l,hist:[...(ex.doc.hist||[]),{rev,date:today(),motif:"…"}]}}
+    else doc={ref:await prochaineRef(m,"APQ"),code:"APQ",apqK:APQ_M,rev:0,date:today(),l,hist:[{rev:0,date:today(),motif:pdfL("prem",l)}]};
+    const r=await construireApq(m,doc,true);if(!r) return;busyFin();
+    ok=await apercuPdf(r.mk,r.nom,{titre:"Aperçu – rien n'est émis",ok:ex?"📄 Émettre la révision…":"📄 Émettre ce rapport…",annul:"✕ Fermer"})}
+  catch(err){toast("Aperçu impossible : "+(err&&err.message||err),6000)}finally{busyFin();PDF_EN_COURS=false}
+  if(ok) pdfApq()}
 async function pdfApq(){if(PDF_EN_COURS) return;const m=curMission()||CFG.mission;
   // déjà émis : « Créer le PDF » = révision suivante (motif demandé)
   await apqCharger();const ex=await apqDocCourant(APQ_M);
@@ -4692,6 +4703,11 @@ async function renderPdfs(){let liste=[];try{liste=await tousPdfs()}catch(e){}
    Les listes du projet (équipements, activités, accès, dégâts courants) gardent la langue du projet.
    {a}, {b}… = parties variables (nombres, noms, dates), recopiées telles quelles. */
 const TRAD_UI=[
+["👁 Aperçu PDF","👁 PDF preview","👁 Vista previa PDF","👁 PDF-Vorschau"],
+["Aperçu – rien n'est émis","Preview – nothing is issued","Vista previa – no se emite nada","Vorschau – nichts wird ausgegeben"],
+["📄 Émettre ce rapport…","📄 Issue this report…","📄 Emitir este informe…","📄 Diesen Bericht ausgeben…"],
+["📄 Émettre la révision…","📄 Issue the revision…","📄 Emitir la revisión…","📄 Revision ausgeben…"],
+["✕ Fermer","✕ Close","✕ Cerrar","✕ Schließen"],
 ["Sur PC : glisser des photos ou un PDF ici, ou survoler cette zone et Ctrl+V (capture d'écran).","On PC: drop photos or a PDF here, or hover over this area and press Ctrl+V (screenshot).","En PC: arrastra fotos o un PDF aquí, o pasa el ratón por esta zona y pulsa Ctrl+V (captura).","Am PC: Fotos oder ein PDF hierher ziehen oder über diesen Bereich fahren und Strg+V drücken (Bildschirmfoto)."],
 ["Sur PC : glisser-déposer le fichier ici, ou survoler cette zone et Ctrl+V.","On PC: drop the file here, or hover over this area and press Ctrl+V.","En PC: arrastra el archivo aquí, o pasa el ratón por esta zona y pulsa Ctrl+V.","Am PC: Datei hierher ziehen oder über diesen Bereich fahren und Strg+V drücken."],
 ["Glisser une photo ou un PDF ici, ou Ctrl+V (capture d'écran)","Drop a photo or a PDF here, or Ctrl+V (screenshot)","Arrastra una foto o un PDF aquí, o Ctrl+V (captura de pantalla)","Foto oder PDF hierher ziehen oder Strg+V (Bildschirmfoto)"],
