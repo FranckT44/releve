@@ -991,7 +991,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <script>
 "use strict";
-const APP_VERSION="2.68";
+const APP_VERSION="2.69";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1266,7 +1266,7 @@ async function addFiles(files){const nouv=[];const im=files.filter(f=>f.type.sta
   // v1.57 : la date reste celle du jour ; si les photos sont d'un autre jour, la date de prise de vue est seulement PROPOSÉE
   majPropDate();
   renderThumbs()}
-function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};try{ECH.prec={ech:[],rel:[]};$("echCard").hidden=true}catch(e){}if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";$("fSurf").value="";$("fMarq").checked=false;if($("fAcces").options.length){$("fAcces").value="";majAccesLibre(false)}
+function resetForm(keepContext=true){form={photos:[],gravite:"",editId:null,prevuId:null};try{$("lSubAct").hidden=false}catch(e){}try{ECH.prec={ech:[],rel:[]};$("echCard").hidden=true}catch(e){}if($("prevuBanner")) $("prevuBanner").hidden=true;$("fObs").value="";$("fReco").value="";$("fDec").checked=false;$("fRep").value="";$("fSurf").value="";$("fMarq").checked=false;if($("fAcces").options.length){$("fAcces").value="";majAccesLibre(false)}
   renderPlan([]);majAv([]);renderAtelier(null);$("fDate").value=today();/* v1.57 : chaque nouveau constat repart sur la date du jour */majPropDate();renderThumbs();renderGrav();$("formTitle").textContent="Nouveau constat";$("bSave").textContent="Enregistrer le constat";$("bCancelEdit").hidden=true;majCtxPrec()}
 async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
@@ -2208,7 +2208,8 @@ async function majAv(sel){const c=$("avCard");if(!c) return;const a=curAct();c.h
 const NI_LIB={absent:"validé sans inspection (inspecteur absent)",nuit:"validé sans inspection (poste de nuit)",autre:"validé sans inspection (autre motif)"};
 const SRC_LIB={project:"Scope de base (Project Scope)",extra:"Découvert en inspection (Extraworks)"};
 /* v2.57 : suivi des travaux d'une zone — bandeau (constat de suivi ouvert, plan mis à jour, ou suivi existant pour la zone) */
-function majSuiviBan(ctx){try{majEch()}catch(e){}let b=$("avSuivi");if(!b){b=document.createElement("div");b.id="avSuivi";b.className="avSuivi";$("avSrc").after(b)}b.innerHTML="";b.hidden=true;if(!ctx) return;
+function majSuiviBan(ctx){try{majEch()}catch(e){}try{$("lSubAct").hidden=!!form.suivi;majBarreSaisie()}catch(e){}   // v2.69 : pas de sous-activité dans un suivi (les étapes sont dans « Avancement »)
+  let b=$("avSuivi");if(!b){b=document.createElement("div");b.id="avSuivi";b.className="avSuivi";$("avSrc").after(b)}b.innerHTML="";b.hidden=true;if(!ctx) return;
   if(form.suivi){b.hidden=false;const t=document.createElement("p");t.className="hint";t.textContent="Constat de suivi des travaux de la zone : mets à jour les étapes ; l'historique garde chaque passage.";b.append(t);
     // v2.58 : origine des travaux
     const sr=document.createElement("div");sr.className="avSrcCh";sr.setAttribute("role","radiogroup");const lb=document.createElement("b");lb.textContent="Origine des travaux";sr.append(lb);
