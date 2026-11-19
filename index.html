@@ -417,6 +417,16 @@ main input[list]::placeholder{color:#4f7a5c}
 .echPh img{width:52px;height:52px;object-fit:cover;border-radius:6px}
 .echPh button{padding:4px 10px}
 .echPrec{margin:4px 0}
+/* v2.63 : constats repliables par équipement ; titre de l'équipement collé en haut quand il est déplié */
+.kEqCard>.kHead{position:sticky;top:var(--hdrH,56px);z-index:3;background:var(--surface);cursor:pointer;user-select:none;justify-content:flex-start;align-items:center;padding:6px 0;margin-top:-6px}
+.kHead .stat{margin-left:auto;text-align:right}
+.kChev{display:inline-block;width:1.2em;opacity:.75}
+.kCorps{display:grid;gap:12px}
+.kEqCard.kFerme{gap:0}.kEqCard.kFerme>.kCorps{display:none}
+/* v2.64 : 2e niveau : sous-zone repliable quand elle a plusieurs constats ; titre collé sous celui de l'équipement */
+.cgrp.kSzH{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;position:sticky;top:calc(var(--hdrH,56px) + var(--kHeadH,44px));z-index:2;background:var(--surface);padding-top:6px}
+.kSzH .kSzN{margin-left:auto;font-weight:400;font-size:12px;font-family:var(--mono,monospace)}
+.kSz{display:grid;gap:12px}.kSz.kFerme{display:none}
 </style>
 </head>
 <body>
@@ -642,6 +652,8 @@ main input[list]::placeholder{color:#4f7a5c}
     <label>Activité<select id="kAct"></select></label>
     <p class="stat" id="kInfo"></p>
     <p class="hint">Tous les constats du projet, par équipement et sous-zone, dans l'ordre de la liste. Les constats prévus (pas encore commencés) sont en grisé. L'envoi au PC se fait depuis le Journal.</p>
+    <p class="hint">Touche le nom d'un équipement, ou d'une sous-zone qui a plusieurs constats, pour la déplier ou la replier.</p>
+    <div class="btns"><button type="button" class="ghost" id="kTousFerme">Tout replier</button><button type="button" class="ghost" id="kTousOuvre">Tout déplier</button></div>
   </div>
   <div id="constats"></div>
 </section>
@@ -976,7 +988,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <script>
 "use strict";
-const APP_VERSION="2.61";
+const APP_VERSION="2.64";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3085,6 +3097,7 @@ async function afficherNavette(h){const a=await analyseNavette(h);
   t.push(`Constats prévus : ${a.retires.length} faits ou supprimés sur l'autre appareil (retirés ici), ${a.ajouts.length} ajouté(s).`);
   if(a.m&&a.listes) t.push("Les listes du projet (équipements, activités) seront remplacées par la version plus récente de la navette.");
   const box=$("navTxt");box.innerHTML="";for(const x of t){const d=document.createElement("div");d.textContent=x;box.append(d)}
+  $("bNavOk").textContent=`Importer / Fusionner (${a.nouv} nouveau(x), ${a.maj} MàJ)`;   // v2.62 : libellé plus parlant
   NAV_EN_ATTENTE=h;$("navCard").hidden=false;$("navCard").scrollIntoView({behavior:"smooth",block:"center"})}
 async function appliquerNavette(){const h=NAV_EN_ATTENTE;$("navCard").hidden=true;NAV_EN_ATTENTE=null;if(!h) return;
   const b=$("bNavOk");b.disabled=true;busy("Fusion de la navette…","",0);await repos();
@@ -3309,25 +3322,52 @@ async function renderConstats(){
   if(items.some(x=>!x.eq)) eqs.push({code:"",nom:"Autres",enfants:[]});
   const box=$("constats");box.innerHTML="";
   for(const q of eqs){const li=items.filter(x=>x.eq===q.code);if(!li.length) continue;
-    const c=document.createElement("div");c.className="card";
-    const n=li.length,np=li.filter(x=>x.k==="p").length;
-    c.innerHTML=`<div class="ehead"><h3></h3><span class="stat"></span></div>`;const h3=c.querySelector("h3");h3.textContent=q.nom;if(q.code) h3.dataset.noi18n="";
-    c.querySelector(".stat").textContent=np?`${n} constat(s), dont ${np} prévu(s)`:`${n} constat(s)`;
+    const c=document.createElement("div");c.className="card kEqCard";c.dataset.eq=q.code;
+    const n=li.length,np=li.filter(x=>x.k==="p").length,na=li.filter(x=>x.k==="e"&&!x.e.envoye).length;
+    c.innerHTML=`<div class="ehead kHead" role="button" tabindex="0"><span class="kChev">▾</span><h3></h3><span class="stat"></span></div>`;const h3=c.querySelector("h3");h3.textContent=q.nom;if(q.code) h3.dataset.noi18n="";
+    c.querySelector(".stat").textContent=(np?`${n} constat(s), dont ${np} prévu(s)`:`${n} constat(s)`)+(na?` · ${na} à envoyer`:"");
+    const corps=document.createElement("div");corps.className="kCorps";c.append(corps);
+    {const hd=c.querySelector(".kHead");const go=ev=>{if(ev.type==="keydown"&&ev.key!=="Enter"&&ev.key!==" ") return;ev.preventDefault();const o=c.classList.contains("kFerme");kBasculer(c,o);if(!o) c.scrollIntoView({block:"nearest"})};
+      hd.addEventListener("click",go);hd.addEventListener("keydown",go)}
+    kPoser(c,!!CST.eq||kOuverts().has(q.code)||(!!CST.ouvrir&&li.some(x=>x.k==="e"&&x.e.id===CST.ouvrir)));
     // sous-zones : ordre de la liste, puis « (général) », puis celles qui n'y sont plus
     const cle=x=>{if(x.k==="p") return x.p.sub||"";const nom=x.e.sousEquipement||"";if(!nom) return "";
       const ch=q.enfants.find(z=>z.nom===nom||z.code===slug(nom));return ch?ch.code:"#"+nom};
     const sous=[...q.enfants.map(z=>({code:z.code,nom:z.nom})),{code:"",nom:"(général)"}];
     for(const x of li){const k=cle(x);if(!sous.some(z=>z.code===k)) sous.push({code:k,nom:k.startsWith("#")?k.slice(1):(nomDe(q.enfants,k)||k)})}
-    for(const z of sous){const ls=li.filter(x=>cle(x)===z.code);if(!ls.length) continue;
-      if(q.enfants.length||z.code){const g=document.createElement("div");g.className="cgrp";g.textContent=z.nom;if(z.code) g.dataset.noi18n="";c.append(g)}
-      for(const x of ls.filter(x=>x.k==="e")) c.append(ligneConstat(x.e));
-      for(const x of ls.filter(x=>x.k==="p")) c.append(lignePrevu(x.p))}
+    for(const z of sous){const ls=li.filter(x=>cle(x)===z.code);if(!ls.length) continue;let dest=corps;
+      if(q.enfants.length||z.code){const g=document.createElement("div");g.className="cgrp";
+        if(ls.length>1){   // v2.64 : sous-zone à plusieurs constats : repliable
+          const cz=q.code+"|"+z.code,na2=ls.filter(x=>x.k==="e"&&!x.e.envoye).length;
+          g.classList.add("kSzH");g.setAttribute("role","button");g.tabIndex=0;g.dataset.kz=cz;
+          const ch=document.createElement("span");ch.className="kChev";const nm=document.createElement("span");nm.textContent=z.nom;if(z.code) nm.dataset.noi18n="";
+          const nb=document.createElement("span");nb.className="kSzN";nb.textContent=`${ls.length} constat(s)`+(na2?` · ${na2} à envoyer`:"");g.append(ch,nm,nb);
+          dest=document.createElement("div");dest.className="kSz";dest.dataset.kz=cz;
+          const go=ev=>{if(ev.type==="keydown"&&ev.key!=="Enter"&&ev.key!==" ") return;ev.preventDefault();kSzBasculer(g,dest,dest.classList.contains("kFerme"))};
+          g.addEventListener("click",go);g.addEventListener("keydown",go);
+          kSzPoser(g,dest,kOuverts().has(cz)||(!!CST.ouvrir&&ls.some(x=>x.k==="e"&&x.e.id===CST.ouvrir)));corps.append(g,dest)}
+        else{g.textContent=z.nom;if(z.code) g.dataset.noi18n="";corps.append(g)}}
+      for(const x of ls.filter(x=>x.k==="e")) dest.append(ligneConstat(x.e));
+      for(const x of ls.filter(x=>x.k==="p")) dest.append(lignePrevu(x.p))}
     box.append(c)}
+  kHauteurTete();
   if(!items.length) box.innerHTML=`<div class="card"><p class="hint">${en.length+nP?"Aucun constat ne correspond à ces filtres.":"Aucun constat pour ce projet. Les constats enregistrés depuis l'onglet Saisie et les constats prévus apparaissent ici, par équipement."}</p></div>`;
   if(CST.ouvrir){const el=$("cst_"+CST.ouvrir);CST.ouvrir=null;
     if(el){const b=el.querySelector("button.ouvrir");if(b&&b.getAttribute("aria-expanded")!=="true") b.click();
       el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash");setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),60)}}}
+// v2.63 : équipements dépliés, mémorisés par projet sur cet appareil (par défaut tout est replié)
+function kCle(){return "kOuverts:"+(CFG.mission&&CFG.mission.id||"")}
+function kOuverts(){try{return new Set(JSON.parse(localStorage.getItem(kCle())||"[]"))}catch(e){return new Set()}}
+function kSauver(st){try{localStorage.setItem(kCle(),JSON.stringify([...st]))}catch(e){}}
+function kPoser(c,ouvert){c.classList.toggle("kFerme",!ouvert);c.querySelector(".kChev").textContent=ouvert?"▾":"▸";c.querySelector(".kHead").setAttribute("aria-expanded",String(ouvert))}
+function kBasculer(c,ouvert){kPoser(c,ouvert);const st=kOuverts();if(ouvert) st.add(c.dataset.eq);else st.delete(c.dataset.eq);kSauver(st);kHauteurTete()}
+function kSzPoser(g,d,ouvert){d.classList.toggle("kFerme",!ouvert);g.querySelector(".kChev").textContent=ouvert?"▾":"▸";g.setAttribute("aria-expanded",String(ouvert))}
+function kSzBasculer(g,d,ouvert){kSzPoser(g,d,ouvert);const st=kOuverts();if(ouvert) st.add(d.dataset.kz);else st.delete(d.dataset.kz);kSauver(st);if(!ouvert) g.scrollIntoView({block:"nearest"})}
+function kHauteurTete(){const h=document.querySelector("#constats .kEqCard>.kHead");if(h&&h.offsetHeight) document.documentElement.style.setProperty("--kHeadH",(h.offsetHeight-6)+"px")}
+function kTous(ouvert){const st=kOuverts();document.querySelectorAll("#constats .kEqCard").forEach(c=>{kPoser(c,ouvert);ouvert?st.add(c.dataset.eq):st.delete(c.dataset.eq)});
+  document.querySelectorAll("#constats .kSzH").forEach(g=>{const d=g.nextElementSibling;kSzPoser(g,d,ouvert);ouvert?st.add(d.dataset.kz):st.delete(d.dataset.kz)});kSauver(st);kHauteurTete()}
 function initConstats(){
+  $("kTousFerme").onclick=()=>kTous(false);$("kTousOuvre").onclick=()=>kTous(true);
   $("kEq").onchange=()=>{CST.eq=$("kEq").value;renderConstats()};
   $("kAct").onchange=()=>{CST.act=$("kAct").value;renderConstats()};
   $("kSt").onchange=()=>{CST.st=$("kSt").value;renderConstats()}}
@@ -5148,6 +5188,7 @@ const TRAD_UI=[
 ["Nouvelle préqualification (autre campagne, entreprise ou matériau) : elle aura son propre rapport (numéro APQ suivant). « Reprendre l'en-tête » recopie introduction, périmètre, inspecteur, lieu, spécification, documents et équipements ; matériaux, applicateurs et sessions partent vides.","New prequalification (another campaign, company or material): it gets its own report (next APQ number). “Reuse the header” copies introduction, scope, inspector, location, specification, documents and equipment; materials, applicators and sessions start empty.","Nueva precualificación (otra campaña, empresa o material): tendrá su propio informe (número APQ siguiente). «Reutilizar el encabezado» copia introducción, alcance, inspector, lugar, especificación, documentos y equipos; materiales, aplicadores y sesiones empiezan vacíos.","Neue Präqualifikation (andere Kampagne, Firma oder anderes Material): sie erhält einen eigenen Bericht (nächste APQ-Nummer). „Kopf übernehmen“ kopiert Einleitung, Umfang, Inspektor, Ort, Spezifikation, Dokumente und Ausrüstungen; Materialien, Verarbeiter und Sitzungen beginnen leer."],
 ["Navette reçue","Shuttle file received","Lanzadera recibida","Shuttle-Datei empfangen"],
 ["Fusionner","Merge","Fusionar","Zusammenführen"],
+["Importer / Fusionner ({a} nouveau(x), {b} MàJ)","Import / Merge ({a} new, {b} updated)","Importar / Fusionar ({a} nueva(s), {b} actualizada(s))","Importieren / Zusammenführen ({a} neu, {b} aktualisiert)"],
 ["🔄 Créer la navette","🔄 Create the shuttle file","🔄 Crear la lanzadera","🔄 Shuttle-Datei erstellen"],
 ["Préparation de la navette…","Preparing the shuttle file…","Preparando la lanzadera…","Shuttle-Datei wird vorbereitet…"],
 ["Navette complète (sinon : seulement ce qui est nouveau ou modifié depuis la dernière navette)","Full shuttle file (otherwise: only what is new or changed since the last one)","Lanzadera completa (si no: solo lo nuevo o modificado desde la última)","Vollständige Shuttle-Datei (sonst: nur Neues oder Geändertes seit der letzten)"],
@@ -5796,6 +5837,8 @@ const TRAD_UI=[
 ["Déjà relevées pour cette zone :","Already recorded for this area:","Ya registradas en esta zona:","Bereits erfasst für diesen Bereich:"],
 ["Échantillons de production","Production samples","Muestras de producción","Produktionsproben"],["Feuilles de relevé","Record sheets","Hojas de registro","Einbauprotokolle"],
 ["Rien à copier : ajoute d'abord un élément.","Nothing to copy: add an item first.","Nada que copiar: añade primero un elemento.","Nichts zu kopieren: zuerst ein Element hinzufügen."],
+["Touche le nom d'un équipement, ou d'une sous-zone qui a plusieurs constats, pour la déplier ou la replier.","Tap an equipment name, or a sub-area with several findings, to expand or collapse it.","Toca el nombre de un equipo, o de una subzona con varios hallazgos, para desplegarlo o plegarlo.","Auf den Namen einer Ausrüstung oder eines Unterbereichs mit mehreren Befunden tippen, um ihn auf- oder zuzuklappen."],
+["{a} à envoyer","{a} to send","{a} por enviar","{a} zu senden"],
 ["Mettre à jour ce suivi plutôt","Update this follow-up instead","Actualizar este seguimiento","Stattdessen diese Verfolgung aktualisieren"],
 ["+ Ajouter une étape hors plan…","+ Add a step outside the plan…","+ Añadir un paso fuera del plan…","+ Schritt außerhalb des Plans hinzufügen…"],
 ["(hors plan)","(outside the plan)","(fuera del plan)","(außerhalb des Plans)"],
