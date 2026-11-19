@@ -952,7 +952,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <script>
 "use strict";
-const APP_VERSION="2.58";
+const APP_VERSION="2.59";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -4723,7 +4723,7 @@ class PdfRapide{
         this.y+=rowH}}}
   // en-têtes et pieds de page (une seule fois : servent à l'aperçu puis au fichier)
   async miseEnPage(){if(this.mep) return;this.mep=true;const l=this.l,M=this.M,W=this.W,N=this.pages.length,logo=this.logoPerso||await logoPdf(this.soc);if(logo) this.ajouterImage(logo);
-    const nomSoc=this.soc==="FTA"?(this.m.inspecteur||"Franck TALLEUX"):"QUARTIS LIMITED",actSoc=this.soc==="FTA"?(this.m.activiteSociete||"API 936 Consultancy"):"REFRACTORY INSPECTION";
+    const nomSoc=this.soc==="FTA"?(String(this.m.inspecteur||"Franck TALLEUX").replace(/\s*[–—-]\s*API\b.*$/i,"").trim()||"Franck TALLEUX"):"QUARTIS LIMITED",actSoc=this.soc==="FTA"?(this.m.activiteSociete||"API 936 Consultancy"):"REFRACTORY INSPECTION";
     const quand=new Date(),gen=pdfL("gen",l).replace("{a}",`${frDate(today())} ${pad(quand.getHours())}:${pad(quand.getMinutes())}`);
     this.pages.forEach((pg,i)=>{const ops=pg.ops,dd=pg.d;pg.ops=[];pg.d=[];this.page=pg;
       // en-tête : logo, société, titre ; pied : inspecteur, date, page
@@ -4734,10 +4734,12 @@ class PdfRapide{
         const larg=Math.max(140,W-M-x-24),mots=pdfL("notif",l).split(" "),li=[];let c="";
         for(const w of mots){const t=c?c+" "+w:w;if(pdfLargeur(t,"I",8)>larg&&c){li.push(c);c=w}else c=t}if(c) li.push(c);
         li.slice(0,3).forEach((t,k)=>this.txt(W-M-pdfLargeur(t,"I",8),M+26+k*9.5,t,"I",8,"0.70 0.15 0.12"))}
-      else if(G){this.txt(x,M+26,nomSoc,"B",13);this.txt(x,M+42,actSoc,"R",9.5,"0.40 0.40 0.40")}else{this.txt(x,M+15,nomSoc,"B",11);this.txt(x,M+29,actSoc,"R",8.5,"0.40 0.40 0.40")}
+      else if(G){this.txt(x,M+26,nomSoc,"B",13);this.txt(x,M+42,actSoc,"R",9.5,"0.40 0.40 0.40")}else{const tR=this.titre1||pdfL(this.prog?"titreAv":"titre",l),dispo=W-M-pdfLargeur(tR,"B",10)-16-x,fN=Math.max(7.5,Math.min(11,11*dispo/pdfLargeur(nomSoc,"B",11)));this.txt(x,M+15,nomSoc,"B",fN);this.txt(x,M+29,actSoc,"R",8.5,"0.40 0.40 0.40")}
       const t1=this.titre1||pdfL(this.prog?"titreAv":"titre",l);
-      if(rap){}else if(G){const fin=x+Math.max(pdfLargeur(nomSoc,"B",13),pdfLargeur(actSoc,"R",9.5))+18,fs=Math.max(10,Math.min(16,10*(W-M-fin)/pdfLargeur(t1,"B",10)));
-        this.txt(W-M-pdfLargeur(t1,"B",fs),M+30,t1,"B",fs,"0.42 0.16 0.08")}
+      if(rap){}else if(G){const fin=x+Math.max(pdfLargeur(nomSoc,"B",13),pdfLargeur(actSoc,"R",9.5))+18,fs=Math.min(16,10*(W-M-fin)/pdfLargeur(t1,"B",10));
+        // v2.59 : nom de société / inspecteur long -> le titre ne tient plus à droite : il passe sous l'en-tête (au lieu de le chevaucher)
+        if(fs>=10) this.txt(W-M-pdfLargeur(t1,"B",fs),M+30,t1,"B",fs,"0.42 0.16 0.08");
+        else{const f2=Math.min(12,10*(W-2*M)/pdfLargeur(t1,"B",10));this.txt(W-M-pdfLargeur(t1,"B",f2),M+64,t1,"B",f2,"0.42 0.16 0.08")}}
       else this.txt(W-M-pdfLargeur(t1,"B",10),M+13,t1,"B",10,"0.42 0.16 0.08");
       if(!rap&&!this.sansMission){const t2=`${pdfL("mission",l)} ${this.m.no||""}`;this.txt(W-M-pdfLargeur(t2,"R",8.5),M+26,t2,"R",8.5,"0.40 0.40 0.40")}
       if(!rap&&this.soc!=="FTA"){const t3=pdfL("prelim",l);this.txt(W-M-pdfLargeur(t3,"I",8),G?M+46:(this.sansMission?M+28:M+38),t3,"I",8,"0.70 0.15 0.12")}
