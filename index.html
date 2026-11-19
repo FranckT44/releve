@@ -433,6 +433,12 @@ main input[list]::placeholder{color:#4f7a5c}
 /* v2.70 : brouillon : constat identifié */
 .brQuoi{display:grid;gap:3px;margin:2px 0 0;padding:8px 10px;border-left:3px solid currentColor;background:rgba(127,127,127,.10);border-radius:6px}
 .brQuoi .brZone{font-weight:650}.brQuoi .fic{font-family:var(--mono,monospace);font-size:.85em;opacity:.8}
+/* v2.71 : accueil regroupé ; écran Suivi des travaux */
+.acc-grp{grid-column:1/-1;margin:8px 2px -4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.suItem{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:6px;margin:8px 0;background:var(--surface)}
+.suTete{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.suTete b{font-size:15px}.suPct{margin-left:auto;font-weight:700;font-family:var(--mono,monospace)}
+.suItem .avBar{max-width:none}.suItem .btns{margin:0}.suItem .btns button{padding:6px 12px;min-height:0}
+.suAl{color:#b3261e;font-weight:600}.suGrp{margin:14px 0 2px;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -452,15 +458,19 @@ main input[list]::placeholder{color:#4f7a5c}
   <div class="card c-bleu acc-tete"><h2>Projet actif</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div><div class="acc-alerte" id="accAlerte" hidden></div></div>
   <div class="card confirm brCard" id="brCardA" hidden><strong class="brTxt"></strong><div class="brQuoi"></div><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
   <div class="acc-grille">
+    <h3 class="acc-grp">Sur le terrain</h3>
     <button type="button" class="acc c-ambre" data-go="saisie"><span class="acc-ic">📷</span><b>Nouveau constat</b><span class="hint">Photos, constat, observation</span></button>
-    <button type="button" class="acc c-violet" data-go="prep"><span class="acc-ic">🎤</span><b>Préparer</b><span class="hint">Dicter les contrôles prévus</span></button>
-    <button type="button" class="acc c-jaune" data-go="prevus"><span class="acc-ic">📋</span><b>Constats prévus</b><span class="hint" id="accPrevus">Aucun</span></button>
+    <button type="button" class="acc c-vert" data-go="suivi" id="accSuiviB"><span class="acc-ic">🔧</span><b>Suivi des travaux</b><span class="hint" id="accSuivi">Aucune zone</span></button>
+    <button type="button" class="acc c-jaune" data-go="constats"><span class="acc-ic">📋</span><b>Constats</b><span class="hint" id="accCst">Aucun</span></button>
+    <button type="button" class="acc c-violet" data-go="prep"><span class="acc-ic">🎤</span><b>Préparer</b><span class="hint" id="accPrevus">Dicter les contrôles prévus</span></button>
+    <h3 class="acc-grp">Rapports et envoi</h3>
     <button type="button" class="acc c-bleu" data-go="journal"><span class="acc-ic">📤</span><b>Journal / Envoi</b><span class="hint" id="accJournal">Rien à envoyer</span></button>
-    <button type="button" class="acc c-violet" data-go="galerie"><span class="acc-ic">🖼️</span><b>Galerie</b><span class="hint">Légendes, ordre, annotations</span></button>
     <button type="button" class="acc c-ambre" data-go="pdfs"><span class="acc-ic">📄</span><b>Documents émis</b><span class="hint" id="accPdfs">Aucun</span></button>
+    <button type="button" class="acc c-violet" data-go="galerie"><span class="acc-ic">🖼️</span><b>Galerie</b><span class="hint">Légendes, ordre, annotations</span></button>
+    <h3 class="acc-grp">Ponctuel</h3>
     <button type="button" class="acc c-jaune" data-go="apq"><span class="acc-ic">🧪</span><b>Préqualification</b><span class="hint">Applicateurs, panneaux, verdicts</span></button>
     <button type="button" class="acc c-vert" data-go="reglages"><span class="acc-ic">📁</span><b>Projets</b><span class="hint">Listes, partage, réglages</span></button>
-    <button type="button" class="acc c-bleu" data-go="trad" id="accTrad" hidden><span class="acc-ic">🌐</span><b>Traduction</b><span class="hint">Observations du CSV (PC)</span></button>
+    <button type="button" class="acc c-bleu" data-go="trad" id="accTrad" hidden><span class="acc-ic">🌐</span><b>Traduction</b><span class="hint">Traduire les observations (PC)</span></button>
   </div>
 </section>
 
@@ -651,6 +661,13 @@ main input[list]::placeholder{color:#4f7a5c}
 </section>
 
 <!-- ============ CONSTATS (v1.70 : visualisation) ============ -->
+<section id="v-suivi" hidden>
+  <div class="card c-vert" id="suiviCard">
+    <h2>Suivi des travaux</h2>
+    <p class="hint">Zones en réparation du projet : avancement, points d'arrêt, échantillons. Un clic pour mettre à jour.</p>
+    <div id="suiviListe"></div>
+  </div>
+</section>
 <section id="v-constats" hidden>
   <div class="card c-vert">
     <h2>Constats du projet</h2>
@@ -908,7 +925,6 @@ main input[list]::placeholder{color:#4f7a5c}
   <button type="button" data-v="constats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11M3.5 18l1.5 1.5L7.5 17"/></svg>Constats</button>
   <button type="button" data-v="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Journal<span class="badge" id="nbPending" hidden></span></span></button>
   <button type="button" data-v="galerie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><circle cx="9" cy="10" r="2"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>Galerie</button>
-  <button type="button" data-v="trad" id="navTrad" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 6 8M11 5c-1 4-4 7-7 8"/><path d="M13 21l4-9 4 9M14.5 18h5"/></svg>Traduction</button>
   <button type="button" data-v="reglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h6l2 2"/></svg><span>Projets<span class="badge" id="mWarn" hidden>!</span></span></button>
 </nav>
 <div id="pretCard" class="card confirm" hidden><strong id="pretTxt"></strong><p class="hint" id="pretPq"></p>
@@ -994,7 +1010,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <script>
 "use strict";
-const APP_VERSION="2.70";
+const APP_VERSION="2.71";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3282,7 +3298,7 @@ async function enregistrerCsv(){const txt=csvEcrire(T.head,T.rows);
     catch(e){toast("Écriture impossible ("+e.message+"). Le fichier est-il ouvert dans Excel ?",7000);return}}
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv"}));a.download=T.nom||"Observations_releve.csv";a.click();
   T.modif=false;rendreTrad();toast("Fichier enregistré dans Téléchargements : remplace l'ancien dans le dossier du projet.",6000)}
-async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) return;$("navTrad").hidden=false;
+async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) return;TRAD_DISPO=true;
   try{const l=await kvGet("tLang");if(l) T.lang=l;const sl=await kvGet("tSrc");if(sl) T.src=sl}catch(e){}$("tLang").value=T.lang;$("tSrc").value=T.src;
   const majGloss=async()=>{$("tGloss").value=await glossaire(T.src,T.lang);$("tGlossHint").textContent=`Sens ${T.src.toUpperCase()} → ${T.lang.toUpperCase()}. Une ligne par terme : « terme d'origine = traduction ». Ces termes sont remplacés avant la traduction automatique, pour garder le vocabulaire du métier.`};
   await majGloss();
@@ -3294,9 +3310,9 @@ async function initTrad(){if(!("Translator" in self)||/Android|iPhone|iPad|Mobil
   $("bTAll").onclick=()=>traduireLignes(T.rows.map((_,i)=>i),false);$("bTSave").onclick=enregistrerCsv;
   window.addEventListener("beforeunload",e=>{if(T.modif){e.preventDefault();e.returnValue=""}})}
 /* ---------- navigation ---------- */
-function showView(v){if(v!=="journal") PREP=null;if(v!=="galerie"&&GAL.sel) galQuitterSel(false);for(const s of ["accueil","saisie","constats","journal","galerie","reglages","trad","pdfs","apq"]) $("v-"+s).hidden=s!==v;$("saisieBar").hidden=v!=="saisie";if(v==="saisie") majBarreSaisie();
+function showView(v){if(v!=="journal") PREP=null;if(v!=="galerie"&&GAL.sel) galQuitterSel(false);for(const s of ["accueil","saisie","constats","suivi","journal","galerie","reglages","trad","pdfs","apq"]) $("v-"+s).hidden=s!==v;$("saisieBar").hidden=v!=="saisie";if(v==="saisie") majBarreSaisie();
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v?"page":"false"));
-  if(v==="journal") renderJournal();if(v==="constats") renderConstats();if(v==="apq") renderApq();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();if(v==="pdfs") renderPdfs();window.scrollTo(0,0)}
+  if(v==="journal") renderJournal();if(v==="constats") renderConstats();if(v==="suivi") renderSuivi();if(v==="apq") renderApq();if(v==="galerie") chargerGalerie().then(renderGalerie);if(v==="reglages") renderCfg();if(v==="accueil") renderAccueil();if(v==="pdfs") renderPdfs();window.scrollTo(0,0)}
 
 /* ---------- v1.70 : onglet Constats (visualisation par équipement / sous-zone ; l'envoi reste dans le Journal) ---------- */
 const CST={eq:"",act:"",st:"",ouvrir:null};
@@ -4446,12 +4462,55 @@ async function pdfApq(){if(PDF_EN_COURS) return;const m=curMission()||CFG.missio
   catch(err){toast("PDF impossible : "+(err&&err.message||err),6000)}finally{busyFin();PDF_EN_COURS=false}}
 
 
+/* ---------- v2.71 : écran « Suivi des travaux » : zones en cours, à démarrer, terminées ---------- */
+let TRAD_DISPO=false;
+async function etatSuivis(){const en=(await allEntries()).filter(belongs);const cle=e=>e.equipement.code+"|"+e.sousEquipement;
+  const suivis=new Map();for(const e of en.filter(x=>x.suivi).sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms))) suivis.set(cle(e),e);
+  const cours=[],finies=[],demarrer=[];
+  for(const e of suivis.values()){const plan=en.find(x=>x.id===(e.suivi.plan||e.suivi.origine));const av=e.avancement||[];
+    const etapes=[...((plan&&plan.planReparation)||[]).map(x=>({...x,...(av.find(y=>y.code===x.code&&y.nom===x.nom)||{}),arret:x.arret||false})),...av.filter(y=>!((plan&&plan.planReparation)||[]).some(x=>x.code===y.code&&x.nom===y.nom))];
+    const pcts=etapes.map(x=>Math.max(0,Math.min(100,pctAv(x)||0)));const pct=pcts.length?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
+    const hp=etapes.filter(x=>x.arret&&!x.libere).length,faites=pcts.filter(x=>x>=100).length;
+    const hist=e.suivi.historique||[];const echJ=new Set(hist.flatMap(h=>(h.ech||[]).map(x=>x.date||h.date)));
+    const manque=[...new Set(hist.filter(h=>(h.etapes||[]).some(x=>estGarnissage(x.nom)&&(x.libere||(pctAv(x)||0)>0))).map(h=>h.date))].filter(d=>!echJ.has(d));
+    const nEch=hist.reduce((a,h)=>a+(h.ech||[]).length,0),nRel=hist.reduce((a,h)=>a+(h.rel||[]).length,0);
+    const o={e,pct,hp,faites,n:etapes.length,manque,nEch,nRel,der:hist.length?hist[hist.length-1].date:e.date};
+    (pcts.length&&faites===pcts.length&&!hp?finies:cours).push(o)}
+  for(const e of en.filter(x=>estInitiale(x.activite)&&x.planReparation&&x.planReparation.length&&!x.suivi)) if(!suivis.has(cle(e))&&!demarrer.some(o=>cle(o.e)===cle(e))) demarrer.push({e});
+  const ordre=o=>{const q=EQ.findIndex(x=>x.code===o.e.equipement.code);return (q<0?999:q)};
+  for(const l of [cours,finies,demarrer]) l.sort((a,b)=>ordre(a)-ordre(b)||String(a.e.sousEquipement).localeCompare(String(b.e.sousEquipement)));
+  return {cours,finies,demarrer}}
+async function majAccSuivi(){try{const at=estAtelier();$("accSuiviB").hidden=at;if(at) return;const s=await etatSuivis();const w=s.cours.filter(o=>o.manque.length).length;
+  $("accSuivi").textContent=s.cours.length||s.demarrer.length||s.finies.length?[s.cours.length?`${s.cours.length} en cours`:"",s.demarrer.length?`${s.demarrer.length} à démarrer`:"",!s.cours.length&&s.finies.length?`${s.finies.length} terminée(s)`:"",w?`${w} ⚠ échantillon`:""].filter(Boolean).join(" · "):"Aucune zone"}catch(e){}}
+async function renderSuivi(){const box=$("suiviListe");if(!box) return;box.innerHTML="";const s=await etatSuivis();
+  const grp=(t,n)=>{const h=document.createElement("p");h.className="suGrp";h.textContent=t;const c=document.createElement("span");c.dataset.noi18n="";c.textContent=` (${n})`;h.append(c);box.append(h)};
+  const bt=(par,txt,fn,cl)=>{const b=document.createElement("button");b.type="button";b.textContent=txt;if(cl) b.className=cl;b.onclick=fn;par.append(b)};
+  const tete=(o,droite)=>{const t=document.createElement("div");t.className="suTete";const b=document.createElement("b");b.dataset.noi18n="";b.textContent=`${o.e.equipement.nom} › ${o.e.sousEquipement||"(général)"}`;t.append(b);
+    if(o.e.suivi&&o.e.suivi.source){const ps=document.createElement("span");ps.className="pill";ps.style.background=o.e.suivi.source==="project"?"#3a5f9a":"#8a5a14";ps.textContent=o.e.suivi.source==="project"?"Scope de base":"Extraworks";t.append(ps)}
+    if(droite!=null){const p=document.createElement("span");p.className="suPct";p.textContent=droite;t.append(p)}return t};
+  const item=o=>{const d=document.createElement("div");d.className="suItem";d.append(tete(o,o.pct+" %"));
+    const bar=document.createElement("div");bar.className="avBar";const i=document.createElement("i");i.style.width=o.pct+"%";bar.append(i);d.append(bar);
+    const inf=document.createElement("div");inf.className="hint";inf.textContent=[`dernier passage ${frDate(o.der)}`,`${o.faites}/${o.n} étape(s) terminée(s)`,o.hp?`⛔ ${o.hp} point(s) d'arrêt à libérer`:"",o.nEch?`${o.nEch} échantillon(s)`:"",o.nRel?`${o.nRel} feuille(s) de relevé`:"",o.e.envoye?"envoyé au PC":"à envoyer"].filter(Boolean).join(" · ");d.append(inf);
+    if(o.manque.length){const a=document.createElement("div");a.className="suAl";a.textContent=`⚠ Garnissage sans échantillon : ${o.manque.map(x=>frDate(x).slice(0,5)).join(", ")}`;d.append(a)}
+    const b=document.createElement("div");b.className="btns";bt(b,"🔧 Mettre à jour",()=>ouvrirSuivi(o.e.id),"primary");
+    if(!o.e.envoye&&(o.e.suivi.historique||[]).length) bt(b,"✏️ Corriger le dernier passage",()=>modifierPassage(o.e.id));
+    bt(b,"Voir",()=>voirConstat(o.e.id),"ghost");d.append(b);return d};
+  if(s.cours.length){grp("En cours",s.cours.length);s.cours.forEach(o=>box.append(item(o)))}
+  if(s.demarrer.length){grp("À démarrer (plan de réparation sans suivi)",s.demarrer.length);
+    for(const o of s.demarrer){const d=document.createElement("div");d.className="suItem";d.append(tete(o,null));const inf=document.createElement("div");inf.className="hint";
+      inf.textContent=`inspection du ${frDate(o.e.date)} · ${o.e.planReparation.length} étape(s) au plan`+(o.e.planReparation.some(x=>x.arret)?" · ⛔ point(s) d'arrêt":"");d.append(inf);
+      const b=document.createElement("div");b.className="btns";bt(b,"🔧 Démarrer le suivi",()=>demarrerSuivi(o.e),"primary");bt(b,"Voir",()=>voirConstat(o.e.id),"ghost");d.append(b);box.append(d)}}
+  if(s.finies.length){const det=document.createElement("details");const su=document.createElement("summary");su.className="suGrp";su.textContent=`Terminées (${s.finies.length})`;det.append(su);s.finies.forEach(o=>det.append(item(o)));box.append(det)}
+  if(!s.cours.length&&!s.demarrer.length&&!s.finies.length) box.innerHTML='<p class="hint">Aucune zone à suivre : le suivi démarre depuis une inspection initiale qui a un plan de réparation.</p>'}
 /* ---------- accueil ---------- */
 async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`${m.no} · ${m.client||""}`;
   $("accInfo").textContent=[m.inspecteur,libelleSociete(m)].filter(Boolean).join(" · ");$("accVer").textContent="version "+APP_VERSION;
-  const np=PREVUS.filter(p=>p.mission===m.id).length;const vs=visites();$("accPrevus").textContent=np?[`${np} à faire`,...vs.map(texteVisite)].join(" · "):"Aucun";
+  const np=PREVUS.filter(p=>p.mission===m.id).length;const vs=visites();$("accPrevus").textContent=np?[`${np} constat(s) prévu(s) à faire`,...vs.map(texteVisite)].join(" · "):"Dicter les contrôles prévus";
   const en=(await allEntries()).filter(belongs);const n=en.filter(e=>!e.envoye).length;
-  $("accJournal").textContent=n?`${n} constat${n>1?"s":""} à envoyer`:(en.length?`${en.length} constat${en.length>1?"s":""}, tout est envoyé`:"Aucun constat");
+  $("accCst").textContent=en.length||np?[`${en.length} constat(s)`,np?`${np} prévu(s)`:""].filter(Boolean).join(" · "):"Aucun";
+  {const env=en.map(e=>e.envoyeLe).filter(Boolean).sort().pop();let quand="";if(env){const d=new Date(env),auj=new Date();const hier=new Date(Date.now()-86400000);
+     quand=`dernier envoi ${d.toDateString()===auj.toDateString()?"aujourd'hui":d.toDateString()===hier.toDateString()?"hier":"le "+frDate(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`).slice(0,5)} ${pad(d.getHours())} h ${pad(d.getMinutes())}`}
+   $("accJournal").textContent=[n?`${n} constat${n>1?"s":""} à envoyer`:(en.length?`${en.length} constat${en.length>1?"s":""}, tout est envoyé`:"Aucun constat"),quand].filter(Boolean).join(" · ")}
   // constats qui n'existent que sur ce téléphone depuis plus de 4 h (ou depuis la veille)
   const att=en.filter(e=>!e.envoye).map(e=>new Date(e.modifieLe||e.creeLe||e.date)).filter(d=>!isNaN(d)).sort((a,b)=>a-b),al=$("accAlerte");
   const vieux=att[0],seuil=vieux&&(Date.now()-vieux>4*3600000||vieux.toDateString()!==new Date().toDateString());
@@ -4460,8 +4519,8 @@ async function renderAccueil(){const m=CFG.mission;$("accMission").textContent=`
     al.textContent=`⚠ ${n} constat${n>1?"s":""} non envoyé${n>1?"s":""} au PC (le plus ancien : ${quand} à ${pad(vieux.getHours())}:${pad(vieux.getMinutes())}). Tant qu'il${n>1?"s ne sont pas envoyés, ils n'existent":" n'est pas envoyé, il n'existe"} que sur ce téléphone.`;
     al.onclick=()=>showView("journal");al.style.cursor="pointer"}
   afficherBrouillon();
-  try{const lp=(await tousPdfs()).filter(p=>p.mission&&p.mission.id===m.id);const np=new Set(lp.map(p=>p.doc&&p.doc.ref||p.id)).size;$("accPdfs").textContent=np?`${np} document(s)`:"Aucun"}catch(e){}
-  $("accTrad").hidden=$("navTrad").hidden}
+  try{const lp=(await tousPdfs()).filter(p=>p.mission&&p.mission.id===m.id);const np=new Set(lp.map(p=>p.doc&&p.doc.ref||p.id)).size;const na=lp.filter(p=>p.doc&&p.doc.ref&&!p.doc.envoyePC&&p.doc.statut!=="revisee").length;$("accPdfs").textContent=np?[`${np} document(s)`,na?`${na} à envoyer`:""].filter(Boolean).join(" · "):"Aucun"}catch(e){}
+  $("accTrad").hidden=!TRAD_DISPO;majAccSuivi()}
 function initAccueil(){$("pdfToutes").onchange=renderPdfs;document.querySelectorAll("#v-accueil .acc").forEach(b=>b.onclick=()=>{const g=b.dataset.go;
   if(g==="prep"){showView("saisie");prepOuvrir(true);$("prepCard").scrollIntoView({block:"start"});return}
   if(g==="prevus"){showView("saisie");if(!$("prevusCard").hidden){ouvrirCarte($("prevusCard"));$("prevusCard").scrollIntoView({block:"start"})}return}
@@ -5899,6 +5958,20 @@ const TRAD_UI=[
 ["✏️ Modification d'un constat","✏️ Finding being edited","✏️ Modificación de un hallazgo","✏️ Änderung eines Befunds"],["➕ Nouveau constat","➕ New finding","➕ Nuevo hallazgo","➕ Neuer Befund"],
 ["date {a}","date {a}","fecha {a}","Datum {a}"],["{a} étape(s) cochée(s)","{a} step(s) ticked","{a} paso(s) marcado(s)","{a} Schritt(e) angehakt"],
 ["{a} échantillon(s)","{a} sample(s)","{a} muestra(s)","{a} Probe(n)"],["{a} feuille(s) de relevé","{a} record sheet(s)","{a} hoja(s) de registro","{a} Einbauprotokoll(e)"],
+["Sur le terrain","In the field","En campo","Vor Ort"],["Rapports et envoi","Reports and sending","Informes y envío","Berichte und Versand"],["Ponctuel","Occasional","Puntual","Gelegentlich"],
+["Suivi des travaux","Works follow-up","Seguimiento de obras","Arbeitsverfolgung"],["Constats","Findings","Hallazgos","Befunde"],["Aucune zone","No area","Ninguna zona","Kein Bereich"],
+["Traduire les observations (PC)","Translate observations (PC)","Traducir observaciones (PC)","Beobachtungen übersetzen (PC)"],
+["Zones en réparation du projet : avancement, points d'arrêt, échantillons. Un clic pour mettre à jour.","Project areas under repair: progress, hold points, samples. One click to update.","Zonas en reparación: avance, puntos de parada, muestras. Un clic para actualizar.","Bereiche in Reparatur: Fortschritt, Haltepunkte, Proben. Ein Klick zum Aktualisieren."],
+["En cours","In progress","En curso","Laufend"],["À démarrer (plan de réparation sans suivi)","To start (repair plan without follow-up)","Por iniciar (plan sin seguimiento)","Zu starten (Reparaturplan ohne Verfolgung)"],["Terminées ({a})","Completed ({a})","Terminadas ({a})","Abgeschlossen ({a})"],
+["🔧 Mettre à jour","🔧 Update","🔧 Actualizar","🔧 Aktualisieren"],["✏️ Corriger le dernier passage","✏️ Correct the last visit","✏️ Corregir la última visita","✏️ Letzten Durchgang korrigieren"],["Voir","View","Ver","Ansehen"],["🔧 Démarrer le suivi","🔧 Start follow-up","🔧 Iniciar seguimiento","🔧 Verfolgung starten"],
+["{a} en cours","{a} in progress","{a} en curso","{a} laufend"],["{a} à démarrer","{a} to start","{a} por iniciar","{a} zu starten"],["{a} terminée(s)","{a} completed","{a} terminada(s)","{a} abgeschlossen"],["{a} ⚠ échantillon","{a} ⚠ sample","{a} ⚠ muestra","{a} ⚠ Probe"],
+["dernier passage {a}","last visit {a}","última visita {a}","letzter Durchgang {a}"],["{a}/{b} étape(s) terminée(s)","{a}/{b} step(s) completed","{a}/{b} paso(s) terminado(s)","{a}/{b} Schritt(e) abgeschlossen"],
+["⛔ {a} point(s) d'arrêt à libérer","⛔ {a} hold point(s) to release","⛔ {a} punto(s) de parada por liberar","⛔ {a} Haltepunkt(e) freizugeben"],["envoyé au PC","sent to PC","enviado al PC","an PC gesendet"],
+["⚠ Garnissage sans échantillon : {a}","⚠ Lining without sample: {a}","⚠ Revestimiento sin muestra: {a}","⚠ Auskleidung ohne Probe: {a}"],
+["inspection du {a}","inspection of {a}","inspección del {a}","Inspektion vom {a}"],["{a} étape(s) au plan","{a} step(s) in the plan","{a} paso(s) en el plan","{a} Schritt(e) im Plan"],["⛔ point(s) d'arrêt","⛔ hold point(s)","⛔ punto(s) de parada","⛔ Haltepunkt(e)"],
+["Aucune zone à suivre : le suivi démarre depuis une inspection initiale qui a un plan de réparation.","No area to follow: follow-up starts from an initial inspection with a repair plan.","Ninguna zona: el seguimiento empieza desde una inspección inicial con plan de reparación.","Kein Bereich: Die Verfolgung startet von einer Erstinspektion mit Reparaturplan."],
+["{a} constat(s) prévu(s) à faire","{a} planned finding(s) to do","{a} hallazgo(s) previsto(s)","{a} geplante(r) Befund(e)"],["{a} constat(s)","{a} finding(s)","{a} hallazgo(s)","{a} Befund(e)"],["{a} prévu(s)","{a} planned","{a} previsto(s)","{a} geplant"],
+["dernier envoi {a}","last sent {a}","último envío {a}","zuletzt gesendet {a}"],["{a} document(s)","{a} document(s)","{a} documento(s)","{a} Dokument(e)"],
 ["Mettre à jour ce suivi plutôt","Update this follow-up instead","Actualizar este seguimiento","Stattdessen diese Verfolgung aktualisieren"],
 ["+ Ajouter une étape hors plan…","+ Add a step outside the plan…","+ Añadir un paso fuera del plan…","+ Schritt außerhalb des Plans hinzufügen…"],
 ["(hors plan)","(outside the plan)","(fuera del plan)","(außerhalb des Plans)"],
