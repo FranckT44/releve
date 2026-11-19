@@ -991,7 +991,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <script>
 "use strict";
-const APP_VERSION="2.67";
+const APP_VERSION="2.68";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1307,11 +1307,18 @@ async function saveEntry(){
     const phDe=(t,id)=>form.photos.map((p,i)=>p[t]===id?names[i]:null).filter(Boolean).join(";");
     const echOut=echListe("ech").map(x=>({id:x.id,ref:(x.ref||"").trim(),date:x.date||date,poste:x.poste||"",mat:(x.mat||"").trim(),photo:phDe("ech",x.id)}));
     const relOut=echListe("rel").map(x=>({id:x.id,ref:(x.ref||"").trim(),date:x.date||date,poste:x.poste||"",equipe:(x.equipe||"").trim(),mat:(x.mat||"").trim(),lot:(x.lot||"").trim(),palette:(x.palette||"").trim(),photo:phDe("rel",x.id)}));
-    if(changes.length||nouvPh.length||!old||echOut.length||relOut.length) hist.push({date,hms,etapes:changes,photos:nouvPh,...(echOut.length?{ech:echOut}:{}),...(relOut.length?{rel:relOut}:{})});
+    if(form.passage&&hist.length){   // v2.68 : correction du dernier passage (pas de nouveau passage)
+      const last=hist[hist.length-1];const et=(last.etapes||[]).filter(x=>!changes.some(y=>y.code===x.code&&y.nom===x.nom)).concat(changes);
+      const nv={...last,etapes:et,photos:[...new Set([...(last.photos||[]),...nouvPh])]};delete nv.ech;delete nv.rel;if(echOut.length) nv.ech=echOut;if(relOut.length) nv.rel=relOut;hist[hist.length-1]=nv}
+    else if(changes.length||nouvPh.length||!old||echOut.length||relOut.length) hist.push({date,hms,etapes:changes,photos:nouvPh,...(echOut.length?{ech:echOut}:{}),...(relOut.length?{rel:relOut}:{})});
+    // photos retirées du constat : retirées aussi de l'historique, des échantillons et des feuilles
+    for(const h of hist){if(Array.isArray(h.photos)) h.photos=h.photos.filter(n=>names.includes(n));for(const t of ["ech","rel"]) for(const x of (h[t]||[])) x.photo=String(x.photo||"").split(";").map(v=>v.trim()).filter(n=>n&&names.includes(n)).join(";")}
     const lr=socMission(curMission()).langueRapport;   // v2.61 : motif de révision dans la langue du PR
     const echTxt=[echOut.length?pdfL("motEch",lr)+" "+echOut.map(x=>x.id).join(", "):"",relOut.length?pdfL("motRel",lr)+" "+relOut.map(x=>x.id).join(", "):""].filter(Boolean).join(" ; ");
     if(changes.length) form.prSuivi=pdfL("motAv",lr).replace("{d}",frDate(date))+" : "+changes.map(x=>traduireNom(x.nom,lr)+(texteAv(x,lr)?" "+texteAv(x,lr):"")+(x.libere?" ("+pdfL("hpLib",lr).toLowerCase()+")":"")+(x.nonInsp?" ("+pdfL(x.nonInsp==="absent"?"niAbsent":x.nonInsp==="nuit"?"niNuit":"niAutre",lr).toLowerCase()+")":"")).join(", ")+(echTxt?" ; "+echTxt:"");
     else if(echTxt) form.prSuivi=pdfL("motSuivi",lr).replace("{d}",frDate(date))+" : "+echTxt;
+    if(form.passage&&hist.length){const h=hist[hist.length-1];const et=h.etapes||[];   // motif = contenu complet du passage corrigé
+      form.prSuivi=(et.length?pdfL("motAv",lr).replace("{d}",frDate(h.date))+" : "+et.map(x=>traduireNom(x.nom,lr)+(texteAv(x,lr)?" "+texteAv(x,lr):"")+(x.libere?" ("+pdfL("hpLib",lr).toLowerCase()+")":"")).join(", "):pdfL("motSuivi",lr).replace("{d}",frDate(h.date)))+(echTxt?(et.length?" ; ":" : ")+echTxt:"")}
     suiviObj={origine:form.suivi.origine||null,source:form.suivi.source||"extra",plan:AV.ctx&&AV.ctx.plan?AV.ctx.plan.id:(form.suivi.plan||null),historique:hist}}
   const entry={schema:"releve-refractaire/1",id,hms:old?old.hms:hms,creeLe:old?old.creeLe:now.toISOString(),modifieLe:now.toISOString(),
     mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa&&!form.suivi?{code:sa.code,nom:sa.nom}:null,
@@ -1327,9 +1334,9 @@ async function saveEntry(){
   const depl=form.deplacer||[];const nDep=depl.length?await retirerDeplacees(depl,id):0;
   {const a=accesSaisi();if(a&&a.code==="LIBRE") memoAccesLibre(a.nom)}
   toast((old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`)+(nDep?` · ${nDep} photo(s) retirée(s) de leur constat d'origine`:""),nDep?4500:2600);
-  const fini=!old?await prevuTermine():null;const prMotif=suiviObj?form.prSuivi:null;
+  const fini=!old?await prevuTermine():null;const prMotif=suiviObj?form.prSuivi:null,prRemp=!!(suiviObj&&form.passage);
   resetForm(true);memoCtxPrec(ctxSauve);viderCtx();effacerBrouillon();refreshBadge();if(fini) proposerSuivant(fini);
-  if(prMotif) emettrePrSuivi(entry,prMotif);   // v2.58 : chaque avancement d'étape du suivi = nouvelle révision du rapport d'avancement (PR)
+  if(prMotif) emettrePrSuivi(entry,prMotif,prRemp);   // v2.58 : chaque avancement d'étape du suivi = nouvelle révision du rapport d'avancement (PR)
   else if(old&&!suiviObj) proposerRevision(id);
 }
 async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;BR.silence=true;try{await editEntry2(en,id)}finally{BR.silence=false}}
@@ -2232,7 +2239,7 @@ async function echProchain(t){const no=String(CFG.mission.no||"");const lettre=t
   return `${no}-${lettre}-${String(max+1).padStart(3,"0")}`}
 async function majEch(){const c=$("echCard");if(!c) return;const a=curAct();const vis=!!form.suivi&&!!a&&!estInitiale(a)&&!estAtelier();c.hidden=!vis;if(!vis) return;
   const tok=++ECH.tok;const prec={ech:[],rel:[]};
-  if(form.editId){try{const o=await tx("entries","readonly",s=>s.get(form.editId));if(o&&o.suivi) for(const h of o.suivi.historique||[]) for(const t of ["ech","rel"]) for(const x of (h[t]||[])) prec[t].push({...x,date:x.date||h.date})}catch(err){}}
+  if(form.editId){try{const o=await tx("entries","readonly",s=>s.get(form.editId));if(o&&o.suivi) for(const h of (o.suivi.historique||[]).slice(0,form.passage?-1:undefined)) for(const t of ["ech","rel"]) for(const x of (h[t]||[])) prec[t].push({...x,date:x.date||h.date})}catch(err){}}
   if(tok!==ECH.tok) return;ECH.prec=prec;
   try{await apqBibCharger();apqBibDatalist()}catch(err){}
   renderEch()}
@@ -2275,10 +2282,21 @@ function renderEch(){for(const t of ["ech","rel"]){const box=$(t==="ech"?"echLis
     const n=document.createElement("span");n.className="hint";n.textContent=lp.length?`${lp.length} photo(s)`:"Pas de photo";ph.append(n);
     const bt=(txt,inp)=>{const k=document.createElement("button");k.type="button";k.textContent=txt;k.onclick=()=>{ECH.cible={t,id:x.id};$(inp).click()};ph.append(k)};
     bt("📷 Photo","iEchCam");bt("🖼 Galerie","iEchGal");d.append(ph);box.append(d)}}}
+async function modifierPassage(id){await editEntry(id);const en=await tx("entries","readonly",s=>s.get(id));const h=en&&en.suivi&&(en.suivi.historique||[]).slice(-1)[0];if(!h) return;
+  form.passage=true;$("fDate").value=h.date||en.date;
+  for(const t of ["ech","rel"]){form[t]=(h[t]||[]).map(x=>{const y={...x};delete y.photo;return y});
+    for(const x of (h[t]||[])) for(const n of String(x.photo||"").split(";").map(v=>v.trim()).filter(Boolean)){const p=form.photos.find(q=>q.id===n);if(p) p[t]=x.id}}
+  $("formTitle").textContent=`Modifier le passage du ${frDate(h.date||en.date)}`;$("bSave").textContent="Enregistrer la modification";
+  await majEch();renderThumbs();toast("Modification du dernier passage : corrige les étapes, les échantillons, les feuilles de relevé ou les photos (× sur la photo).",5000)}
 // v2.58 : rapport d'avancement (PR) de la zone, révisé automatiquement à chaque avancement d'une étape ; l'ancienne révision est gardée (filigrane RÉVISÉE)
-async function emettrePrSuivi(e,motif){if(PDF_EN_COURS){setTimeout(()=>emettrePrSuivi(e,motif),1500);return}PDF_EN_COURS=true;
+async function emettrePrSuivi(e,motif,remplacer){if(PDF_EN_COURS){setTimeout(()=>emettrePrSuivi(e,motif,remplacer),1500);return}PDF_EN_COURS=true;
   try{const m=MISSIONS.find(x=>e.mission&&x.id===e.mission.id)||curMission();const so=socMission(m),l=so.langueRapport;   // v2.61 : langue des rapports du projet (et plus la langue de l'appli)
     const p=(await docsDuConstat(e.id)).find(x=>x.doc.code==="PR");let doc;
+    // v2.68 : correction du dernier passage : la révision en cours est refaite (même n°) si elle n'est pas encore partie au PC
+    if(remplacer&&p&&!p.doc.envoyePC){const d=p.doc,h=(d.hist||[]).slice();if(h.length) h[h.length-1]={...h[h.length-1],date:today(),motif};else h.push({rev:d.rev||0,date:today(),motif});
+      doc={...d,date:today(),l,hist:h,statut:"courant"};const r=await construireQir([e],m,so,l,doc);
+      await tx("pdfs","readwrite",s=>s.put({...p,nom:r.nom,cree:new Date().toISOString(),taille:r.octets.length,blob:r.f,titres:[libelleConstat(e)],doc}));
+      toast(`${doc.ref} Rev${doc.rev} mis à jour (pas encore envoyé au PC).`,5000);return}
     if(p){const d=p.doc,rev=(d.rev||0)+1;doc={...d,rev,date:today(),hist:[...(d.hist||[]),{rev,date:today(),motif}],statut:"courant",envoyePC:false};delete doc.remplaceLe;delete doc.envoyePCLe}
     else doc={ref:await prochaineRef(m,"PR"),code:"PR",rev:0,titre:zoneTitre(e),date:today(),l,hist:[{rev:0,date:today(),motif}]};
     doc.l=l;doc.titre=zoneTitre(e);
@@ -3301,6 +3319,9 @@ function ligneConstat(e){const r=document.createElement("div");r.className="cst"
   const bE=document.createElement("button");bE.type="button";bE.textContent="Modifier";bE.onclick=()=>editEntry(e.id);acts.append(bE);
   // v2.57 : suivi des travaux (un constat par zone, mis à jour à chaque passage)
   if(e.suivi){bE.textContent="🔧 Mettre à jour l'avancement";const pl=document.createElement("span");pl.className="pill";pl.style.background="#2e7d4f";pl.textContent="Suivi";t.prepend(pl);if(e.suivi.source){const ps=document.createElement("span");ps.className="pill";ps.style.background=e.suivi.source==="project"?"#3a5f9a":"#8a5a14";ps.textContent=e.suivi.source==="project"?"Scope de base":"Extraworks";pl.after(ps)}}
+  // v2.68 : corriger le DERNIER passage du suivi tant que le constat n'est pas envoyé au PC
+  if(e.suivi&&!e.envoye&&(e.suivi.historique||[]).length){const bM=document.createElement("button");bM.type="button";bM.textContent="✏️ Modifier le dernier passage";
+    bM.title="Corriger le dernier passage (étapes, échantillons, feuilles de relevé, photos) sans créer de nouveau passage ; le PR est mis à jour";bM.onclick=()=>modifierPassage(e.id);acts.append(bM)}
   else if(estInitiale(e.activite)&&e.planReparation&&e.planReparation.length){const bT=document.createElement("button");bT.type="button";bT.textContent="🔧 Suivi des travaux";
     bT.title="Démarrer (ou ouvrir) le constat de suivi des travaux de cette zone, à partir de ce plan de réparation";bT.onclick=()=>demarrerSuivi(e);acts.append(bT)}
   const bP=document.createElement("button");bP.type="button";bP.textContent="📄 PDF";bP.setAttribute("aria-label","PDF rapide de ce constat");bP.onclick=()=>pdfRapide([e]);acts.append(bP);
@@ -4683,7 +4704,7 @@ let MAJ=null;
    dans le téléphone (photos à chaque changement, textes 1 s après la frappe, et dès que l'appli passe en arrière-plan). */
 const BR={silence:false,minuterie:null,photos:false,charge:false,session:false};
 function etatTexte(){return {mission:CFG.mission.id,t:Date.now(),eq:$("fEq").value,sub:$("fSub").value,act:$("fAct").value,subact:$("fSubAct").value,rep:$("fRep").value,date:$("fDate").value,
-  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,accesLibre:$("fAccesLibre").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,suivi:form.suivi||null,ech:form.ech||[],rel:form.rel||[],plan:lirePlan(),av:lireAv(),at:lireAtelier()}}
+  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,accesLibre:$("fAccesLibre").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,suivi:form.suivi||null,passage:!!form.passage,ech:form.ech||[],rel:form.rel||[],plan:lirePlan(),av:lireAv(),at:lireAtelier()}}
 const aDuContenu=t=>!!(form.photos.length||(t.ech&&t.ech.length)||(t.rel&&t.rel.length)||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||(t.plan&&t.plan.length)||(t.av&&t.av.length)||(t.at&&(t.at.op||t.at.vig.length||t.at.ctl.length||(t.at.mat&&t.at.mat.length)))||t.editId);
 function planifierBrouillon(photos){if(BR.silence||!DB||!BR.charge) return;if(photos) BR.photos=true;clearTimeout(BR.minuterie);BR.minuterie=setTimeout(()=>sauverBrouillon().catch(()=>{}),photos?300:1000)}
 async function sauverBrouillon(){clearTimeout(BR.minuterie);if(!DB||!BR.charge) return;const t=etatTexte();
@@ -4705,7 +4726,7 @@ async function reprendreBrouillon(){const t=await kvGet("brouillonTexte"),ph=awa
   BR.silence=true;try{showView("saisie");
     refreshSelects({eq:t.eq,act:t.act,subact:t.subact});if(t.sub) $("fSub").value=t.sub;fillSubAct(t.subact);
     $("fRep").value=t.rep;$("fDate").value=t.date||today();$("fObs").value=t.obs;$("fReco").value=t.reco;$("fDec").checked=t.dec;$("fSurf").value=t.surf;$("fMarq").checked=t.marq;{const v=t.acces||"";if(v==="LIBRE"){$("fAcces").value="LIBRE";majAccesLibre(false);$("fAccesLibre").value=t.accesLibre||""}else if(v.startsWith("L:")) poserAcces({code:"LIBRE",nom:v.slice(2)},t.accesLibre);else poserAcces(v?{code:v}:null)}renderPlan(t.plan||[]);majAv(t.av||[]);renderAtelier(t.at||null);
-    form={photos:ph&&ph.mission===t.mission?ph.photos:[],gravite:t.gravite||"",editId:t.editId,prevuId:t.prevuId,suivi:t.suivi||null,ech:t.ech||[],rel:t.rel||[]};try{majEch()}catch(e){}
+    form={photos:ph&&ph.mission===t.mission?ph.photos:[],gravite:t.gravite||"",editId:t.editId,prevuId:t.prevuId,suivi:t.suivi||null,passage:!!t.passage,ech:t.ech||[],rel:t.rel||[]};try{majEch()}catch(e){}
     const pv=t.prevuId&&PREVUS.find(x=>x.id===t.prevuId);if(pv){$("prevuBanner").hidden=false;$("prevuTxt").textContent=pv.note}else{form.prevuId=null;$("prevuBanner").hidden=true}
     if(t.editId){$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false}
     renderThumbs();renderGrav();updatePath();if(typeof majDegats==="function") majDegats()}finally{BR.silence=false}
@@ -5855,6 +5876,10 @@ const TRAD_UI=[
 ["Touche le nom d'un équipement, ou d'une sous-zone qui a plusieurs constats, pour la déplier ou la replier.","Tap an equipment name, or a sub-area with several findings, to expand or collapse it.","Toca el nombre de un equipo, o de una subzona con varios hallazgos, para desplegarlo o plegarlo.","Auf den Namen einer Ausrüstung oder eines Unterbereichs mit mehreren Befunden tippen, um ihn auf- oder zuzuklappen."],
 ["{a} à envoyer","{a} to send","{a} por enviar","{a} zu senden"],
 ["Retirer cette photo","Remove this photo","Quitar esta foto","Dieses Foto entfernen"],["Voir / annoter","View / annotate","Ver / anotar","Ansehen / annotieren"],
+["✏️ Modifier le dernier passage","✏️ Edit last visit","✏️ Modificar la última visita","✏️ Letzten Durchgang ändern"],
+["Modifier le passage du {a}","Edit the visit of {a}","Modificar la visita del {a}","Durchgang vom {a} ändern"],
+["Enregistrer la modification","Save the change","Guardar la modificación","Änderung speichern"],
+["Corriger le dernier passage (étapes, échantillons, feuilles de relevé, photos) sans créer de nouveau passage ; le PR est mis à jour","Correct the last visit (steps, samples, record sheets, photos) without creating a new one; the PR is updated","Corregir la última visita (pasos, muestras, hojas, fotos) sin crear una nueva; el PR se actualiza","Letzten Durchgang korrigieren (Schritte, Proben, Protokolle, Fotos), ohne neuen anzulegen; der PR wird aktualisiert"],
 ["Mettre à jour ce suivi plutôt","Update this follow-up instead","Actualizar este seguimiento","Stattdessen diese Verfolgung aktualisieren"],
 ["+ Ajouter une étape hors plan…","+ Add a step outside the plan…","+ Añadir un paso fuera del plan…","+ Schritt außerhalb des Plans hinzufügen…"],
 ["(hors plan)","(outside the plan)","(fuera del plan)","(außerhalb des Plans)"],
