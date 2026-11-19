@@ -430,6 +430,9 @@ main input[list]::placeholder{color:#4f7a5c}
 /* v2.65 : photos d'un échantillon / d'une feuille : × pour retirer, clic pour voir / annoter */
 .echTh{position:relative;display:inline-block}.echTh img{cursor:pointer;display:block}
 .echTh button{position:absolute;top:-7px;right:-7px;width:24px;height:24px;min-height:0;min-width:0;padding:0;border-radius:50%;font-size:15px;line-height:1;background:rgba(0,0,0,.7);color:#fff;border:1.5px solid #fff}
+/* v2.70 : brouillon : constat identifié */
+.brQuoi{display:grid;gap:3px;margin:2px 0 0;padding:8px 10px;border-left:3px solid currentColor;background:rgba(127,127,127,.10);border-radius:6px}
+.brQuoi .brZone{font-weight:650}.brQuoi .fic{font-family:var(--mono,monospace);font-size:.85em;opacity:.8}
 </style>
 </head>
 <body>
@@ -447,7 +450,7 @@ main input[list]::placeholder{color:#4f7a5c}
 <section id="v-accueil">
   <div class="acc-titre"><span>The 982 Inspector Toolbox</span><span class="acc-ver" id="accVer"></span></div>
   <div class="card c-bleu acc-tete"><h2>Projet actif</h2><div class="acc-mission" id="accMission"></div><div class="hint" id="accInfo"></div><div class="acc-alerte" id="accAlerte" hidden></div></div>
-  <div class="card confirm brCard" id="brCardA" hidden><strong class="brTxt"></strong><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
+  <div class="card confirm brCard" id="brCardA" hidden><strong class="brTxt"></strong><div class="brQuoi"></div><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
   <div class="acc-grille">
     <button type="button" class="acc c-ambre" data-go="saisie"><span class="acc-ic">📷</span><b>Nouveau constat</b><span class="hint">Photos, constat, observation</span></button>
     <button type="button" class="acc c-violet" data-go="prep"><span class="acc-ic">🎤</span><b>Préparer</b><span class="hint">Dicter les contrôles prévus</span></button>
@@ -463,7 +466,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <!-- ============ SAISIE ============ -->
 <section id="v-saisie" hidden>
-  <div class="card confirm brCard" id="brCardS" hidden><strong class="brTxt"></strong><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
+  <div class="card confirm brCard" id="brCardS" hidden><strong class="brTxt"></strong><div class="brQuoi"></div><p class="hint">Il a été gardé automatiquement (l'appli a été fermée ou rechargée avant « Enregistrer »).</p><div class="btns"><button type="button" class="primary brGo">Reprendre</button><button type="button" class="brNo">Supprimer le brouillon</button></div></div>
   <div class="card c-violet replie" id="prepCard">
     <div class="ghead"><h2 id="prepTitre">🎤 Préparer des constats</h2><button type="button" class="ghost" id="prepClose" aria-expanded="false" aria-controls="prepCorps">▸ Ouvrir</button></div>
     <div id="prepCorps" hidden>
@@ -991,7 +994,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <script>
 "use strict";
-const APP_VERSION="2.69";
+const APP_VERSION="2.70";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -4721,8 +4724,17 @@ async function afficherBrouillon(){let t=null,ph=null;try{t=await kvGet("brouill
   if(!t||t.mission!==CFG.mission.id||BR.session){vide.forEach(c=>c.hidden=true);return}
   const n=ph&&ph.mission===t.mission?ph.photos.length:0,d=new Date(t.t);
   const quoi=t.editId?"Une modification de constat":"Un constat en cours";
-  const txt=`${quoi} n'a pas été enregistré${t.editId?"e":""} : ${n} photo${n>1?"s":""}${t.obs.trim()?", observation saisie":""} (le ${frDate(d.toISOString().slice(0,10))} à ${pad(d.getHours())}:${pad(d.getMinutes())}).`;
-  vide.forEach(c=>{c.hidden=false;c.querySelector(".brTxt").textContent=txt;const no=c.querySelector(".brNo");no.textContent="Supprimer le brouillon";no.dataset.ok=""})}
+  const txt=`${quoi} n'a pas été enregistré${t.editId?"e":""} : ${n} photo${n>1?"s":""}${t.obs.trim()?", observation saisie":""} (le ${frDate(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`)} à ${pad(d.getHours())}:${pad(d.getMinutes())}).`;   // v2.70 : date locale (et plus UTC)
+  // v2.70 : quel constat ? type, équipement › zone · activité, contenu, n° du constat
+  const eqO=EQ.find(x=>x.code===t.eq),subO=eqO&&eqO.enfants.find(x=>x.code===t.sub),acO=ACT.find(x=>x.code===t.act),saO=!t.suivi&&acO&&acO.enfants.find(x=>x.code===t.subact);
+  const zone=[[eqO&&eqO.nom,subO&&subO.nom].filter(Boolean).join(" › "),[acO&&acO.nom,saO&&saO.nom].filter(Boolean).join(" › ")].filter(Boolean).join(" · ");
+  const genre=t.suivi?(t.passage?"🔧 Suivi des travaux – correction du dernier passage":t.editId?"🔧 Suivi des travaux – nouveau passage":"🔧 Nouveau suivi des travaux"):(t.editId?"✏️ Modification d'un constat":"➕ Nouveau constat");
+  const extra=[t.date?"date "+frDate(t.date):"",(t.av||[]).length?`${t.av.length} étape(s) cochée(s)`:"",(t.ech||[]).length?`${t.ech.length} échantillon(s)`:"",(t.rel||[]).length?`${t.rel.length} feuille(s) de relevé`:""].filter(Boolean).join(" · ");
+  vide.forEach(c=>{const q=c.querySelector(".brQuoi");if(q){q.innerHTML="";const g=document.createElement("span");g.textContent=genre;q.append(g);
+      if(zone){const z=document.createElement("span");z.className="brZone";z.dataset.noi18n="";z.textContent=zone;q.append(z)}
+      if(extra){const x=document.createElement("span");x.className="hint";x.textContent=extra;q.append(x)}
+      if(t.editId){const f=document.createElement("span");f.className="fic";f.dataset.noi18n="";f.textContent=t.editId;q.append(f)}}
+    c.hidden=false;c.querySelector(".brTxt").textContent=txt;const no=c.querySelector(".brNo");no.textContent="Supprimer le brouillon";no.dataset.ok=""})}
 async function reprendreBrouillon(){const t=await kvGet("brouillonTexte"),ph=await kvGet("brouillonPhotos");if(!t) return;
   BR.silence=true;try{showView("saisie");
     refreshSelects({eq:t.eq,act:t.act,subact:t.subact});if(t.sub) $("fSub").value=t.sub;fillSubAct(t.subact);
@@ -5881,6 +5893,12 @@ const TRAD_UI=[
 ["Modifier le passage du {a}","Edit the visit of {a}","Modificar la visita del {a}","Durchgang vom {a} ändern"],
 ["Enregistrer la modification","Save the change","Guardar la modificación","Änderung speichern"],
 ["Corriger le dernier passage (étapes, échantillons, feuilles de relevé, photos) sans créer de nouveau passage ; le PR est mis à jour","Correct the last visit (steps, samples, record sheets, photos) without creating a new one; the PR is updated","Corregir la última visita (pasos, muestras, hojas, fotos) sin crear una nueva; el PR se actualiza","Letzten Durchgang korrigieren (Schritte, Proben, Protokolle, Fotos), ohne neuen anzulegen; der PR wird aktualisiert"],
+["🔧 Suivi des travaux – correction du dernier passage","🔧 Works follow-up – correction of the last visit","🔧 Seguimiento de obras – corrección de la última visita","🔧 Arbeitsverfolgung – Korrektur des letzten Durchgangs"],
+["🔧 Suivi des travaux – nouveau passage","🔧 Works follow-up – new visit","🔧 Seguimiento de obras – nueva visita","🔧 Arbeitsverfolgung – neuer Durchgang"],
+["🔧 Nouveau suivi des travaux","🔧 New works follow-up","🔧 Nuevo seguimiento de obras","🔧 Neue Arbeitsverfolgung"],
+["✏️ Modification d'un constat","✏️ Finding being edited","✏️ Modificación de un hallazgo","✏️ Änderung eines Befunds"],["➕ Nouveau constat","➕ New finding","➕ Nuevo hallazgo","➕ Neuer Befund"],
+["date {a}","date {a}","fecha {a}","Datum {a}"],["{a} étape(s) cochée(s)","{a} step(s) ticked","{a} paso(s) marcado(s)","{a} Schritt(e) angehakt"],
+["{a} échantillon(s)","{a} sample(s)","{a} muestra(s)","{a} Probe(n)"],["{a} feuille(s) de relevé","{a} record sheet(s)","{a} hoja(s) de registro","{a} Einbauprotokoll(e)"],
 ["Mettre à jour ce suivi plutôt","Update this follow-up instead","Actualizar este seguimiento","Stattdessen diese Verfolgung aktualisieren"],
 ["+ Ajouter une étape hors plan…","+ Add a step outside the plan…","+ Añadir un paso fuera del plan…","+ Schritt außerhalb des Plans hinzufügen…"],
 ["(hors plan)","(outside the plan)","(fuera del plan)","(außerhalb des Plans)"],
