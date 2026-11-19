@@ -952,7 +952,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <script>
 "use strict";
-const APP_VERSION="2.59";
+const APP_VERSION="2.60";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -3910,7 +3910,7 @@ async function apqSauvegarder(envoi){envoi=envoi===true;const a=await apqCharger
     const now=new Date(),h={schema:"releve-apq/1",cree:now.toISOString(),version:APP_VERSION,mission:{no:m.no,client:m.client||""},apq:a,photos,
       apqK:APQ_M,apqN:apqNum(APQ_M),apqNom:apqTitreCourt(a)};const nD=apqNum(APQ_M);
     if(envoi){const so=socMission(m);h.mission={...h.mission,dossierPC:m.dossierPC||"",inspecteur:m.inspecteur||"",societe:so.societe,langueRapport:so.langueRapport};
-      h.pc={titre:{fr:apqTitreDoc(a,"fr"),en:apqTitreDoc(a,"en")},equip:apqEquipTexte(a),resultatsLibres:apqSansRedite(a),tr:APQ_TR,lib:APQL,
+      h.pc={titre:{fr:apqTitreDoc(a,"fr"),en:apqTitreDoc(a,"en")},equip:apqEquipTexte(a),resultatsLibres:apqSansRedite(a),tr:Object.fromEntries(Object.entries(APQ_TR).filter(([k],i,t)=>t.findIndex(([x])=>x.toLowerCase()===k.toLowerCase())===i)),/* v2.59 : sans « à repasser » (doublon de casse refusé par PowerShell) */lib:APQL,
         verdicts:Object.fromEntries(Object.entries(APQ_V).map(([k,v])=>[k,v.fr])),ctl:APQ_CTL,ech:APQ_ECH,maquette:APQ_MAQUETTE,
         slots:{mat:APQ_SL_MAT,temp:APQ_SL_TEMP,ech:APQ_SL_ECH,ordre:APQ_ORDRE_PH},equipNoms:Object.fromEntries((EQ||[]).map(e=>[e.code,e.nom]))};
       h.pc.pstCat=APQ_PST_CAT;h.pc.refs=(await apqDocsDossier(APQ_M)).map(p=>({ref:p.doc.ref,rev:p.doc.rev,statut:p.doc.statut||"",date:p.doc.date||""}))}
