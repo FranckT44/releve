@@ -952,7 +952,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <script>
 "use strict";
-const APP_VERSION="2.56";
+const APP_VERSION="2.58";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -1165,8 +1165,9 @@ function fillSub(keep){const e=curEq();fillSelect($("fSub"),!e?[{nom:"—",code:
 function fillSubAct(keep){const a=curAct();const has=a&&a.enfants.length;fillSelect($("fSubAct"),has?a.enfants:[{nom:AUCUNE[langueMission()]||"(aucune)",code:""}],keep);updatePath();if(typeof majDegats==="function") majDegats();if(typeof majPlan==="function") majPlan();if(typeof majAv==="function") majAv();if(typeof majAtelier==="function") majAtelier()}
 function subActObj(){if(!$("fSubAct").value) return null;const a=curAct();return a&&a.enfants.length?a.enfants.find(x=>x.code===$("fSubAct").value):null}
 function targetDir(){const e=curEq(),a=curAct(),sa=subActObj();const sub=e?($("fSub").selectedOptions[0]?.textContent||""):"";
-  const act=a?`${a.code} - ${a.nom}`:"";const sact=sa?`${sa.code} - ${sa.nom}`:"";
-  return ["Dossier Photo",safeDir(e?.nom),safeDir(sub),safeDir(act),safeDir(sact),$("fDate").value].filter(Boolean).join("\\")}
+  const suivi=typeof form!=="undefined"&&form&&form.suivi;   // v2.57 : suivi des travaux = un dossier fixe par zone (pas de sous-dossier daté)
+  const act=a?`${a.code} - ${a.nom}`:"";const sact=suivi?"Suivi des travaux":sa?`${sa.code} - ${sa.nom}`:"";
+  return ["Dossier Photo",safeDir(e?.nom),safeDir(sub),safeDir(act),safeDir(sact),suivi?"":$("fDate").value].filter(Boolean).join("\\")}
 function updatePath(){$("fPath").textContent="→ "+targetDir();majCtxPrec();try{majBarreSaisie()}catch(e){}}
 function majBarreSaisie(){const b=$("saisieBar");if(!b) return;const T=x=>tradUI(x)||x;
   const lib=id=>{const e=$(id);if(!e||e.closest("[hidden]")&&id==="fSubAct") return "";const o=e.selectedOptions&&e.selectedOptions[0];return o&&e.value?o.textContent.trim():""};
@@ -1232,7 +1233,7 @@ async function nomPris(n,id){const r=await getPhoto(n);return !!r&&r.entry!==id}
 async function saveEntry(){
   const e=curEq(),a=curAct();if(!e||!a){toast("Choisis un équipement et une activité dans la liste.");return}
   if($("fSub").value===""){toast("Choisis un sous-équipement dans la liste.");return}
-  if(!form.photos.length&&!$("fObs").value.trim()){toast("Ajoute au moins une photo ou une observation.");return}
+  if(!form.photos.length&&!$("fObs").value.trim()&&!(form.suivi&&lireAv().length)){toast("Ajoute au moins une photo ou une observation.");return}
   const date=$("fDate").value||today();const now=new Date();const hms=`${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
   const sa=subActObj();const subNom=$("fSub").selectedOptions[0]?.textContent||"";
   const ctxSauve={eq:e.code,sub:$("fSub").value,act:a.code,subact:$("fSubAct").value,lib:[e.nom,subNom,a.nom,sa&&sa.nom].filter(Boolean).join(" · ")};
@@ -1252,11 +1253,19 @@ async function saveEntry(){
     for(let k=2;names.includes(name)||(name!==p.id&&await nomPris(name,id));k++) name=(hp?`${prefixe}${hp}`:`${base}_${pad(i+1)}`)+`_${pad(k)}.${ext}`;
     names.push(name);prises.push(p.prise||null);photoRecs.push({id:name,entry:id,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null})}
   const originaux=photoRecs.filter(r=>r.orig).map(r=>r.id.replace(/\.jpg$/i,"_original.jpg"));
+  // v2.57 : constat de SUIVI DES TRAVAUX d'une zone (un seul, mis à jour à chaque passage) : date de dernière évolution par étape + historique des passages
+  let avSaisi=estInitiale(a)||estAtelier()?[]:lireAv(),suiviObj=null;
+  if(form.suivi&&!estInitiale(a)&&!estAtelier()){const prec=old?(old.avancement||[]):[];const champs=["mode","pct","fait","total","unite","libere","commentaire","nonInsp"];const changes=[];
+    avSaisi=avSaisi.map(x=>{const p=prec.find(y=>y.code===x.code&&y.nom===x.nom);const ch=!p||champs.some(c=>String(p[c]??"")!==String(x[c]??""));if(ch) changes.push({...x});return {...x,date:ch?date:(p.date||(old&&old.date)||date)}});
+    const nouvPh=names.filter(n=>!old||!(old.photos||[]).includes(n));const hist=old&&old.suivi&&Array.isArray(old.suivi.historique)?old.suivi.historique.slice():[];
+    if(changes.length||nouvPh.length||!old) hist.push({date,hms,etapes:changes,photos:nouvPh});
+    if(changes.length) form.prSuivi="Avancement du "+frDate(date)+" : "+changes.map(x=>x.nom+(texteAv(x,"fr")?" "+texteAv(x,"fr"):"")+(x.libere?" (point d'arrêt libéré)":"")+(x.nonInsp?" ("+NI_LIB[x.nonInsp]+")":"")).join(", ");
+    suiviObj={origine:form.suivi.origine||null,source:form.suivi.source||"extra",plan:AV.ctx&&AV.ctx.plan?AV.ctx.plan.id:(form.suivi.plan||null),historique:hist}}
   const entry={schema:"releve-refractaire/1",id,hms:old?old.hms:hms,creeLe:old?old.creeLe:now.toISOString(),modifieLe:now.toISOString(),
-    mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa?{code:sa.code,nom:sa.nom}:null,
+    mission:{...CFG.mission},equipement:{code:e.code,nom:e.nom},sousEquipement:subNom,activite:{code:a.code,nom:a.nom},sousActivite:sa&&!form.suivi?{code:sa.code,nom:sa.nom}:null,
     repere:$("fRep").value.trim(),date,observation:$("fObs").value.trim(),gravite:form.gravite,recommandation:$("fReco").value.trim(),decisionClient:$("fDec").checked,surface:$("fSurf").value.trim().replace(/\s*m²?$/i,""),zonesMarquees:$("fMarq").checked,acces:accesSaisi(),
     planReparation:estInitiale(a)&&!estAtelier()?lirePlan():[],
-    avancement:estInitiale(a)||estAtelier()?[]:lireAv(),
+    avancement:avSaisi,...(suiviObj?{suivi:suiviObj}:{}),
     ...(estAtelier()?(x=>({operationItp:x.op,vigilance:x.vig,controles:x.ctl,materiels:x.mat}))(lireAtelier()):{}),
     photos:names,photosPrisesLe:prises,legendes:form.photos.map(p=>p.leg||""),rapport:form.photos.map(p=>p.inc!==false),originaux,dossierCible:targetDir(),envoye:false,envoyeLe:null};
   try{
@@ -1266,9 +1275,10 @@ async function saveEntry(){
   const depl=form.deplacer||[];const nDep=depl.length?await retirerDeplacees(depl,id):0;
   {const a=accesSaisi();if(a&&a.code==="LIBRE") memoAccesLibre(a.nom)}
   toast((old?"Constat modifié":`Constat enregistré (${names.length} photo${names.length>1?"s":""})`)+(nDep?` · ${nDep} photo(s) retirée(s) de leur constat d'origine`:""),nDep?4500:2600);
-  const fini=!old?await prevuTermine():null;
+  const fini=!old?await prevuTermine():null;const prMotif=suiviObj?form.prSuivi:null;
   resetForm(true);memoCtxPrec(ctxSauve);viderCtx();effacerBrouillon();refreshBadge();if(fini) proposerSuivant(fini);
-  if(old) proposerRevision(id);
+  if(prMotif) emettrePrSuivi(entry,prMotif);   // v2.58 : chaque avancement d'étape du suivi = nouvelle révision du rapport d'avancement (PR)
+  else if(old&&!suiviObj) proposerRevision(id);
 }
 async function editEntry(id){const en=await tx("entries","readonly",s=>s.get(id));if(!en) return;BR.silence=true;try{await editEntry2(en,id)}finally{BR.silence=false}}
 async function editEntry2(en,id){
@@ -1280,9 +1290,10 @@ async function editEntry2(en,id){
     else if(e&&e.enfants.length){absent($("fSub"),en.sousEquipement);toast("Le sous-équipement de ce constat n'existe plus : choisis-le à nouveau avant d'enregistrer.",6000)}}
   if(en.sousActivite) {fillSubAct(en.sousActivite.code)}
   $("fDate").value=en.date;$("fRep").value=en.repere;$("fObs").value=en.observation;$("fReco").value=en.recommandation;$("fDec").checked=en.decisionClient;$("fSurf").value=en.surface||"";$("fMarq").checked=!!en.zonesMarquees;poserAcces(en.acces);renderPlan(en.planReparation||[]);majAv(en.avancement||[]);renderAtelier({op:en.operationItp||"",vig:en.vigilance||[],ctl:en.controles||[],mat:en.materiels||[]});
-  form={photos:[],gravite:en.gravite,editId:id};
+  form={photos:[],gravite:en.gravite,editId:id,suivi:en.suivi?{origine:en.suivi.origine||null,plan:en.suivi.plan||null,source:en.suivi.source||"extra"}:null};
+  if(en.suivi){$("fDate").value=today();majAv(en.avancement||[])}   // v2.57 : suivi des travaux : nouveau passage = date du jour
   for(const [k,n] of en.photos.entries()){const p=await getPhoto(n);if(p) form.photos.push({id:n,blob:p.blob,thumb:p.thumb,type:p.type,prise:p.prise||null,orig:p.orig||null,annot:p.annot||null,leg:(en.legendes||[])[k]||"",inc:(en.rapport||[])[k]!==false})}
-  renderThumbs();renderGrav();updatePath();$("formTitle").textContent="Modifier le constat";ouvrirCarte($("formTitle"));$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false;window.scrollTo(0,0)}
+  renderThumbs();renderGrav();updatePath();$("formTitle").textContent=en.suivi?"Mettre à jour le suivi des travaux":"Modifier le constat";ouvrirCarte($("formTitle"));$("bSave").textContent=en.suivi?"Enregistrer l'avancement":"Enregistrer les modifications";$("bCancelEdit").hidden=false;if(en.suivi) ouvrirCarte($("avCard"));window.scrollTo(0,0)}
 /* ---------- ajout rapide depuis la saisie ---------- */
 let AJOUT=null;
 function arbreVersTexte(arbre,codesEnfants){return arbre.map(e=>`${e.nom} [${e.code}]`+e.enfants.map(c=>"\n- "+c.nom+(codesEnfants&&c.code&&c.code!==slug(c.nom)?` [${c.code}]`:"")).join("")).join("\n")}
@@ -2120,41 +2131,84 @@ async function avContexte(){const e=curEq(),a=curAct();const sub=$("fSub").selec
   en.sort((x,y)=>(x.date+x.hms).localeCompare(y.date+y.hms));
   const avecPlan=en.filter(x=>x.planReparation&&x.planReparation.length);ctx.plan=avecPlan.length?avecPlan[avecPlan.length-1]:null;
   ctx.etapes=ctx.plan?ctx.plan.planReparation.map(x=>({code:x.code,nom:x.nom,groupe:x.groupe||"",arret:!!x.arret})):etapesPlan().map(x=>({...x,arret:false}));
-  for(const x of en) for(const s of (x.avancement||[])) ctx.prec[s.code+"|"+s.nom]={...s,date:x.date};
+  for(const x of en) for(const s of (x.avancement||[])) ctx.prec[s.code+"|"+s.nom]={...s,date:s.date||x.date};
+  ctx.suivi=en.filter(x=>x.suivi).pop()||null;
   return ctx}
 function lireAv(){return [...document.querySelectorAll("#avList .avStep")].filter(d=>d.querySelector(".avOn").checked).map(d=>{
   const mode=d.querySelector(".avM:checked")?.value||"pct";
   const x={code:d.dataset.code,nom:d.dataset.nom,groupe:d.dataset.groupe,arret:d.dataset.arret==="1",mode,
     pct:mode==="pct"?numAv(d.querySelector(".avP").value):null,fait:mode==="qte"?numAv(d.querySelector(".avF").value):null,
     total:mode==="qte"?numAv(d.querySelector(".avT").value):null,unite:mode==="qte"?d.querySelector(".avU").value:"",
-    libere:d.dataset.arret==="1"?d.querySelector(".avLib").checked:false,commentaire:$(d.dataset.ed).value};
+    libere:d.dataset.arret==="1"?d.querySelector(".avLib").checked:false,commentaire:$(d.dataset.ed).value,...(d.dataset.hors==="1"?{hors:true}:{}),...(d.querySelector(".avNI")&&d.querySelector(".avNI").value?{nonInsp:d.querySelector(".avNI").value}:{})};
   if(mode==="qte") x.pct=pctAv(x);return x})}
 async function majAv(sel){const c=$("avCard");if(!c) return;const a=curAct();c.hidden=!a||estInitiale(a);
   if(sel!==undefined) AV.pend=sel;const tok=++AV.tok;const ctx=await avContexte();if(tok!==AV.tok) return;
   const sig=JSON.stringify([ctx.key,ctx.etapes,!!ctx.plan&&ctx.plan.id]);
-  if(AV.pend==null&&sig===AV.sig){AV.ctx=ctx;majPrecAv();return}
-  const cur=AV.pend!=null?AV.pend:lireAv();AV.pend=null;AV.sig=sig;AV.ctx=ctx;renderAv(cur,ctx)}
+  if(AV.pend==null&&sig===AV.sig){AV.ctx=ctx;majPrecAv();majSuiviBan(ctx);return}
+  const cur=AV.pend!=null?AV.pend:lireAv();AV.pend=null;AV.sig=sig;AV.ctx=ctx;renderAv(cur,ctx);majSuiviBan(ctx)}
+const NI_LIB={absent:"validé sans inspection (inspecteur absent)",nuit:"validé sans inspection (poste de nuit)",autre:"validé sans inspection (autre motif)"};
+const SRC_LIB={project:"Scope de base (Project Scope)",extra:"Découvert en inspection (Extraworks)"};
+/* v2.57 : suivi des travaux d'une zone — bandeau (constat de suivi ouvert, plan mis à jour, ou suivi existant pour la zone) */
+function majSuiviBan(ctx){let b=$("avSuivi");if(!b){b=document.createElement("div");b.id="avSuivi";b.className="avSuivi";$("avSrc").after(b)}b.innerHTML="";b.hidden=true;if(!ctx) return;
+  if(form.suivi){b.hidden=false;const t=document.createElement("p");t.className="hint";t.textContent="Constat de suivi des travaux de la zone : mets à jour les étapes ; l'historique garde chaque passage.";b.append(t);
+    // v2.58 : origine des travaux
+    const sr=document.createElement("div");sr.className="avSrcCh";sr.setAttribute("role","radiogroup");const lb=document.createElement("b");lb.textContent="Origine des travaux";sr.append(lb);
+    for(const v of ["project","extra"]){const la=document.createElement("label");la.className="toggle";const r=document.createElement("input");r.type="radio";r.name="avSrcR";r.value=v;r.checked=(form.suivi.source||"extra")===v;
+      r.onchange=()=>{form.suivi.source=v;planifierBrouillon()};const sp=document.createElement("span");sp.textContent=" "+SRC_LIB[v];la.append(r,sp);sr.append(la)}
+    b.append(sr);
+    if(ctx.plan&&form.suivi.plan&&ctx.plan.id!==form.suivi.plan){const q=document.createElement("p");q.className="avMaj";q.dataset.noi18n="";q.textContent=`Plan de réparation mis à jour par l'inspection du ${frDate(ctx.plan.date)} : ses étapes sont maintenant dans la liste.`;b.append(q);
+      if(AV.planVu!==ctx.plan.id){AV.planVu=ctx.plan.id;toast(q.textContent,5000)}}}
+  else if(!form.editId&&ctx.suivi){b.hidden=false;const t=document.createElement("p");t.className="hint";t.dataset.noi18n="";t.textContent=`Un constat de suivi des travaux existe déjà pour cette zone (mis à jour le ${frDate(ctx.suivi.date)}).`;
+    const bt=document.createElement("button");bt.type="button";bt.className="primary";bt.textContent="Mettre à jour ce suivi plutôt";bt.onclick=()=>ouvrirSuivi(ctx.suivi.id);b.append(t,bt)}}
+// v2.58 : rapport d'avancement (PR) de la zone, révisé automatiquement à chaque avancement d'une étape ; l'ancienne révision est gardée (filigrane RÉVISÉE)
+async function emettrePrSuivi(e,motif){if(PDF_EN_COURS){setTimeout(()=>emettrePrSuivi(e,motif),1500);return}PDF_EN_COURS=true;
+  try{const m=MISSIONS.find(x=>e.mission&&x.id===e.mission.id)||curMission();const so=socMission(m),l=m.langue||langueMission();
+    const p=(await docsDuConstat(e.id)).find(x=>x.doc.code==="PR");let doc;
+    if(p){const d=p.doc,rev=(d.rev||0)+1;doc={...d,rev,date:today(),hist:[...(d.hist||[]),{rev,date:today(),motif}],statut:"courant",envoyePC:false};delete doc.remplaceLe;delete doc.envoyePCLe}
+    else doc={ref:await prochaineRef(m,"PR"),code:"PR",rev:0,titre:zoneTitre(e),date:today(),l,hist:[{rev:0,date:today(),motif}]};
+    doc.l=doc.l||l;doc.titre=zoneTitre(e);
+    const r=await construireQir([e],m,so,doc.l,doc);
+    let ancien=null;if(p){ancien=fichierDoc(p);try{const o=await filigranerPdf(new Uint8Array(await ancien.arrayBuffer()),pdfL("filig",doc.l));ancien=new File([o],p.nom,{type:"application/pdf"})}catch(err){}}
+    await tx("pdfs","readwrite",s=>{if(p) s.put({...p,blob:ancien,blobOrig:p.blobOrig||fichierDoc(p),taille:ancien.size,doc:{...p.doc,statut:"revisee",remplaceLe:new Date().toISOString(),envoyePC:false}});
+      s.put({id:newId(),nom:r.nom,cree:new Date().toISOString(),mission:{id:m.id,no:m.no,client:m.client||""},societe:so.societe,constats:[e.id],titres:[libelleConstat(e)],taille:r.octets.length,blob:r.f,doc:{...doc,statut:"courant"}})});
+    toast(`${doc.ref} Rev${doc.rev} émis (rapport d'avancement de la zone) : voir Documents émis.`,5000)}
+  catch(err){toast("Rapport d'avancement non créé : "+(err&&err.message||err),6000)}finally{PDF_EN_COURS=false}}
+async function ouvrirSuivi(id){if(!form.editId&&(form.photos.length||$("fObs").value.trim())&&!confirm("Abandonner le constat en cours et ouvrir le suivi des travaux de la zone ?")) return;
+  await editEntry(id);toast("Suivi des travaux de la zone ouvert : mets à jour l'avancement.",3500)}
+function actSuivi(){const c=ACT.filter(a=>!estInitiale(a)&&!/final|liber|release|endkontrol/i.test(norm(a.nom)));return c.find(a=>/progress|avancement|avance|fortschritt|travaux|works/i.test(norm(a.nom)))||c.find(a=>a.enfants.length)||c[0]||null}
+async function demarrerSuivi(e){
+  if(form.editId){toast("Termine ou annule d'abord la modification en cours.");return}
+  const ex=(await allEntries()).filter(x=>belongs(x)&&x.suivi&&x.equipement.code===e.equipement.code&&x.sousEquipement===e.sousEquipement).sort((a,b)=>(a.date+a.hms).localeCompare(b.date+b.hms)).pop();
+  if(ex){await ouvrirSuivi(ex.id);return}
+  const act=actSuivi();if(!act){toast("Aucune activité d'avancement dans les listes du projet.");return}
+  const eq=EQ.find(x=>x.code===e.equipement.code);if(!eq){toast("L'équipement de ce constat n'existe plus dans la liste.");return}
+  const sub=eq.enfants.find(x=>x.nom===e.sousEquipement);
+  showView("saisie");resetForm(true);form.suivi={origine:e.id,plan:e.id,source:"extra"};
+  refreshSelects({eq:eq.code,sub:sub?sub.code:undefined,act:act.code});if(sub) $("fSub").value=sub.code;fillSubAct();
+  $("fDate").value=today();$("formTitle").textContent="Nouveau constat de suivi des travaux";$("bSave").textContent="Enregistrer le suivi";
+  updatePath();await majAv([]);ouvrirCarte($("avCard"));window.scrollTo(0,0)}
 function majPrecAv(){if(!AV.ctx) return;document.querySelectorAll("#avList .avStep").forEach(d=>{const p=AV.ctx.prec[d.dataset.code+"|"+d.dataset.nom];const el=d.querySelector(".avPrec");
   const t=p?texteAv(p,"fr"):"";el.textContent=t?`Précédent : ${t} (${frDate(p.date)})`:"";el.hidden=!t})}
 function renderAv(sel,ctx){sel=Array.isArray(sel)?sel:[];const box=$("avList");if(!box) return;
   $("avSrc").textContent=ctx.plan?`Étapes du plan de réparation de cette zone (constat du ${frDate(ctx.plan.date)}).`:"Pas de plan de réparation pour cette zone : toutes les étapes du projet sont proposées.";
   const cle=x=>x.code+"|"+x.nom;const liste=ctx.etapes.slice();
-  for(const x of sel) if(!liste.some(y=>cle(y)===cle(x))) liste.push({...x,absent:true});
+  for(const x of sel) if(!liste.some(y=>cle(y)===cle(x))) liste.push({...x,absent:!x.hors});
   box.innerHTML="";
   if(!liste.length){box.innerHTML='<p class="hint">Aucune étape de réparation dans les activités du projet (à ajouter dans l\'onglet Projets, après les inspections).</p>';return}
   // nouveau constat sans étape cochée : l'étape de la sous-activité choisie est cochée d'office
-  const sa=subActObj();const auto=!sel.length&&!form.editId&&sa?sa.code:null;
+  const sa=subActObj();const auto=!sel.length&&!form.editId&&!form.suivi&&sa?sa.code:null;
   let grp=null;
   for(const x of liste){const s=sel.find(y=>cle(y)===cle(x));
     if(!x.absent&&(x.groupe||"")!==grp){grp=x.groupe||"";if(grp){const g=document.createElement("p");g.className="plGrp";g.dataset.noi18n="";g.textContent=grp;box.append(g)}}
-    const n=++AV.n;const d=document.createElement("div");d.className="avStep";Object.assign(d.dataset,{code:x.code,nom:x.nom,groupe:x.groupe||"",arret:x.arret?"1":"",ed:"fAv"+n});
-    d.innerHTML=`<label class="toggle"><input type="checkbox" class="avOn"> <span class="plNom" data-noi18n></span>${x.arret?' <span class="avHp">⛔</span>':""}${x.absent?' <span class="plAbs">(n\'existe plus dans la liste)</span>':""}</label>`
+    const n=++AV.n;const d=document.createElement("div");d.className="avStep";Object.assign(d.dataset,{code:x.code,nom:x.nom,groupe:x.groupe||"",arret:x.arret?"1":"",hors:x.hors?"1":"",ed:"fAv"+n});
+    d.innerHTML=`<label class="toggle"><input type="checkbox" class="avOn"> <span class="plNom" data-noi18n></span>${x.arret?' <span class="avHp">⛔</span>':""}${x.absent?' <span class="plAbs">(n\'existe plus dans la liste)</span>':""}${x.hors?' <span class="plAbs">(hors plan)</span>':""}</label>`
       +`<div class="avDet" hidden><div class="avMode" role="radiogroup"><label><input type="radio" class="avM" name="avM${n}" value="pct" checked> %</label><label><input type="radio" class="avM" name="avM${n}" value="qte"> Quantité (fait / total)</label></div>`
       +`<div class="avVal avPct"><input type="text" class="avP" inputmode="decimal" autocomplete="off" placeholder="0–100" aria-label="Avancement en %"><span>%</span></div>`
       +`<div class="avVal avQte" hidden><input type="text" class="avF" inputmode="decimal" autocomplete="off" placeholder="fait" aria-label="Quantité faite"><span>/</span><input type="text" class="avT" inputmode="decimal" autocomplete="off" placeholder="total" aria-label="Quantité totale">`
       +`<select class="avU" aria-label="Unité">${AV_UNITES.map(u=>`<option>${u}</option>`).join("")}</select><span class="avCalc"></span></div>`
       +`<div class="avBar" hidden><i></i></div><p class="hint avPrec" hidden></p>`
       +(x.arret?`<label class="toggle"><input type="checkbox" class="avLib"> ✅ Point d'arrêt libéré</label>`:"")
+      +`<label class="avNIl">Contrôle<select class="avNI"><option value="">Inspecté</option><option value="absent">Validé sans inspection : inspecteur absent</option><option value="nuit">Validé sans inspection : poste de nuit</option><option value="autre">Validé sans inspection : autre motif (voir commentaire)</option></select></label>`
       +`<div class="rtewrap"><span class="rtelab" id="lAv${n}">Commentaire</span>${PLAN_BARRE}<div class="rte" id="fAv${n}" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="lAv${n}"></div></div></div>`;
     d.querySelector(".plNom").textContent=x.nom;box.append(d);initEditeur("fAv"+n);
     const on=d.querySelector(".avOn"),det=d.querySelector(".avDet");
@@ -2168,11 +2222,16 @@ function renderAv(sel,ctx){sel=Array.isArray(sel)?sel:[];const box=$("avList");i
         if(p.mode==="qte"){if(p.total!=null) d.querySelector(".avT").value=fmtNum(p.total);if(p.unite) d.querySelector(".avU").value=p.unite}}};
     if(s){d.dataset.init="1";on.checked=true;det.hidden=false;if(s.mode==="qte"){d.querySelector(".avF").value=fmtNum(s.fait);d.querySelector(".avT").value=fmtNum(s.total);
         if(s.unite){if(![...d.querySelector(".avU").options].some(o=>o.value===s.unite)) d.querySelector(".avU").append(new Option(s.unite));d.querySelector(".avU").value=s.unite}}
-      else d.querySelector(".avP").value=fmtNum(s.pct);mode(s.mode||"pct");if(x.arret) d.querySelector(".avLib").checked=!!s.libere;$("fAv"+n).value=s.commentaire||""}
+      else d.querySelector(".avP").value=fmtNum(s.pct);mode(s.mode||"pct");if(x.arret) d.querySelector(".avLib").checked=!!s.libere;if(s.nonInsp) d.querySelector(".avNI").value=s.nonInsp;$("fAv"+n).value=s.commentaire||""}
     else if(auto&&x.code===auto){on.checked=true;on.onchange()}}
+  // v2.57 : étape hors plan (zone avec plan de réparation) : ajoutée à la liste, marquée « hors plan »
+  if(ctx.plan){const autres=etapesPlan().filter(y=>!liste.some(z=>cle(z)===cle(y)));
+    if(autres.length){const w=document.createElement("div");w.className="avHors";const s=document.createElement("select");s.setAttribute("aria-label","Ajouter une étape hors plan");
+      const o0=new Option("+ Ajouter une étape hors plan…","");s.append(o0);autres.forEach((y,i)=>{const o=new Option(y.nom,String(i));o.dataset.noi18n="";s.append(o)});
+      s.onchange=()=>{const y=autres[+s.value];if(!y) return;renderAv([...lireAv(),{code:y.code,nom:y.nom,groupe:y.groupe||"",arret:false,hors:true,mode:"pct",pct:null}],AV.ctx);majSuiviBan(AV.ctx)};w.append(s);box.append(w)}}
   majPrecAv()}
 function avHtml(p){if(!p||!p.length) return "";
-  return '<ol class="plAp">'+p.map(x=>{const t=texteAv(x,"fr");return `<li><b>${esc(x.nom)}</b>${t?" : "+esc(t):""}${x.arret?(x.libere?' <span>✅ point d\'arrêt libéré</span>':' <span class="plArretOn">⛔ point d\'arrêt non libéré</span>'):""}${x.commentaire?versHtml(x.commentaire):""}</li>`}).join("")+"</ol>"}
+  return '<ol class="plAp">'+p.map(x=>{const t=texteAv(x,"fr");return `<li><b>${esc(x.nom)}</b>${x.hors?" <i>(hors plan)</i>":""}${t?" : "+esc(t):""}${x.date?` <span class="hint">(${frDate(x.date)})</span>`:""}${x.nonInsp?` <i class="avNIt">– ${esc(NI_LIB[x.nonInsp]||"validé sans inspection")}</i>`:""}${x.arret?(x.libere?' <span>✅ point d\'arrêt libéré</span>':' <span class="plArretOn">⛔ point d\'arrêt non libéré</span>'):""}${x.commentaire?versHtml(x.commentaire):""}</li>`}).join("")+"</ol>"}
 function planHtml(p){if(!p||!p.length) return "";
   return '<ol class="plAp">'+p.map(x=>`<li><b>${esc(x.nom)}</b>${x.arret?' <span class="plArretOn">⛔ point d\'arrêt</span>':""}${x.commentaire?versHtml(x.commentaire):""}</li>`).join("")+"</ol>"}
 function initDegats(){renderDegats();majDegats();$("degOk").onclick=validerDegat;$("degNo").onclick=()=>{DEG_EN_COURS=null;$("degParam").hidden=true};
@@ -2419,6 +2478,8 @@ async function remplirApercu(ap,e){
   ajouter("Recommandation",e.recommandation?versHtml(e.recommandation):"");
   ajouter("Plan de réparation",planHtml(e.planReparation));
   ajouter("Avancement",avHtml(e.avancement));
+  ajouter("Origine des travaux",e.suivi&&e.suivi.source?esc(SRC_LIB[e.suivi.source]||""):"");
+  ajouter("Historique du suivi",e.suivi&&e.suivi.historique&&e.suivi.historique.length?'<ul class="plAp">'+e.suivi.historique.slice().reverse().map(h=>`<li><b>${frDate(h.date)}</b> : ${(h.etapes||[]).map(x=>esc(x.nom)+(texteAv(x,"fr")?" "+esc(texteAv(x,"fr")):"")+(x.libere?" ✅":"")).join(" · ")||"photos"}${h.photos&&h.photos.length?` · ${h.photos.length} 📷`:""}</li>`).join("")+"</ul>":"");
   ajouter("Opération ITP",e.operationItp?esc(e.operationItp):"");
   ajouter("Points de vigilance vérifiés",e.vigilance&&e.vigilance.length?"<ul>"+e.vigilance.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":"");
   ajouter("Matériel utilisé",e.materiels&&e.materiels.length?esc(e.materiels.join(" · ")):"");
@@ -3115,6 +3176,10 @@ function ligneConstat(e){const r=document.createElement("div");r.className="cst"
     if(o){JOURNAL_OUVERTS.add(e.id);if(!ap.dataset.fait){ap.dataset.fait="1";remplirApercu(ap,e)}}else JOURNAL_OUVERTS.delete(e.id)};
   bO.onclick=()=>basculer(ap.hidden);basculer(JOURNAL_OUVERTS.has(e.id));acts.append(bO);r.querySelector("img").onclick=()=>bO.click();
   const bE=document.createElement("button");bE.type="button";bE.textContent="Modifier";bE.onclick=()=>editEntry(e.id);acts.append(bE);
+  // v2.57 : suivi des travaux (un constat par zone, mis à jour à chaque passage)
+  if(e.suivi){bE.textContent="🔧 Mettre à jour l'avancement";const pl=document.createElement("span");pl.className="pill";pl.style.background="#2e7d4f";pl.textContent="Suivi";t.prepend(pl);if(e.suivi.source){const ps=document.createElement("span");ps.className="pill";ps.style.background=e.suivi.source==="project"?"#3a5f9a":"#8a5a14";ps.textContent=e.suivi.source==="project"?"Scope de base":"Extraworks";pl.after(ps)}}
+  else if(estInitiale(e.activite)&&e.planReparation&&e.planReparation.length){const bT=document.createElement("button");bT.type="button";bT.textContent="🔧 Suivi des travaux";
+    bT.title="Démarrer (ou ouvrir) le constat de suivi des travaux de cette zone, à partir de ce plan de réparation";bT.onclick=()=>demarrerSuivi(e);acts.append(bT)}
   const bP=document.createElement("button");bP.type="button";bP.textContent="📄 PDF";bP.setAttribute("aria-label","PDF rapide de ce constat");bP.onclick=()=>pdfRapide([e]);acts.append(bP);
   const bS=document.createElement("button");bS.type="button";bS.className="ghost";bS.textContent="🗑 Supprimer";bS.setAttribute("aria-label","Supprimer ce constat");bS.onclick=()=>supprimerConstat(e,bS);acts.append(bS);
   return r}
@@ -4468,7 +4533,7 @@ let MAJ=null;
    dans le téléphone (photos à chaque changement, textes 1 s après la frappe, et dès que l'appli passe en arrière-plan). */
 const BR={silence:false,minuterie:null,photos:false,charge:false,session:false};
 function etatTexte(){return {mission:CFG.mission.id,t:Date.now(),eq:$("fEq").value,sub:$("fSub").value,act:$("fAct").value,subact:$("fSubAct").value,rep:$("fRep").value,date:$("fDate").value,
-  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,accesLibre:$("fAccesLibre").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,plan:lirePlan(),av:lireAv(),at:lireAtelier()}}
+  obs:$("fObs").value,reco:$("fReco").value,dec:$("fDec").checked,surf:$("fSurf").value,marq:$("fMarq").checked,acces:$("fAcces").value,accesLibre:$("fAccesLibre").value,gravite:form.gravite,editId:form.editId||null,prevuId:form.prevuId||null,suivi:form.suivi||null,plan:lirePlan(),av:lireAv(),at:lireAtelier()}}
 const aDuContenu=t=>!!(form.photos.length||t.obs.trim()||t.reco.trim()||t.rep.trim()||t.surf.trim()||(t.plan&&t.plan.length)||(t.av&&t.av.length)||(t.at&&(t.at.op||t.at.vig.length||t.at.ctl.length||(t.at.mat&&t.at.mat.length)))||t.editId);
 function planifierBrouillon(photos){if(BR.silence||!DB||!BR.charge) return;if(photos) BR.photos=true;clearTimeout(BR.minuterie);BR.minuterie=setTimeout(()=>sauverBrouillon().catch(()=>{}),photos?300:1000)}
 async function sauverBrouillon(){clearTimeout(BR.minuterie);if(!DB||!BR.charge) return;const t=etatTexte();
@@ -4490,7 +4555,7 @@ async function reprendreBrouillon(){const t=await kvGet("brouillonTexte"),ph=awa
   BR.silence=true;try{showView("saisie");
     refreshSelects({eq:t.eq,act:t.act,subact:t.subact});if(t.sub) $("fSub").value=t.sub;fillSubAct(t.subact);
     $("fRep").value=t.rep;$("fDate").value=t.date||today();$("fObs").value=t.obs;$("fReco").value=t.reco;$("fDec").checked=t.dec;$("fSurf").value=t.surf;$("fMarq").checked=t.marq;{const v=t.acces||"";if(v==="LIBRE"){$("fAcces").value="LIBRE";majAccesLibre(false);$("fAccesLibre").value=t.accesLibre||""}else if(v.startsWith("L:")) poserAcces({code:"LIBRE",nom:v.slice(2)},t.accesLibre);else poserAcces(v?{code:v}:null)}renderPlan(t.plan||[]);majAv(t.av||[]);renderAtelier(t.at||null);
-    form={photos:ph&&ph.mission===t.mission?ph.photos:[],gravite:t.gravite||"",editId:t.editId,prevuId:t.prevuId};
+    form={photos:ph&&ph.mission===t.mission?ph.photos:[],gravite:t.gravite||"",editId:t.editId,prevuId:t.prevuId,suivi:t.suivi||null};
     const pv=t.prevuId&&PREVUS.find(x=>x.id===t.prevuId);if(pv){$("prevuBanner").hidden=false;$("prevuTxt").textContent=pv.note}else{form.prevuId=null;$("prevuBanner").hidden=true}
     if(t.editId){$("formTitle").textContent="Modifier le constat";$("bSave").textContent="Enregistrer les modifications";$("bCancelEdit").hidden=false}
     renderThumbs();renderGrav();updatePath();if(typeof majDegats==="function") majDegats()}finally{BR.silence=false}
@@ -4531,6 +4596,12 @@ const PDFL={titre:["RAPPORT RAPIDE D'INSPECTION","QUICK INSPECTION REPORT","INFO
   plan:["Plan de réparation","Repair plan","Plan de reparación","Reparaturplan"],
   av:["Avancement","Progress","Avance","Fortschritt"],titreAv:["RAPPORT D'AVANCEMENT","PROGRESS REPORT","INFORME DE AVANCE","FORTSCHRITTSBERICHT"],
   rapAv:["Rapport d'avancement","Progress report","Informe de avance","Fortschrittsbericht"],
+  horsPlan:["hors plan","outside the plan","fuera del plan","außerhalb des Plans"],
+  niAbsent:["VALIDÉ SANS INSPECTION – INSPECTEUR ABSENT","ACCEPTED WITHOUT INSPECTION – INSPECTOR ABSENT","VALIDADO SIN INSPECCIÓN – INSPECTOR AUSENTE","OHNE INSPEKTION FREIGEGEBEN – INSPEKTOR ABWESEND"],
+  niNuit:["VALIDÉ SANS INSPECTION – POSTE DE NUIT","ACCEPTED WITHOUT INSPECTION – NIGHT SHIFT","VALIDADO SIN INSPECCIÓN – TURNO DE NOCHE","OHNE INSPEKTION FREIGEGEBEN – NACHTSCHICHT"],
+  niAutre:["VALIDÉ SANS INSPECTION","ACCEPTED WITHOUT INSPECTION","VALIDADO SIN INSPECCIÓN","OHNE INSPEKTION FREIGEGEBEN"],
+  srcProject:["Scope de base","Base scope (Project)","Alcance base","Basisumfang"],srcExtra:["Découvert en inspection (Extraworks)","Found during inspection (Extraworks)","Detectado en inspección (Extraworks)","Bei Inspektion festgestellt (Extraworks)"],
+  srcTitre:["Origine des travaux","Origin of works","Origen de los trabajos","Herkunft der Arbeiten"],
   hpLib:["POINT D'ARRÊT LIBÉRÉ","HOLD POINT RELEASED","PUNTO DE PARADA LIBERADO","HALTEPUNKT FREIGEGEBEN"],
   hpNon:["POINT D'ARRÊT NON LIBÉRÉ","HOLD POINT NOT RELEASED","PUNTO DE PARADA NO LIBERADO","HALTEPUNKT NICHT FREIGEGEBEN"],
   nb:["nb","pcs","uds","Stk"],hp:["POINT D'ARRÊT","HOLD POINT","PUNTO DE PARADA","HALTEPUNKT"],
@@ -4634,11 +4705,13 @@ class PdfRapide{
         this.y+=5})}
     // v1.61 : avancement cumulé par étape (progress report)
     if(e.avancement&&e.avancement.length){this.titreSection(pdfL("av",l));const ind=20,unite=u=>u==="nb"?pdfL("nb",l):u;
-      e.avancement.forEach((x,k)=>{this.place(15);const y=this.y;const v=texteAv(x,l,unite);const vw=v?pdfLargeur(v,"B",10):0;
+      if(e.suivi&&e.suivi.source){this.place(14);this.paragraphe([{t:pdfL("srcTitre",l)+" : ",b:true},{t:pdfL(e.suivi.source==="project"?"srcProject":"srcExtra",l)}],M,L,10);this.y+=4}
+      e.avancement.forEach((x,k)=>{this.place(15);const y=this.y;const v=[texteAv(x,l,unite),x.date?String(x.date).split("-").reverse().join("/"):""].filter(Boolean).join(" · ");const vw=v?pdfLargeur(v,"B",10):0;
         this.txt(M,y+10,(k+1)+".","B",10);if(v) this.txt(M+L-vw,y+10,v,"B",10,"0.12 0.40 0.20");
-        this.paragraphe([{t:x.nom||"",b:true}],M+ind,L-ind-(vw?vw+12:0),10);
+        this.paragraphe([{t:(x.nom||"")+(x.hors?" ("+pdfL("horsPlan",l)+")":""),b:true}],M+ind,L-ind-(vw?vw+12:0),10);
         const p=pctAv(x);if(p!=null){this.place(9);const bw=L-ind;this.rect(M+ind,this.y+1,bw,5,"0.88 0.88 0.88");if(p>0) this.rect(M+ind,this.y+1,bw*Math.min(100,p)/100,5,"0.18 0.49 0.31");this.y+=9}
         if(x.arret){this.place(16);const t=pdfL(x.libere?"hpLib":"hpNon",l),w=pdfLargeur(t,"B",8)+12;this.rect(M+ind,this.y+1,w,12,x.libere?"0.18 0.49 0.31":"0.75 0.11 0.11");this.txt(M+ind+6,this.y+9.8,t,"B",8,"1 1 1");this.y+=16}
+        if(x.nonInsp){this.place(16);const t=pdfL(x.nonInsp==="absent"?"niAbsent":x.nonInsp==="nuit"?"niNuit":"niAutre",l),w=pdfLargeur(t,"B",8)+12;this.rect(M+ind,this.y+1,w,12,"0.85 0.55 0.10");this.txt(M+ind+6,this.y+9.8,t,"B",8,"1 1 1");this.y+=16}
         if(x.commentaire&&String(x.commentaire).trim()){this.y+=1;this.texteBalise(x.commentaire,M+ind,L-ind,9.5)}
         this.y+=5})}
     if(photos.length){this.titreSection(pdfL("photos",l));const gap=12,cw=(L-gap)/2,maxH=230;
@@ -5580,6 +5653,26 @@ const TRAD_UI=[
 ["Zone(s) déjà marquée(s)","Area(s) already marked","Zona(s) ya marcada(s)","Bereich(e) bereits markiert"],
 ["Plan de réparation","Repair plan","Plan de reparación","Reparaturplan"],
 ["Avancement","Progress","Avance","Fortschritt"],
+["🔧 Suivi des travaux","🔧 Works follow-up","🔧 Seguimiento de obras","🔧 Arbeitsverfolgung"],
+["🔧 Mettre à jour l'avancement","🔧 Update progress","🔧 Actualizar avance","🔧 Fortschritt aktualisieren"],
+["Nouveau constat de suivi des travaux","New works follow-up finding","Nuevo hallazgo de seguimiento de obras","Neuer Befund Arbeitsverfolgung"],
+["Mettre à jour le suivi des travaux","Update works follow-up","Actualizar seguimiento de obras","Arbeitsverfolgung aktualisieren"],
+["Enregistrer le suivi","Save follow-up","Guardar seguimiento","Verfolgung speichern"],
+["Enregistrer l'avancement","Save progress","Guardar avance","Fortschritt speichern"],
+["Mettre à jour ce suivi plutôt","Update this follow-up instead","Actualizar este seguimiento","Stattdessen diese Verfolgung aktualisieren"],
+["+ Ajouter une étape hors plan…","+ Add a step outside the plan…","+ Añadir un paso fuera del plan…","+ Schritt außerhalb des Plans hinzufügen…"],
+["(hors plan)","(outside the plan)","(fuera del plan)","(außerhalb des Plans)"],
+["Suivi","Follow-up","Seguimiento","Verfolgung"],
+["Historique du suivi","Follow-up history","Historial del seguimiento","Verlauf der Verfolgung"],
+["Origine des travaux","Origin of works","Origen de los trabajos","Herkunft der Arbeiten"],
+["Scope de base (Project Scope)","Base scope (Project Scope)","Alcance base (Project Scope)","Basisumfang (Project Scope)"],
+["Découvert en inspection (Extraworks)","Found during inspection (Extraworks)","Detectado en inspección (Extraworks)","Bei Inspektion festgestellt (Extraworks)"],
+["Scope de base","Base scope","Alcance base","Basisumfang"],
+["Contrôle","Check","Control","Kontrolle"],["Inspecté","Inspected","Inspeccionado","Inspiziert"],
+["Validé sans inspection : inspecteur absent","Accepted without inspection: inspector absent","Validado sin inspección: inspector ausente","Ohne Inspektion freigegeben: Inspektor abwesend"],
+["Validé sans inspection : poste de nuit","Accepted without inspection: night shift","Validado sin inspección: turno de noche","Ohne Inspektion freigegeben: Nachtschicht"],
+["Validé sans inspection : autre motif (voir commentaire)","Accepted without inspection: other reason (see comment)","Validado sin inspección: otro motivo (ver comentario)","Ohne Inspektion freigegeben: anderer Grund (siehe Kommentar)"],
+["Constat de suivi des travaux de la zone : mets à jour les étapes ; l'historique garde chaque passage.","Works follow-up finding for this area: update the steps; the history keeps every visit.","Hallazgo de seguimiento de obras de la zona: actualiza los pasos; el historial guarda cada visita.","Arbeitsverfolgungsbefund des Bereichs: Schritte aktualisieren; der Verlauf speichert jeden Besuch."],
 ["Coche la ou les étapes contrôlées et saisis l'avancement cumulé à ce jour, en % ou en quantité (fait / total).","Tick the step(s) checked and enter the cumulative progress to date, in % or as a quantity (done / total).","Marca el o los pasos controlados e introduce el avance acumulado hasta hoy, en % o en cantidad (hecho / total).","Geprüfte Schritte ankreuzen und den kumulierten Fortschritt bis heute eingeben, in % oder als Menge (erledigt / gesamt)."],
 ["Étapes du plan de réparation de cette zone (constat du {a}).","Steps of the repair plan for this area (finding of {a}).","Pasos del plan de reparación de esta zona (hallazgo del {a}).","Schritte des Reparaturplans dieses Bereichs (Befund vom {a})."],
 ["Pas de plan de réparation pour cette zone : toutes les étapes du projet sont proposées.","No repair plan for this area: all the project steps are offered.","No hay plan de reparación para esta zona: se proponen todos los pasos del proyecto.","Kein Reparaturplan für diesen Bereich: alle Schritte des Projekts werden angeboten."],
