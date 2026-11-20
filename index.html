@@ -843,7 +843,7 @@ main input[list]::placeholder{color:#4f7a5c}
     <button id="bRenOnly" type="button">Enregistrer sans modifier les constats</button>
     <button class="ghost" id="bRenCancel" type="button">Annuler</button>
   </div>
-  <button class="primary big" id="bCfgSave" type="button">Enregistrer le projet</button>
+  <div class="btns"><button class="primary big" id="bCfgSave" type="button">Enregistrer le projet</button><button class="big" id="bCfgCancel" type="button">✕ Annuler la saisie</button></div>
   <p></p>
   <div class="card c-violet">
     <h2>Partager un projet</h2>
@@ -1010,7 +1010,7 @@ main input[list]::placeholder{color:#4f7a5c}
 
 <script>
 "use strict";
-const APP_VERSION="2.71";
+const APP_VERSION="2.72";
 const GRAVITES=["OK","Mineur","À réparer","Critique","Non inspecté","Info"];
 const GCOL={"OK":"var(--ok)","Mineur":"var(--minor)","À réparer":"var(--repair)","Critique":"var(--crit)","Non inspecté":"var(--na)","Info":"var(--na)"};
 const TEMPLATES={
@@ -2956,11 +2956,27 @@ async function saveCfg(){
       $("renTxt").textContent=ren.map(r=>(r.o.code!==r.n.code||r.o.nom!==r.n.nom?`${r.o.nom} [${r.o.code}] → ${r.n.nom} [${r.n.code}]`:r.o.nom)+r.subs.map(x=>`\n   - ${x.o} → ${x.n}`).join("")).join("\n");
       $("renHint").textContent=`${n} constat(s) pas encore envoyé(s) utilisent l'ancien nom. « Mettre à jour » les renomme (photos et dossier de rangement compris). Les photos déjà rangées sur le PC se renomment avec l'outil « Renommer-Equipement » du dossier PC.`;
       $("renCard").hidden=false;$("renCard").scrollIntoView({block:"center"});return}}
-  saveCfg.force=false;Object.assign(m,nv);await majMissionConstats(m);if(change) m.modifieLe=new Date().toISOString();
+  saveCfg.force=false;Object.assign(m,nv);delete m.creeIci;await majMissionConstats(m);if(change) m.modifieLe=new Date().toISOString();
   await saveMissions();const keep={eq:$("fEq").value,act:$("fAct").value};setActive(m);refreshSelects(keep);renderCfg();renderHeader();renderDegats();renderAcces();
   toast(change?"Projet enregistré. Pense à l'envoyer à tes autres appareils.":"Aucun changement",3500)}
 async function finirRenommage(majAussi){$("renCard").hidden=true;const r=REN_EN_ATTENTE;REN_EN_ATTENTE=null;
   saveCfg.force=true;await saveCfg();if(majAussi&&r){const n=await majConstats(r.ren);refreshBadge();toast(`Projet enregistré et ${n} constat(s) mis à jour.`,4000)}}
+function cfgModifie(m){const so=socMission(m);const v={no:$("cNo").value.trim(),inspecteur:$("cInsp").value.trim(),client:$("cClient").value.trim(),dossierPC:$("cDir").value.trim(),societe:$("cSoc").value,activiteSociete:$("cSoc").value==="FTA"?$("cActSoc").value:"",langueRapport:$("cLangRap").value,equipements:$("cEq").value,activites:$("cAct").value,typeProjet:$("cType").value,vigilance:$("cVig").value};
+  return Object.keys(v).some(k=>(k==="societe"?so.societe:k==="activiteSociete"?(so.societe==="FTA"?so.activiteSociete||"API 936 Consultancy":""):k==="langueRapport"?so.langueRapport:k==="typeProjet"?(m.typeProjet==="atelier"?"atelier":"arret"):k==="no"?(m.no||"").trim():(m[k]||""))!==v[k])||$("pasteBox").value.trim()!==""}
+async function projetNeufVide(m){if(!m||!m.creeIci||m.envoyeLe||m.recuLe||m.programme) return false;
+  if(!MISSIONS.some(x=>!x.archive&&x.id!==m.id)) return false;
+  try{return !(await allEntries()).some(e=>e.mission&&(e.mission.id?e.mission.id===m.id:e.mission.no===m.no))}catch(e){return false}}
+function confirmer(fr){return confirm(tradUI(fr)||fr)}
+async function annulerCfg(){const m=curMission();if(!m) return;const modif=cfgModifie(m);
+  if(await projetNeufVide(m)&&confirmer(`Le projet ${m.no} vient d'être créé et n'a encore jamais été enregistré ni reçu de constat.\n\nOK : supprimer ce projet de l'appareil\nAnnuler : garder le projet`)){
+    const i=MISSIONS.indexOf(m);if(i>=0) MISSIONS.splice(i,1);await saveMissions();
+    const dest=MISSIONS.find(x=>x.id===m.creeIci&&!x.archive)||MISSIONS.find(x=>!x.archive);
+    $("pasteBox").value="";majCollage();$("renCard").hidden=true;REN_EN_ATTENTE=null;saveCfg.force=false;
+    await switchMission(dest.id);toast(`Projet ${m.no} supprimé : rien n'a été enregistré.`,4000);return}
+  if(!modif){toast("Rien à annuler : le projet est tel qu'il a été enregistré.",3500);return}
+  if(!confirmer("Abandonner les modifications non enregistrées du projet ?\n\nOK : revenir au dernier enregistrement\nAnnuler : continuer la saisie")) return;
+  $("pasteBox").value="";majCollage();$("renCard").hidden=true;REN_EN_ATTENTE=null;saveCfg.force=false;$("trCard").hidden=true;
+  renderCfg();toast("Saisie annulée : le projet est revenu à son dernier enregistrement.",4000)}
 function dossierPour(no,client){const base=(CFG.mission.dossierPC||"").replace(/\\[^\\]*$/,"");return base?`${base}\\${safeDir(no+(client?" - "+client:""))}`:""}
 async function createMission(){
   const no=$("nNo").value.trim(),client=$("nClient").value.trim();if(!no){toast("Indique le n° du nouveau projet.");return}
@@ -2969,7 +2985,7 @@ async function createMission(){
   const lang=$("nLang").value||"fr";
   const m={id:newId(),archive:false,no,client,langue:lang,inspecteur:CFG.mission.inspecteur,dossierPC:dossierPour(no,client),societe:$("nSoc").value,activiteSociete:$("nSoc").value==="FTA"?$("nActSoc").value:"",langueRapport:$("nLangRap").value,equipements:kind==="tpl"&&lang!=="fr"&&src.equipementsEn?src.equipementsEn:src.equipements,activites:convertirActivites(src.activites,lang),dico:kind==="copy"&&src.dico?JSON.parse(JSON.stringify(src.dico)):[],modifieLe:new Date().toISOString()};
   {const at=kind==="tpl"?ref==="atelier":src.typeProjet==="atelier";m.typeProjet=at?"atelier":"arret";m.vigilance=kind==="copy"&&src.vigilance?src.vigilance:at?vigDefaut(lang):""}
-  MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
+  m.creeIci=CFG.mission.id||"1";MISSIONS.push(m);await saveMissions();$("newCard").hidden=true;$("nNo").value="";$("nClient").value="";await switchMission(m.id);
   toast(`Projet ${no} créé : vérifie le dossier PC et complète les listes`,4000)}
 async function toggleArchive(){const m=curMission();
   if(m.archive){m.archive=false;await saveMissions();renderCfg();toast(`Projet ${m.no} désarchivé`);return}
@@ -2979,7 +2995,7 @@ async function toggleArchive(){const m=curMission();
 async function doArchive(){const m=curMission();m.archive=true;await saveMissions();$("archCard").hidden=true;await switchMission(MISSIONS.find(x=>!x.archive).id)}
 function renderHeader(){renderSync();$("appVer").textContent="Version de l'appli : "+APP_VERSION;$("hMission").textContent=CFG.mission.no+(CFG.mission.client?" · "+CFG.mission.client:"")}
 async function exportCfg(){const m=curMission();if(!m.modifieLe) m.modifieLe=new Date().toISOString();
-  const {id,archive,envoyeLe,recuLe,versionRecue,...data}=m;
+  const {id,archive,envoyeLe,recuLe,versionRecue,creeIci,...data}=m;
   const f=await fichierMission({schema:"mission-releve/1",...data});
   let ok=false;const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)&&!estDeX();
   // sur PC, le partage Windows ouvre Quick Share sans le fichier : on enregistre directement dans Téléchargements
@@ -6152,6 +6168,12 @@ const TRAD_UI=[
 ["Enregistrer et mettre à jour les constats","Save and update the findings","Guardar y actualizar los hallazgos","Speichern und Befunde aktualisieren"],
 ["Enregistrer sans modifier les constats","Save without changing the findings","Guardar sin modificar los hallazgos","Speichern ohne Befunde zu ändern"],
 ["Enregistrer le projet","Save project","Guardar el proyecto","Projekt speichern"],
+["✕ Annuler la saisie","✕ Cancel changes","✕ Cancelar los cambios","✕ Änderungen verwerfen"],
+["Rien à annuler : le projet est tel qu'il a été enregistré.","Nothing to cancel: the project is as last saved.","Nada que cancelar: el proyecto está tal como se guardó.","Nichts zu verwerfen: Das Projekt ist wie zuletzt gespeichert."],
+["Abandonner les modifications non enregistrées du projet ?\n\nOK : revenir au dernier enregistrement\nAnnuler : continuer la saisie","Discard the unsaved changes to the project?\n\nOK: go back to the last saved version\nCancel: keep editing","¿Descartar los cambios no guardados del proyecto?\n\nAceptar: volver a la última versión guardada\nCancelar: seguir editando","Nicht gespeicherte Änderungen am Projekt verwerfen?\n\nOK: zur zuletzt gespeicherten Fassung zurück\nAbbrechen: weiter bearbeiten"],
+["Saisie annulée : le projet est revenu à son dernier enregistrement.","Changes cancelled: the project is back to its last saved version.","Cambios cancelados: el proyecto vuelve a su última versión guardada.","Änderungen verworfen: Das Projekt ist wieder auf dem zuletzt gespeicherten Stand."],
+["Le projet {a} vient d'être créé et n'a encore jamais été enregistré ni reçu de constat.\n\nOK : supprimer ce projet de l'appareil\nAnnuler : garder le projet","Project {a} has just been created and has never been saved nor received any finding.\n\nOK: delete this project from the device\nCancel: keep the project","El proyecto {a} se acaba de crear y aún no se ha guardado ni tiene hallazgos.\n\nAceptar: eliminar este proyecto del dispositivo\nCancelar: conservar el proyecto","Projekt {a} wurde gerade angelegt, noch nie gespeichert und hat keine Befunde.\n\nOK: Projekt vom Gerät löschen\nAbbrechen: Projekt behalten"],
+["Projet {a} supprimé : rien n'a été enregistré.","Project {a} deleted: nothing was saved.","Proyecto {a} eliminado: no se guardó nada.","Projekt {a} gelöscht: Es wurde nichts gespeichert."],
 ["Partager un projet","Share a project","Compartir un proyecto","Projekt teilen"],
 ["Remplacer","Replace","Reemplazar","Ersetzen"],
 ["Garder celle de cet appareil","Keep this device's version","Conservar la de este dispositivo","Version dieses Geräts behalten"],
@@ -6480,7 +6502,7 @@ async function start(){
   $("bPurgeYes").onclick=purge;$("bPurgeNo").onclick=()=>$("purgeConfirm").hidden=true;
   $("bCfgSave").onclick=saveCfg;
   $("mSel").onchange=e=>switchMission(e.target.value);$("mShowArch").onchange=renderCfg;$("hMission").onclick=()=>showView("reglages");
-  $("bNew").onclick=()=>{renderCfg();$("nLang").value=langueMission();{const so=socMission(curMission());$("nSoc").value=so.societe;$("nActSoc").value=so.activiteSociete||"API 936 Consultancy";$("nLangRap").value=so.langueRapport;majChoixSoc("nSoc","lNActSoc")}$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>$("newCard").hidden=true;$("bNewOk").onclick=createMission;$("nSoc").addEventListener("change",()=>{$("nLangRap").value=$("nSoc").value==="FTA"?"fr":"en"});
+  $("bNew").onclick=()=>{renderCfg();$("nLang").value=langueMission();{const so=socMission(curMission());$("nSoc").value=so.societe;$("nActSoc").value=so.activiteSociete||"API 936 Consultancy";$("nLangRap").value=so.langueRapport;majChoixSoc("nSoc","lNActSoc")}$("archCard").hidden=true;$("newCard").hidden=false;$("nNo").focus()};$("bNewCancel").onclick=()=>{$("newCard").hidden=true;$("nNo").value="";$("nClient").value=""};$("bCfgCancel").onclick=annulerCfg;$("bNewOk").onclick=createMission;$("nSoc").addEventListener("change",()=>{$("nLangRap").value=$("nSoc").value==="FTA"?"fr":"en"});
   $("bArch").onclick=toggleArchive;$("cSoc").onchange=()=>majChoixSoc("cSoc","lActSoc");$("nSoc").onchange=()=>majChoixSoc("nSoc","lNActSoc");
   $("cLang").onchange=e=>changerLangue(e.target.value);
   $("bRenAll").onclick=()=>finirRenommage(true);$("bRenOnly").onclick=()=>finirRenommage(false);$("bRenCancel").onclick=()=>{$("renCard").hidden=true;REN_EN_ATTENTE=null};
